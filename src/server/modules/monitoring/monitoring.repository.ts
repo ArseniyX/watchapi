@@ -1,0 +1,172 @@
+import { PrismaClient, ApiEndpoint, MonitoringCheck, CheckStatus, Prisma } from '../../../generated/prisma'
+
+export class MonitoringRepository {
+  constructor(private readonly prisma: PrismaClient) {}
+
+  // API Endpoints
+  async createApiEndpoint(data: Omit<ApiEndpoint, 'id' | 'createdAt' | 'updatedAt'>): Promise<ApiEndpoint> {
+    return this.prisma.apiEndpoint.create({
+      data,
+      include: {
+        user: true,
+        collection: true,
+      },
+    })
+  }
+
+  async findApiEndpointById(id: string): Promise<ApiEndpoint | null> {
+    return this.prisma.apiEndpoint.findUnique({
+      where: { id },
+      include: {
+        user: true,
+        collection: true,
+        monitoringChecks: {
+          orderBy: { checkedAt: 'desc' },
+          take: 10,
+        },
+        alerts: true,
+      },
+    })
+  }
+
+  async findApiEndpointsByUserId(userId: string): Promise<ApiEndpoint[]> {
+    return this.prisma.apiEndpoint.findMany({
+      where: { userId },
+      include: {
+        collection: true,
+        monitoringChecks: {
+          orderBy: { checkedAt: 'desc' },
+          take: 5,
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    })
+  }
+
+  async updateApiEndpoint(id: string, data: Partial<Omit<ApiEndpoint, 'id' | 'createdAt' | 'updatedAt'>>): Promise<ApiEndpoint> {
+    return this.prisma.apiEndpoint.update({
+      where: { id },
+      data,
+      include: {
+        collection: true,
+      },
+    })
+  }
+
+  async deleteApiEndpoint(id: string): Promise<void> {
+    await this.prisma.apiEndpoint.delete({
+      where: { id },
+    })
+  }
+
+  async findActiveEndpoints(): Promise<ApiEndpoint[]> {
+    return this.prisma.apiEndpoint.findMany({
+      where: { isActive: true },
+      include: {
+        user: true,
+      },
+    })
+  }
+
+  // Monitoring Checks
+  async createMonitoringCheck(data: Omit<MonitoringCheck, 'id' | 'checkedAt'>): Promise<MonitoringCheck> {
+    return this.prisma.monitoringCheck.create({
+      data,
+      include: {
+        apiEndpoint: true,
+      },
+    })
+  }
+
+  async findChecksByApiEndpointId(
+    apiEndpointId: string,
+    options: {
+      skip?: number
+      take?: number
+      orderBy?: Prisma.MonitoringCheckOrderByWithRelationInput
+    } = {}
+  ): Promise<MonitoringCheck[]> {
+    return this.prisma.monitoringCheck.findMany({
+      where: { apiEndpointId },
+      ...options,
+    })
+  }
+
+  async getUptimeStats(apiEndpointId: string, from: Date, to: Date) {
+    const [total, successful] = await Promise.all([
+      this.prisma.monitoringCheck.count({
+        where: {
+          apiEndpointId,
+          checkedAt: { gte: from, lte: to },
+        },
+      }),
+      this.prisma.monitoringCheck.count({
+        where: {
+          apiEndpointId,
+          status: CheckStatus.SUCCESS,
+          checkedAt: { gte: from, lte: to },
+        },
+      }),
+    ])
+
+    const failed = total - successful
+    const uptimePercentage = total > 0 ? (successful / total) * 100 : 0
+
+    return {
+      total,
+      successful,
+      failed,
+      uptimePercentage,
+    }
+  }
+
+  async getAverageResponseTime(apiEndpointId: string, from: Date, to: Date): Promise<number> {
+    const result = await this.prisma.monitoringCheck.aggregate({
+      where: {
+        apiEndpointId,
+        status: CheckStatus.SUCCESS,
+        responseTime: { not: null },
+        checkedAt: { gte: from, lte: to },
+      },
+      _avg: {
+        responseTime: true,
+      },
+    })
+
+    return result._avg.responseTime || 0
+  }
+
+  async getResponseTimeHistory(
+    apiEndpointId: string,
+    from: Date,
+    to: Date,
+    intervalMinutes: number = 60
+  ) {
+    // This is a simplified version - you might want to use raw SQL for more complex time-series queries
+    return this.prisma.monitoringCheck.findMany({
+      where: {
+        apiEndpointId,
+        status: CheckStatus.SUCCESS,
+        responseTime: { not: null },
+        checkedAt: { gte: from, lte: to },
+      },
+      select: {
+        responseTime: true,
+        checkedAt: true,
+      },
+      orderBy: { checkedAt: 'asc' },
+    })
+  }
+
+  async deleteOldChecks(beforeDate: Date): Promise<number> {
+    const result = await this.prisma.monitoringCheck.deleteMany({
+      where: {
+        checkedAt: {
+          lt: beforeDate,
+        },
+      },
+    })
+
+    return result.count
+  }
+}

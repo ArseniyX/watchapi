@@ -1,8 +1,9 @@
 "use client"
 
-import { BarChart3, Bell, Database, Home, Users, Zap } from "lucide-react"
+import { BarChart3, Bell, Database, Home, Users, Zap, LogOut, User } from "lucide-react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
+import { useAuth } from "@/lib/auth"
 
 import {
   Sidebar,
@@ -81,6 +82,43 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+
+      <div className="border-t p-4">
+        <UserProfile />
+      </div>
     </Sidebar>
+  )
+}
+
+function UserProfile() {
+  const { user, logout } = useAuth()
+  const router = useRouter()
+
+  const handleLogout = () => {
+    logout()
+    router.push('/login')
+  }
+
+  if (!user) return null
+
+  return (
+    <div className="flex items-center justify-between">
+      <div className="flex items-center space-x-2">
+        <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
+          <User className="h-4 w-4 text-primary-foreground" />
+        </div>
+        <div className="flex flex-col">
+          <span className="text-sm font-medium">{user.name || user.email}</span>
+          <span className="text-xs text-muted-foreground">{user.email}</span>
+        </div>
+      </div>
+      <button
+        onClick={handleLogout}
+        className="flex items-center justify-center h-8 w-8 rounded-md hover:bg-accent transition-colors"
+        title="Logout"
+      >
+        <LogOut className="h-4 w-4" />
+      </button>
+    </div>
   )
 }

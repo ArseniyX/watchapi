@@ -1,36 +1,158 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# API Monitoring Platform
 
-## Getting Started
+A lightweight API monitoring and testing platform built with Next.js, designed for development teams who need real-time monitoring without the complexity and cost of enterprise solutions.
 
-First, run the development server:
+## Overview
+
+This application provides a comprehensive dashboard for monitoring API performance, tracking uptime, response times, and error rates. It features a clean, responsive interface with real-time charts and collaborative workspace capabilities.
+
+## Requirements
+
+### System Requirements
+
+- **Node.js**: Version 18.x or higher
+- **npm**: Version 8.x or higher (or yarn equivalent)
+- **Operating System**: macOS, Linux, or Windows
+- **Browser**: Modern browsers (Chrome 90+, Firefox 88+, Safari 14+, Edge 90+)
+
+### Development Environment
+
+- **TypeScript**: Version 5.x
+- **React**: Version 19.x
+- **Next.js**: Version 14.2.x
+- **Tailwind CSS**: Version 4.x for styling
+
+### Dependencies
+
+The application uses the following key dependencies:
+
+#### UI Framework & Components
+- **@radix-ui/react-***: Complete set of unstyled, accessible UI components
+- **lucide-react**: Icon library for consistent iconography
+- **tailwindcss**: Utility-first CSS framework
+- **tailwindcss-animate**: Animation utilities
+- **class-variance-authority**: For component variants
+- **clsx** & **tailwind-merge**: Utility functions for styling
+
+#### Charts & Data Visualization
+- **recharts**: Responsive chart library for React
+- **date-fns**: Date utility library
+
+#### Forms & Validation
+- **react-hook-form**: Performant forms library
+- **@hookform/resolvers**: Resolvers for validation libraries
+- **zod**: TypeScript-first schema validation
+
+#### Additional Features
+- **next-themes**: Theme switching capabilities
+- **sonner**: Toast notifications
+- **cmdk**: Command palette component
+- **vaul**: Drawer component for mobile
+
+## Features
+
+### Core Functionality
+
+- **Real-time API Monitoring**: Track API uptime, response times, and error rates
+- **Interactive Dashboard**: Visual analytics with charts and statistics
+- **Team Collaboration**: Shared workspaces and API collections
+- **Responsive Design**: Works seamlessly across desktop and mobile devices
+
+### Application Structure
+
+The application consists of:
+
+1. **Landing Page** (`/`): Marketing site with hero, features, pricing, and testimonials
+2. **Dashboard** (`/app`): Main monitoring interface with:
+   - Overview dashboard with key metrics
+   - API collections management
+   - Real-time monitoring views
+   - Analytics and reporting
+   - Alert configuration
+   - Team management
+
+### Technical Features
+
+- **TypeScript**: Full type safety throughout the application
+- **Server-Side Rendering**: Optimized performance with Next.js
+- **Component Library**: Reusable UI components built with Radix UI
+- **Theme Support**: Light/dark mode switching
+- **Responsive Layout**: Mobile-first design approach
+- **Analytics Integration**: Vercel Analytics support
+
+## Installation & Setup
 
 ```bash
+# Clone the repository
+git clone <repository-url>
+cd api-monitoring
+
+# Install dependencies
+npm install
+
+# Run development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+
+# Build for production
+npm run build
+
+# Start production server
+npm start
+
+# Run linting
+npm run lint
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Project Structure
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```
+src/
+├── app/                    # Next.js app router pages
+│   ├── app/               # Dashboard application pages
+│   │   ├── page.tsx       # Main dashboard
+│   │   ├── collections/   # API collections
+│   │   ├── monitoring/    # Real-time monitoring
+│   │   ├── analytics/     # Analytics & reporting
+│   │   ├── alerts/        # Alert configuration
+│   │   ├── team/          # Team management
+│   │   ├── login/         # Authentication
+│   │   └── signup/        # User registration
+│   ├── page.tsx           # Landing page
+│   ├── layout.tsx         # Root layout
+│   └── globals.css        # Global styles
+├── components/            # Reusable components
+│   ├── ui/               # Base UI components
+│   ├── header.tsx        # Site header
+│   ├── hero.tsx          # Landing page hero
+│   ├── features.tsx      # Features section
+│   ├── pricing.tsx       # Pricing section
+│   ├── testimonials.tsx  # Customer testimonials
+│   ├── footer.tsx        # Site footer
+│   ├── app-sidebar.tsx   # Dashboard sidebar
+│   └── *-chart.tsx       # Chart components
+├── lib/                  # Utility functions
+│   └── utils.ts          # Shared utilities
+└── hooks/                # Custom React hooks
+    └── use-mobile.ts     # Mobile detection hook
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Browser Support
 
-## Learn More
+- Chrome 90+
+- Firefox 88+
+- Safari 14+
+- Edge 90+
 
-To learn more about Next.js, take a look at the following resources:
+## Performance Requirements
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **First Contentful Paint**: < 1.5s
+- **Largest Contentful Paint**: < 2.5s
+- **Time to Interactive**: < 3.5s
+- **Cumulative Layout Shift**: < 0.1
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Security Requirements
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- All data transmission over HTTPS
+- Input validation and sanitization
+- XSS protection through React's built-in safety
+- CSRF protection for state-changing operations

@@ -1,0 +1,247 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// User management
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  password  String
+  role      UserRole @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  accounts         Account[]
+  sessions         Session[]
+  organizations    OrganizationMember[]
+  apiEndpoints     ApiEndpoint[]
+  monitoringChecks MonitoringCheck[]
+  alerts           Alert[]
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+// Organization management
+model Organization {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  members      OrganizationMember[]
+  apiEndpoints ApiEndpoint[]
+  collections  Collection[]
+
+  @@map("organizations")
+}
+
+model OrganizationMember {
+  id             String         @id @default(cuid())
+  userId         String
+  organizationId String
+  role           OrganizationRole @default(MEMBER)
+  joinedAt       DateTime       @default(now())
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+  @@map("organization_members")
+}
+
+// API monitoring core models
+model Collection {
+  id             String   @id @default(cuid())
+  name           String
+  description    String?
+  organizationId String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization? @relation(fields: [organizationId], references: [id])
+  apiEndpoints ApiEndpoint[]
+
+  @@map("collections")
+}
+
+model ApiEndpoint {
+  id             String      @id @default(cuid())
+  name           String
+  url            String
+  method         HttpMethod  @default(GET)
+  headers        String?     // JSON string
+  body           String?
+  expectedStatus Int         @default(200)
+  timeout        Int         @default(30000)
+  interval       Int         @default(300000) // 5 minutes
+  isActive       Boolean     @default(true)
+  userId         String
+  organizationId String?
+  collectionId   String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  user            User                @relation(fields: [userId], references: [id])
+  organization    Organization?       @relation(fields: [organizationId], references: [id])
+  collection      Collection?         @relation(fields: [collectionId], references: [id])
+  monitoringChecks MonitoringCheck[]
+  alerts          Alert[]
+
+  @@map("api_endpoints")
+}
+
+model MonitoringCheck {
+  id            String      @id @default(cuid())
+  apiEndpointId String
+  userId        String
+  status        CheckStatus
+  responseTime  Int?        // in milliseconds
+  statusCode    Int?
+  errorMessage  String?
+  responseSize  Int?        // in bytes
+  checkedAt     DateTime    @default(now())
+
+  apiEndpoint ApiEndpoint @relation(fields: [apiEndpointId], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [userId], references: [id])
+
+  @@index([apiEndpointId, checkedAt])
+  @@map("monitoring_checks")
+}
+
+// Alerting system
+model Alert {
+  id            String      @id @default(cuid())
+  name          String
+  description   String?
+  apiEndpointId String
+  userId        String
+  condition     AlertCondition
+  threshold     Float
+  isActive      Boolean     @default(true)
+  lastTriggered DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  apiEndpoint      ApiEndpoint        @relation(fields: [apiEndpointId], references: [id], onDelete: Cascade)
+  user             User               @relation(fields: [userId], references: [id])
+  alertTriggers    AlertTrigger[]
+  notifications    AlertNotification[]
+
+  @@map("alerts")
+}
+
+model AlertTrigger {
+  id        String   @id @default(cuid())
+  alertId   String
+  value     Float
+  triggeredAt DateTime @default(now())
+
+  alert Alert @relation(fields: [alertId], references: [id], onDelete: Cascade)
+
+  @@map("alert_triggers")
+}
+
+model AlertNotification {
+  id        String             @id @default(cuid())
+  alertId   String
+  type      NotificationType
+  recipient String             // email, webhook URL, etc.
+  isActive  Boolean            @default(true)
+  createdAt DateTime           @default(now())
+
+  alert Alert @relation(fields: [alertId], references: [id], onDelete: Cascade)
+
+  @@map("alert_notifications")
+}
+
+// Enums
+enum UserRole {
+  USER
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum OrganizationRole {
+  MEMBER
+  ADMIN
+  OWNER
+}
+
+enum HttpMethod {
+  GET
+  POST
+  PUT
+  PATCH
+  DELETE
+  HEAD
+  OPTIONS
+}
+
+enum CheckStatus {
+  SUCCESS
+  FAILURE
+  TIMEOUT
+  ERROR
+}
+
+enum AlertCondition {
+  RESPONSE_TIME_ABOVE
+  RESPONSE_TIME_BELOW
+  STATUS_CODE_NOT
+  UPTIME_BELOW
+  ERROR_RATE_ABOVE
+}
+
+enum NotificationType {
+  EMAIL
+  WEBHOOK
+  SLACK
+  DISCORD
+}

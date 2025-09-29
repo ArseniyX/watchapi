@@ -63,3 +63,52 @@ body {
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
 }
+
+/* Ensure modals, popups, and dropdowns have proper backgrounds */
+[data-radix-popper-content-wrapper] {
+  z-index: 50 !important;
+}
+
+.bg-popover {
+  background-color: hsl(var(--popover)) !important;
+}
+
+.bg-background {
+  background-color: hsl(var(--background)) !important;
+}
+
+.text-popover-foreground {
+  color: hsl(var(--popover-foreground)) !important;
+}
+
+/* Dialog and modal specific fixes */
+[data-state="open"][data-radix-dialog-content] {
+  background-color: hsl(var(--background)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+}
+
+[data-state="open"][data-radix-dropdown-menu-content],
+[data-state="open"][data-radix-select-content] {
+  background-color: hsl(var(--popover)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  color: hsl(var(--popover-foreground)) !important;
+}
+
+/* Additional fixes for all Radix UI components */
+[data-radix-dialog-content] {
+  background-color: hsl(var(--background));
+}
+
+[data-radix-dropdown-menu-content],
+[data-radix-select-content],
+[data-radix-popover-content] {
+  background-color: hsl(var(--popover));
+  color: hsl(var(--popover-foreground));
+  border: 1px solid hsl(var(--border));
+}
+
+/* Force backdrop styles */
+[data-radix-dialog-overlay] {
+  background-color: rgba(0, 0, 0, 0.8) !important;
+  backdrop-filter: blur(4px) !important;
+}
