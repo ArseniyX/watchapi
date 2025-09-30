@@ -214,7 +214,7 @@ export default function DashboardPage() {
                         <p className="text-sm font-medium">
                           {check.responseTime ? formatDuration(check.responseTime) : 'N/A'}
                         </p>
-                        <Badge variant={statusVariant as any} className="text-xs">
+                        <Badge variant={statusVariant} className="text-xs">
                           {statusText}
                         </Badge>
                       </div>
