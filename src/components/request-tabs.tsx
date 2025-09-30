@@ -35,8 +35,10 @@ export function RequestTabs() {
                 <div
                     key={tab.id}
                     className={cn(
-                        "group flex items-center gap-2 rounded bg-muted px-3 py-1.5 cursor-pointer hover:bg-muted/80 transition-colors"
-                        // activeTabId === tab.id && "bg-accent"
+                        "group flex items-center gap-2 rounded-t px-3 py-1.5 cursor-pointer transition-all border-b-2 -mb-[9px]",
+                        activeTabId === tab.id
+                            ? "bg-card border-primary"
+                            : "bg-muted border-transparent hover:bg-muted/80"
                     )}
                     onClick={() => setActiveTab(tab.id)}
                 >
@@ -44,11 +46,11 @@ export function RequestTabs() {
                         className={cn(
                             "text-xs font-medium",
                             getMethodColor(
-                                tab.type === "request" ? "GET" : undefined
+                                tab.type === "request" ? tab.method : undefined
                             )
                         )}
                     >
-                        {tab.type === "request" ? "GET" : "COLLECTION"}
+                        {tab.type === "request" ? (tab.method || "GET") : "COLLECTION"}
                     </span>
                     <span className="text-xs text-foreground whitespace-nowrap">
                         {tab.name}

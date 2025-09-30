@@ -6,6 +6,7 @@ export interface Tab {
   name: string
   collectionId?: string
   isDirty?: boolean
+  method?: string
 }
 
 export interface TabsSlice {

@@ -1,31 +1,45 @@
 "use client"
 
-import { useState } from "react"
+import Editor from '@monaco-editor/react'
 
-export function CodeEditor() {
-  const [code, setCode] = useState(`{
-  "email": "test1@test.test",
-  "password": "{{passTestUser1}}",
-  "returnSecureToken": true
-}`)
+interface CodeEditorProps {
+  value?: string
+  onChange?: (value: string) => void
+  language?: string
+}
+
+export function CodeEditor({ value = '', onChange, language = 'json' }: CodeEditorProps) {
+  const handleChange = (newValue: string | undefined) => {
+    const val = newValue || ''
+    onChange?.(val)
+  }
 
   return (
     <div className="h-full bg-card">
-      <div className="flex h-full">
-        <div className="flex flex-col border-r border-border bg-muted px-2 py-3 text-right font-mono text-xs text-muted-foreground">
-          {code.split("\n").map((_, i) => (
-            <div key={i} className="leading-6">
-              {i + 1}
-            </div>
-          ))}
-        </div>
-        <textarea
-          value={code}
-          onChange={(e) => setCode(e.target.value)}
-          className="flex-1 resize-none bg-card p-3 font-mono text-sm text-foreground outline-none"
-          spellCheck={false}
-        />
-      </div>
+      <Editor
+        height="100%"
+        language={language}
+        value={value}
+        onChange={handleChange}
+        theme="vs-dark"
+        options={{
+          minimap: { enabled: false },
+          fontSize: 12,
+          lineNumbers: 'on',
+          scrollBeyondLastLine: false,
+          automaticLayout: true,
+          tabSize: 2,
+          wordWrap: 'on',
+          folding: true,
+          autoClosingBrackets: 'always',
+          autoClosingQuotes: 'always',
+          formatOnPaste: true,
+          formatOnType: true,
+          bracketPairColorization: {
+            enabled: true,
+          },
+        }}
+      />
     </div>
   )
 }

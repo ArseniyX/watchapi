@@ -9,7 +9,7 @@ export const createMonitoringRouter = (monitoringService: MonitoringService) =>
       .input(
         z.object({
           name: z.string(),
-          url: z.string().url(),
+          url: z.string(),
           method: z.nativeEnum(HttpMethod).default(HttpMethod.GET),
           headers: z.record(z.string()).optional(),
           body: z.string().optional(),
@@ -39,7 +39,7 @@ export const createMonitoringRouter = (monitoringService: MonitoringService) =>
         z.object({
           id: z.string(),
           name: z.string().optional(),
-          url: z.string().url().optional(),
+          url: z.string().optional(),
           method: z.nativeEnum(HttpMethod).optional(),
           headers: z.record(z.string()).optional(),
           body: z.string().optional(),
@@ -64,6 +64,19 @@ export const createMonitoringRouter = (monitoringService: MonitoringService) =>
       .input(z.object({ id: z.string() }))
       .mutation(async ({ input }) => {
         return monitoringService.checkApiEndpoint(input.id)
+      }),
+
+    sendRequest: protectedProcedure
+      .input(
+        z.object({
+          url: z.string(),
+          method: z.nativeEnum(HttpMethod),
+          headers: z.record(z.string()).optional(),
+          body: z.string().optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        return monitoringService.sendRequest(input)
       }),
 
     getHistory: protectedProcedure

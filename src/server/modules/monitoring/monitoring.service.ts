@@ -81,6 +81,66 @@ export class MonitoringService {
     return this.monitoringRepository.deleteApiEndpoint(id)
   }
 
+  async sendRequest(input: {
+    url: string
+    method: HttpMethod
+    headers?: Record<string, string>
+    body?: string
+  }): Promise<{
+    status: number
+    statusText: string
+    headers: Record<string, string>
+    body: string
+    responseTime: number
+    responseSize: number
+  }> {
+    const startTime = Date.now()
+
+    try {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
+
+      const response = await fetch(input.url, {
+        method: input.method,
+        headers: input.headers || {},
+        body: input.body || undefined,
+        signal: controller.signal,
+      })
+
+      clearTimeout(timeoutId)
+      const responseTime = Date.now() - startTime
+      const responseText = await response.text()
+      const responseSize = new TextEncoder().encode(responseText).length
+
+      // Convert response headers to object
+      const responseHeaders: Record<string, string> = {}
+      response.headers.forEach((value, key) => {
+        responseHeaders[key] = value
+      })
+
+      return {
+        status: response.status,
+        statusText: response.statusText,
+        headers: responseHeaders,
+        body: responseText,
+        responseTime,
+        responseSize,
+      }
+    } catch (error) {
+      const responseTime = Date.now() - startTime
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+
+      return {
+        status: 0,
+        statusText: 'Error',
+        headers: {},
+        body: JSON.stringify({ error: errorMessage }),
+        responseTime,
+        responseSize: 0,
+      }
+    }
+  }
+
   async checkApiEndpoint(apiEndpointId: string): Promise<MonitoringCheckResult> {
     const endpoint = await this.monitoringRepository.findApiEndpointById(apiEndpointId)
     if (!endpoint) {

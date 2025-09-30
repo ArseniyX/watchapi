@@ -26,9 +26,11 @@ interface SidebarProps {
 function CollectionTree({
     items,
     level = 0,
+    parentCollectionId,
 }: {
     items: CollectionItem[];
     level?: number;
+    parentCollectionId?: string;
 }) {
     const [hoveredItem, setHoveredItem] = useState<string | null>(null);
 
@@ -73,11 +75,12 @@ function CollectionTree({
                                 setSelectedItem(item.id);
                                 // Open tab for request
                                 const addTab = useAppStore.getState().addTab;
+                                const collectionId = level === 0 ? item.id : parentCollectionId;
                                 addTab({
                                     id: item.id,
                                     type: "request",
                                     name: item.name,
-                                    collectionId: items.find(i => i.id === item.id)?.id,
+                                    collectionId: collectionId,
                                 });
                             }
                         }}
@@ -141,6 +144,7 @@ function CollectionTree({
                         <CollectionTree
                             items={item.children}
                             level={level + 1}
+                            parentCollectionId={level === 0 ? item.id : parentCollectionId}
                         />
                     )}
                 </div>

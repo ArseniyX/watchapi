@@ -1,887 +1,633 @@
 "use client";
 
-import type React from "react";
-
-import { useState } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { RequestTabs } from "@/components/request-tabs";
-import {
-    ChevronDown,
-    Plus,
-    X,
-    Send,
-    Link,
-    Save,
-    ChevronRight,
-    Trash2,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
-import { CodeEditor } from "@/components/code-editor";
+import { RequestUrlBar } from "@/components/request/request-url-bar";
+import { RequestBreadcrumb } from "@/components/request/breadcrumb";
 import { ResponseViewer } from "@/components/response-viewer";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import type { KeyValuePair } from "@/components/request/key-value-table";
+import { useAppStore } from "@/store";
+import { trpc } from "@/lib/trpc";
+import { useForm } from "react-hook-form";
 
-interface KeyValuePair {
-    id: string;
-    key: string;
-    value: string;
-    description?: string;
-    enabled: boolean;
-}
+// Tab Components
+import { ParamsTab } from "@/components/request/tabs/params-tab";
+import { HeadersTab } from "@/components/request/tabs/headers-tab";
+import { BodyTab } from "@/components/request/tabs/body-tab";
+import Image from "next/image";
+
+// Store form state per tab with localStorage persistence
+const CACHE_KEY = "request-builder-cache";
+
+const loadCacheFromStorage = () => {
+    if (typeof window === "undefined") return new Map();
+    try {
+        const stored = localStorage.getItem(CACHE_KEY);
+        if (stored) {
+            const parsed = JSON.parse(stored);
+            return new Map(Object.entries(parsed));
+        }
+    } catch (error) {
+        console.error("Failed to load cache from localStorage:", error);
+    }
+    return new Map();
+};
+
+const saveCacheToStorage = (cache: Map<string, any>) => {
+    if (typeof window === "undefined") return;
+    try {
+        const obj = Object.fromEntries(cache);
+        localStorage.setItem(CACHE_KEY, JSON.stringify(obj));
+    } catch (error) {
+        console.error("Failed to save cache to localStorage:", error);
+    }
+};
+
+const tabFormsCache = loadCacheFromStorage();
 
 export function RequestBuilder() {
-    const [method, setMethod] = useState("POST");
-    const [url, setUrl] = useState(
-        "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=AIzaSyDoTEDZgM8whx1QUh7g3zAUADr_J1VCeGk"
+    // Get active tab and collections data
+    const activeTabId = useAppStore((state) => state.activeTabId);
+    const tabs = useAppStore((state) => state.tabs);
+    const updateTab = useAppStore((state) => state.updateTab);
+    const { data: collectionsData } =
+        trpc.collection.getMyCollections.useQuery();
+    const utils = trpc.useUtils();
+
+    const activeTab = useMemo(
+        () => tabs.find((tab) => tab.id === activeTabId),
+        [tabs, activeTabId]
     );
-    const [activeTab, setActiveTab] = useState("body");
-    const [bodyType, setBodyType] = useState("raw");
-    const [rawType, setRawType] = useState("JSON");
-    const [requestSent, setRequestSent] = useState(false);
 
-    const [queryParams, setQueryParams] = useState<KeyValuePair[]>([
-        {
-            id: "1",
-            key: "key",
-            value: "AIzaSyDoTEDZgM8whx1QUh7g3zAUADr_J1VCeGk",
-            enabled: true,
-        },
-    ]);
+    // Find collection and endpoint data
+    const breadcrumbData = useMemo(() => {
+        if (!activeTab || !collectionsData) {
+            return { collection: "My Collection", request: "New Request", collectionId: null };
+        }
 
-    const [headers, setHeaders] = useState<KeyValuePair[]>([
-        {
-            id: "1",
-            key: "Content-Type",
-            value: "application/json",
-            enabled: true,
-        },
-        { id: "2", key: "Accept", value: "application/json", enabled: true },
-        {
-            id: "3",
-            key: "User-Agent",
-            value: "PostmanRuntime/7.32.3",
-            enabled: true,
-        },
-        {
-            id: "4",
-            key: "Accept-Encoding",
-            value: "gzip, deflate, br",
-            enabled: true,
-        },
-        { id: "5", key: "Connection", value: "keep-alive", enabled: true },
-    ]);
-
-    const [authType, setAuthType] = useState("no-auth");
-    const [authToken, setAuthToken] = useState("");
-
-    const [formData, setFormData] = useState<KeyValuePair[]>([]);
-
-    const addKeyValuePair = (
-        items: KeyValuePair[],
-        setItems: React.Dispatch<React.SetStateAction<KeyValuePair[]>>
-    ) => {
-        setItems([
-            ...items,
-            { id: Date.now().toString(), key: "", value: "", enabled: true },
-        ]);
-    };
-
-    const updateKeyValuePair = (
-        items: KeyValuePair[],
-        setItems: React.Dispatch<React.SetStateAction<KeyValuePair[]>>,
-        id: string,
-        field: keyof KeyValuePair,
-        value: string | boolean
-    ) => {
-        setItems(
-            items.map((item) =>
-                item.id === id ? { ...item, [field]: value } : item
-            )
+        // Find the collection
+        const collection = collectionsData.find(
+            (col: any) => col.id === activeTab.collectionId
         );
-    };
 
-    const removeKeyValuePair = (
-        items: KeyValuePair[],
-        setItems: React.Dispatch<React.SetStateAction<KeyValuePair[]>>,
-        id: string
-    ) => {
-        setItems(items.filter((item) => item.id !== id));
-    };
+        if (!collection) {
+            return { collection: "My Collection", request: activeTab.name, collectionId: activeTab.collectionId };
+        }
 
-    const handleSend = () => {
+        return {
+            collection: collection.name,
+            request: activeTab.name,
+            collectionId: collection.id,
+        };
+    }, [activeTab, collectionsData]);
+
+    // Get default values for current tab
+    const getDefaultValues = useCallback(() => {
+        if (activeTabId && tabFormsCache.has(activeTabId)) {
+            return tabFormsCache.get(activeTabId);
+        }
+        return {
+            method: "GET",
+            url: "",
+            queryParams: [] as KeyValuePair[],
+            headers: [] as KeyValuePair[],
+            authType: "no-auth",
+            authToken: "",
+            bodyType: "raw",
+            rawType: "JSON",
+            formData: [] as KeyValuePair[],
+            bodyContent: "",
+        };
+    }, [activeTabId]);
+
+    // Request State with React Hook Form
+    const {
+        watch,
+        setValue,
+        formState: { isDirty },
+        reset,
+    } = useForm({
+        defaultValues: getDefaultValues(),
+    });
+
+    const method = watch("method");
+    const url = watch("url");
+    const queryParams = watch("queryParams");
+    const headers = watch("headers");
+    const authType = watch("authType");
+    const authToken = watch("authToken");
+    const bodyType = watch("bodyType");
+    const rawType = watch("rawType");
+    const formData = watch("formData");
+    const bodyContent = watch("bodyContent");
+
+    const [requestSent, setRequestSent] = useState(false);
+    const [responseData, setResponseData] = useState<any>(null);
+
+    // Config Tab State (renamed to avoid conflict)
+    const [activeConfigTab, setActiveConfigTab] = useState("body");
+
+    // Track previous tab to save state before switching
+    const prevTabIdRef = useRef<string | null>(null);
+
+    useEffect(() => {
+        // Save previous tab's state before switching
+        if (prevTabIdRef.current && prevTabIdRef.current !== activeTabId) {
+            const currentValues = {
+                method,
+                url,
+                queryParams,
+                headers,
+                authType,
+                authToken,
+                bodyType,
+                rawType,
+                formData,
+                bodyContent,
+            };
+            tabFormsCache.set(prevTabIdRef.current, currentValues);
+            saveCacheToStorage(tabFormsCache);
+        }
+
+        // Load new tab's state
+        if (activeTabId) {
+            if (tabFormsCache.has(activeTabId)) {
+                const savedValues = tabFormsCache.get(activeTabId);
+                // Reset with saved values and clear dirty state
+                reset(savedValues, {
+                    keepDefaultValues: false,
+                    keepDirty: false,
+                });
+            } else {
+                // First time opening this tab - use defaults
+                const defaults = getDefaultValues();
+                reset(defaults, { keepDefaultValues: false, keepDirty: false });
+            }
+            prevTabIdRef.current = activeTabId;
+        }
+    }, [activeTabId, reset, getDefaultValues]);
+
+    // Update tab dirty state and method when form changes
+    useEffect(() => {
+        if (activeTabId) {
+            updateTab(activeTabId, { isDirty, method });
+        }
+    }, [isDirty, method, activeTabId, updateTab]);
+
+    // Generic handlers for key-value pairs using react-hook-form
+    const handleAddQueryParam = useCallback(() => {
+        const currentItems = watch("queryParams");
+        setValue(
+            "queryParams",
+            [
+                ...currentItems,
+                {
+                    id: Date.now().toString(),
+                    key: "",
+                    value: "",
+                    enabled: true,
+                },
+            ],
+            { shouldDirty: true }
+        );
+    }, [watch, setValue]);
+
+    const handleUpdateQueryParam = useCallback(
+        (id: string, field: keyof KeyValuePair, value: string | boolean) => {
+            const currentItems = watch("queryParams");
+            setValue(
+                "queryParams",
+                currentItems.map((item: KeyValuePair) =>
+                    item.id === id ? { ...item, [field]: value } : item
+                ),
+                { shouldDirty: true }
+            );
+        },
+        [watch, setValue]
+    );
+
+    const handleRemoveQueryParam = useCallback(
+        (id: string) => {
+            const currentItems = watch("queryParams");
+            setValue(
+                "queryParams",
+                currentItems.filter((item: KeyValuePair) => item.id !== id),
+                { shouldDirty: true }
+            );
+        },
+        [watch, setValue]
+    );
+
+    const handleAddHeader = useCallback(() => {
+        const currentItems = watch("headers");
+        setValue(
+            "headers",
+            [
+                ...currentItems,
+                {
+                    id: Date.now().toString(),
+                    key: "",
+                    value: "",
+                    enabled: true,
+                },
+            ],
+            { shouldDirty: true }
+        );
+    }, [watch, setValue]);
+
+    const handleUpdateHeader = useCallback(
+        (id: string, field: keyof KeyValuePair, value: string | boolean) => {
+            const currentItems = watch("headers");
+            setValue(
+                "headers",
+                currentItems.map((item: KeyValuePair) =>
+                    item.id === id ? { ...item, [field]: value } : item
+                ),
+                { shouldDirty: true }
+            );
+        },
+        [watch, setValue]
+    );
+
+    const handleRemoveHeader = useCallback(
+        (id: string) => {
+            const currentItems = watch("headers");
+            setValue(
+                "headers",
+                currentItems.filter((item: KeyValuePair) => item.id !== id),
+                { shouldDirty: true }
+            );
+        },
+        [watch, setValue]
+    );
+
+    const handleAddFormData = useCallback(() => {
+        const currentItems = watch("formData");
+        setValue(
+            "formData",
+            [
+                ...currentItems,
+                {
+                    id: Date.now().toString(),
+                    key: "",
+                    value: "",
+                    enabled: true,
+                },
+            ],
+            { shouldDirty: true }
+        );
+    }, [watch, setValue]);
+
+    const handleUpdateFormData = useCallback(
+        (id: string, field: keyof KeyValuePair, value: string | boolean) => {
+            const currentItems = watch("formData");
+            setValue(
+                "formData",
+                currentItems.map((item: KeyValuePair) =>
+                    item.id === id ? { ...item, [field]: value } : item
+                ),
+                { shouldDirty: true }
+            );
+        },
+        [watch, setValue]
+    );
+
+    const handleRemoveFormData = useCallback(
+        (id: string) => {
+            const currentItems = watch("formData");
+            setValue(
+                "formData",
+                currentItems.filter((item: KeyValuePair) => item.id !== id),
+                { shouldDirty: true }
+            );
+        },
+        [watch, setValue]
+    );
+
+    const sendRequestMutation = trpc.monitoring.sendRequest.useMutation();
+
+    const handleSend = useCallback(async () => {
         setRequestSent(true);
-        // Simulate API call
-        setTimeout(() => {
-            setRequestSent(false);
-        }, 1000);
-    };
+
+        try {
+            // Build headers object
+            const requestHeaders: Record<string, string> = {};
+            headers
+                .filter(h => h.enabled && h.key)
+                .forEach(h => {
+                    requestHeaders[h.key] = h.value;
+                });
+
+            // Build query string from params
+            const enabledParams = queryParams.filter(p => p.enabled && p.key);
+            const queryString = enabledParams.length > 0
+                ? '?' + enabledParams.map(p => `${encodeURIComponent(p.key)}=${encodeURIComponent(p.value)}`).join('&')
+                : '';
+
+            const fullUrl = url + queryString;
+
+            // Get body if applicable
+            let requestBody: string | undefined;
+            if (method !== 'GET' && method !== 'HEAD' && bodyType === 'raw' && bodyContent) {
+                requestBody = bodyContent;
+            }
+
+            const result = await sendRequestMutation.mutateAsync({
+                url: fullUrl,
+                method: method as any,
+                headers: requestHeaders,
+                body: requestBody,
+            });
+
+            console.log('Response:', result);
+            setResponseData(result);
+
+        } catch (error) {
+            console.error('Request failed:', error);
+        } finally {
+            setTimeout(() => {
+                setRequestSent(false);
+            }, 1000);
+        }
+    }, [method, url, queryParams, headers, bodyType, bodyContent, sendRequestMutation]);
+
+    // Mutation for updating endpoint
+    const updateEndpointMutation = trpc.monitoring.updateEndpoint.useMutation({
+        onSuccess: () => {
+            utils.collection.getMyCollections.invalidate();
+        },
+    });
+
+    const handleSave = useCallback(async () => {
+        if (!activeTabId || !activeTab) return;
+
+        try {
+            // Convert headers array to record format
+            const headersRecord = headers
+                .filter((h) => h.enabled && h.key)
+                .reduce((acc, h) => {
+                    acc[h.key] = h.value;
+                    return acc;
+                }, {} as Record<string, string>);
+
+            // Save to API
+            await updateEndpointMutation.mutateAsync({
+                id: activeTabId,
+                name: activeTab.name,
+                url,
+                method: method as any,
+                headers: headersRecord,
+                body:
+                    bodyType === "raw"
+                        ? JSON.stringify({ type: rawType })
+                        : undefined,
+            });
+
+            // Save current values to cache
+            const currentValues = {
+                method,
+                url,
+                queryParams,
+                headers,
+                authType,
+                authToken,
+                bodyType,
+                rawType,
+                formData,
+                bodyContent,
+            };
+            tabFormsCache.set(activeTabId, currentValues);
+            saveCacheToStorage(tabFormsCache);
+
+            // Reset form to mark as not dirty
+            reset(currentValues, { keepDefaultValues: true });
+
+            // Update tab to mark as saved
+            updateTab(activeTabId, { isDirty: false });
+        } catch (error) {
+            console.error("Failed to save endpoint:", error);
+        }
+    }, [
+        activeTabId,
+        activeTab,
+        method,
+        url,
+        queryParams,
+        headers,
+        authType,
+        authToken,
+        bodyType,
+        rawType,
+        formData,
+        bodyContent,
+        reset,
+        updateTab,
+        updateEndpointMutation,
+    ]);
+
+    const handleRequestNameChange = useCallback(
+        async (newName: string) => {
+            if (!activeTabId || !activeTab) return;
+
+            try {
+                // Update via API
+                await updateEndpointMutation.mutateAsync({
+                    id: activeTabId,
+                    name: newName,
+                    url,
+                    method: method as any,
+                    headers: headers
+                        .filter((h) => h.enabled && h.key)
+                        .reduce((acc, h) => {
+                            acc[h.key] = h.value;
+                            return acc;
+                        }, {} as Record<string, string>),
+                    body:
+                        bodyType === "raw"
+                            ? JSON.stringify({ type: rawType })
+                            : undefined,
+                });
+
+                // Update tab name in store
+                updateTab(activeTabId, { name: newName });
+            } catch (error) {
+                console.error("Failed to update request name:", error);
+            }
+        },
+        [
+            activeTabId,
+            activeTab,
+            url,
+            method,
+            headers,
+            bodyType,
+            rawType,
+            updateTab,
+            updateEndpointMutation,
+        ]
+    );
+
+    const updateCollectionMutation = trpc.collection.updateCollection.useMutation({
+        onSuccess: () => {
+            utils.collection.getMyCollections.invalidate();
+        },
+    });
+
+    const handleCollectionNameChange = useCallback(
+        async (newName: string) => {
+            if (!breadcrumbData.collectionId) return;
+
+            try {
+                await updateCollectionMutation.mutateAsync({
+                    id: breadcrumbData.collectionId,
+                    name: newName,
+                });
+            } catch (error) {
+                console.error("Failed to update collection name:", error);
+            }
+        },
+        [breadcrumbData.collectionId, updateCollectionMutation]
+    );
+
+    // Show empty state if no tabs
+    if (!activeTabId || tabs.length === 0) {
+        return (
+            <div className="flex h-full flex-col">
+                <RequestTabs />
+                <div className="flex flex-1 items-center justify-center">
+                    <Image
+                        src="/logo.png"
+                        alt="WatchAPI logo"
+                        width={400}
+                        height={400}
+                        className="shrink-0"
+                    />
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="flex h-full flex-col">
             {/* Tab Bar */}
             <RequestTabs />
-            {/* <div className="ml-auto flex items-center gap-2">
-                    <Select defaultValue="no-environment">
-                        <SelectTrigger className="h-7 w-40 text-xs">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="no-environment">
-                                No environment
-                            </SelectItem>
-                            <SelectItem value="development">
-                                Development
-                            </SelectItem>
-                            <SelectItem value="production">
-                                Production
-                            </SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div> 
-            </div>*/}
 
             {/* Breadcrumb */}
-            <div className="flex items-center gap-2 border-b border-border bg-card px-4 py-2 text-xs text-muted-foreground">
-                <span className="text-primary">Bot builder</span>
-                <ChevronRight className="h-3 w-3" />
-                <span>User</span>
-                <ChevronRight className="h-3 w-3" />
-                <span>Retrieve token</span>
-                <div className="ml-auto flex items-center gap-2">
-                    <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-7 gap-1 text-xs"
-                    >
-                        <Save className="h-3 w-3" />
-                        Save
-                    </Button>
-                    <Button size="sm" variant="ghost" className="h-7 text-xs">
-                        Share
-                    </Button>
-                    <Button size="icon" variant="ghost" className="h-7 w-7">
-                        <Link className="h-3 w-3" />
-                    </Button>
-                </div>
-            </div>
+            <RequestBreadcrumb
+                collection={breadcrumbData.collection}
+                request={breadcrumbData.request}
+                onSave={handleSave}
+                onShare={() => console.log("Share")}
+                onCopyLink={() => console.log("Copy link")}
+                onRequestNameChange={handleRequestNameChange}
+                onCollectionNameChange={handleCollectionNameChange}
+            />
 
             {/* Request URL Bar */}
-            <div className="flex items-center gap-2 border-b border-border bg-card p-4">
-                <Select value={method} onValueChange={setMethod}>
-                    <SelectTrigger className="w-32">
-                        <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="GET">GET</SelectItem>
-                        <SelectItem value="POST">POST</SelectItem>
-                        <SelectItem value="PUT">PUT</SelectItem>
-                        <SelectItem value="DELETE">DELETE</SelectItem>
-                        <SelectItem value="PATCH">PATCH</SelectItem>
-                    </SelectContent>
-                </Select>
-                <Input
-                    type="text"
-                    value={url}
-                    onChange={(e) => setUrl(e.target.value)}
-                    className="flex-1 font-mono text-xs"
-                    placeholder="Enter request URL"
-                />
-                <Button
-                    onClick={handleSend}
-                    className="bg-primary hover:bg-primary/90"
-                >
-                    <Send className="mr-2 h-4 w-4" />
-                    Send
-                </Button>
-                <Button size="icon" variant="ghost">
-                    <ChevronDown className="h-4 w-4" />
-                </Button>
-            </div>
+            <RequestUrlBar
+                method={method}
+                url={url}
+                onMethodChange={(value) =>
+                    setValue("method", value, { shouldDirty: true })
+                }
+                onUrlChange={(value) =>
+                    setValue("url", value, { shouldDirty: true })
+                }
+                onSend={handleSend}
+            />
 
             {/* Request Configuration */}
-            <div className="flex flex-1 flex-col overflow-hidden">
+            <div className="flex flex-1 flex-col overflow-hidden min-h-0">
                 <Tabs
-                    value={activeTab}
-                    onValueChange={setActiveTab}
-                    className="flex flex-1 flex-col"
+                    value={activeConfigTab}
+                    onValueChange={setActiveConfigTab}
+                    className="flex flex-1 flex-col min-h-0 gap-0"
                 >
-                    <div className="border-b border-border bg-card px-4">
-                        <TabsList className="h-10 bg-transparent">
-                            <TabsTrigger value="params" className="text-xs">
-                                Params{" "}
-                                <span className="ml-1 text-green-500">●</span>
+                    <div className="border-b border-border bg-card px-4 shrink-0">
+                        <TabsList className="h-10 bg-transparent p-0 gap-1">
+                            <TabsTrigger
+                                value="params"
+                                className="text-xs data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none data-[state=active]:bg-transparent"
+                            >
+                                Params
                             </TabsTrigger>
                             <TabsTrigger
-                                value="authorization"
-                                className="text-xs"
+                                value="headers"
+                                className="text-xs data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none data-[state=active]:bg-transparent"
                             >
-                                Authorization
-                            </TabsTrigger>
-                            <TabsTrigger value="headers" className="text-xs">
                                 Headers{" "}
                                 <span className="ml-1 text-muted-foreground">
                                     ({headers.filter((h) => h.enabled).length})
                                 </span>
                             </TabsTrigger>
-                            <TabsTrigger value="body" className="text-xs">
-                                Body{" "}
-                                <span className="ml-1 text-green-500">●</span>
-                            </TabsTrigger>
-                            <TabsTrigger value="scripts" className="text-xs">
-                                Scripts{" "}
-                                <span className="ml-1 text-green-500">●</span>
-                            </TabsTrigger>
-                            <TabsTrigger value="tests" className="text-xs">
-                                Tests{" "}
-                                <span className="ml-1 text-green-500">●</span>
-                            </TabsTrigger>
-                            <TabsTrigger value="settings" className="text-xs">
-                                Settings
+                            <TabsTrigger
+                                value="body"
+                                className="text-xs data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none data-[state=active]:bg-transparent"
+                            >
+                                Body
                             </TabsTrigger>
                         </TabsList>
-                        <div className="ml-auto flex items-center gap-2 text-xs">
-                            <button className="text-primary hover:underline">
-                                Cookies
-                            </button>
-                            <button className="text-primary hover:underline">
-                                Schema
-                            </button>
-                            <button className="text-primary hover:underline">
-                                Beautify
-                            </button>
-                        </div>
                     </div>
 
                     <TabsContent
                         value="params"
-                        className="flex-1 overflow-auto p-0"
+                        className="flex-1 overflow-hidden p-0 m-0 h-full"
                     >
-                        <div className="flex flex-col">
-                            <div className="grid grid-cols-[40px_1fr_1fr_1fr_40px] gap-2 border-b border-border bg-muted px-4 py-2 text-xs font-medium text-muted-foreground">
-                                <div></div>
-                                <div>KEY</div>
-                                <div>VALUE</div>
-                                <div>DESCRIPTION</div>
-                                <div></div>
-                            </div>
-                            {queryParams.map((param) => (
-                                <div
-                                    key={param.id}
-                                    className="grid grid-cols-[40px_1fr_1fr_1fr_40px] gap-2 border-b border-border px-4 py-2"
-                                >
-                                    <div className="flex items-center">
-                                        <Checkbox
-                                            checked={param.enabled}
-                                            onCheckedChange={(checked) =>
-                                                updateKeyValuePair(
-                                                    queryParams,
-                                                    setQueryParams,
-                                                    param.id,
-                                                    "enabled",
-                                                    checked as boolean
-                                                )
-                                            }
-                                        />
-                                    </div>
-                                    <Input
-                                        value={param.key}
-                                        onChange={(e) =>
-                                            updateKeyValuePair(
-                                                queryParams,
-                                                setQueryParams,
-                                                param.id,
-                                                "key",
-                                                e.target.value
-                                            )
-                                        }
-                                        className="h-8 text-xs"
-                                        placeholder="Key"
-                                    />
-                                    <Input
-                                        value={param.value}
-                                        onChange={(e) =>
-                                            updateKeyValuePair(
-                                                queryParams,
-                                                setQueryParams,
-                                                param.id,
-                                                "value",
-                                                e.target.value
-                                            )
-                                        }
-                                        className="h-8 text-xs"
-                                        placeholder="Value"
-                                    />
-                                    <Input
-                                        value={param.description || ""}
-                                        onChange={(e) =>
-                                            updateKeyValuePair(
-                                                queryParams,
-                                                setQueryParams,
-                                                param.id,
-                                                "description",
-                                                e.target.value
-                                            )
-                                        }
-                                        className="h-8 text-xs"
-                                        placeholder="Description"
-                                    />
-                                    <Button
-                                        size="icon"
-                                        variant="ghost"
-                                        className="h-8 w-8"
-                                        onClick={() =>
-                                            removeKeyValuePair(
-                                                queryParams,
-                                                setQueryParams,
-                                                param.id
-                                            )
-                                        }
-                                    >
-                                        <Trash2 className="h-3 w-3" />
-                                    </Button>
-                                </div>
-                            ))}
-                            <div className="px-4 py-2">
-                                <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="text-xs text-primary"
-                                    onClick={() =>
-                                        addKeyValuePair(
-                                            queryParams,
-                                            setQueryParams
-                                        )
-                                    }
-                                >
-                                    + Add query parameter
-                                </Button>
-                            </div>
-                        </div>
-                    </TabsContent>
-
-                    <TabsContent
-                        value="authorization"
-                        className="flex-1 overflow-auto p-4"
-                    >
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-2">
-                                <label className="text-xs font-medium">
-                                    Type:
-                                </label>
-                                <Select
-                                    value={authType}
-                                    onValueChange={setAuthType}
-                                >
-                                    <SelectTrigger className="w-48">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="no-auth">
-                                            No Auth
-                                        </SelectItem>
-                                        <SelectItem value="bearer-token">
-                                            Bearer Token
-                                        </SelectItem>
-                                        <SelectItem value="basic-auth">
-                                            Basic Auth
-                                        </SelectItem>
-                                        <SelectItem value="api-key">
-                                            API Key
-                                        </SelectItem>
-                                        <SelectItem value="oauth2">
-                                            OAuth 2.0
-                                        </SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            {authType === "bearer-token" && (
-                                <div className="space-y-2">
-                                    <label className="text-xs font-medium">
-                                        Token:
-                                    </label>
-                                    <Input
-                                        value={authToken}
-                                        onChange={(e) =>
-                                            setAuthToken(e.target.value)
-                                        }
-                                        placeholder="Enter bearer token"
-                                        className="font-mono text-xs"
-                                    />
-                                </div>
-                            )}
-                            {authType === "basic-auth" && (
-                                <div className="space-y-4">
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-medium">
-                                            Username:
-                                        </label>
-                                        <Input
-                                            placeholder="Enter username"
-                                            className="text-xs"
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-medium">
-                                            Password:
-                                        </label>
-                                        <Input
-                                            type="password"
-                                            placeholder="Enter password"
-                                            className="text-xs"
-                                        />
-                                    </div>
-                                </div>
-                            )}
-                        </div>
+                        <ParamsTab
+                            queryParams={queryParams}
+                            onAdd={handleAddQueryParam}
+                            onUpdate={handleUpdateQueryParam}
+                            onRemove={handleRemoveQueryParam}
+                        />
                     </TabsContent>
 
                     <TabsContent
                         value="headers"
-                        className="flex-1 overflow-auto p-0"
+                        className="flex-1 overflow-hidden p-0 m-0 h-full"
                     >
-                        <div className="flex flex-col">
-                            <div className="grid grid-cols-[40px_1fr_1fr_1fr_40px] gap-2 border-b border-border bg-muted px-4 py-2 text-xs font-medium text-muted-foreground">
-                                <div></div>
-                                <div>KEY</div>
-                                <div>VALUE</div>
-                                <div>DESCRIPTION</div>
-                                <div></div>
-                            </div>
-                            {headers.map((header) => (
-                                <div
-                                    key={header.id}
-                                    className="grid grid-cols-[40px_1fr_1fr_1fr_40px] gap-2 border-b border-border px-4 py-2"
-                                >
-                                    <div className="flex items-center">
-                                        <Checkbox
-                                            checked={header.enabled}
-                                            onCheckedChange={(checked) =>
-                                                updateKeyValuePair(
-                                                    headers,
-                                                    setHeaders,
-                                                    header.id,
-                                                    "enabled",
-                                                    checked as boolean
-                                                )
-                                            }
-                                        />
-                                    </div>
-                                    <Input
-                                        value={header.key}
-                                        onChange={(e) =>
-                                            updateKeyValuePair(
-                                                headers,
-                                                setHeaders,
-                                                header.id,
-                                                "key",
-                                                e.target.value
-                                            )
-                                        }
-                                        className="h-8 text-xs"
-                                        placeholder="Key"
-                                    />
-                                    <Input
-                                        value={header.value}
-                                        onChange={(e) =>
-                                            updateKeyValuePair(
-                                                headers,
-                                                setHeaders,
-                                                header.id,
-                                                "value",
-                                                e.target.value
-                                            )
-                                        }
-                                        className="h-8 text-xs"
-                                        placeholder="Value"
-                                    />
-                                    <Input
-                                        value={header.description || ""}
-                                        onChange={(e) =>
-                                            updateKeyValuePair(
-                                                headers,
-                                                setHeaders,
-                                                header.id,
-                                                "description",
-                                                e.target.value
-                                            )
-                                        }
-                                        className="h-8 text-xs"
-                                        placeholder="Description"
-                                    />
-                                    <Button
-                                        size="icon"
-                                        variant="ghost"
-                                        className="h-8 w-8"
-                                        onClick={() =>
-                                            removeKeyValuePair(
-                                                headers,
-                                                setHeaders,
-                                                header.id
-                                            )
-                                        }
-                                    >
-                                        <Trash2 className="h-3 w-3" />
-                                    </Button>
-                                </div>
-                            ))}
-                            <div className="px-4 py-2">
-                                <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="text-xs text-primary"
-                                    onClick={() =>
-                                        addKeyValuePair(headers, setHeaders)
-                                    }
-                                >
-                                    + Add header
-                                </Button>
-                            </div>
-                        </div>
+                        <HeadersTab
+                            headers={headers}
+                            onAdd={handleAddHeader}
+                            onUpdate={handleUpdateHeader}
+                            onRemove={handleRemoveHeader}
+                        />
                     </TabsContent>
 
                     <TabsContent
                         value="body"
                         className="flex-1 overflow-hidden p-0"
                     >
-                        <div className="flex h-full flex-col">
-                            <div className="flex items-center gap-4 border-b border-border bg-card px-4 py-2">
-                                <label className="flex items-center gap-2">
-                                    <input
-                                        type="radio"
-                                        name="bodyType"
-                                        value="none"
-                                        checked={bodyType === "none"}
-                                        onChange={(e) =>
-                                            setBodyType(e.target.value)
-                                        }
-                                    />
-                                    <span className="text-xs">none</span>
-                                </label>
-                                <label className="flex items-center gap-2">
-                                    <input
-                                        type="radio"
-                                        name="bodyType"
-                                        value="form-data"
-                                        checked={bodyType === "form-data"}
-                                        onChange={(e) =>
-                                            setBodyType(e.target.value)
-                                        }
-                                    />
-                                    <span className="text-xs">form-data</span>
-                                </label>
-                                <label className="flex items-center gap-2">
-                                    <input
-                                        type="radio"
-                                        name="bodyType"
-                                        value="x-www-form-urlencoded"
-                                        checked={
-                                            bodyType === "x-www-form-urlencoded"
-                                        }
-                                        onChange={(e) =>
-                                            setBodyType(e.target.value)
-                                        }
-                                    />
-                                    <span className="text-xs">
-                                        x-www-form-urlencoded
-                                    </span>
-                                </label>
-                                <label className="flex items-center gap-2">
-                                    <input
-                                        type="radio"
-                                        name="bodyType"
-                                        value="raw"
-                                        checked={bodyType === "raw"}
-                                        onChange={(e) =>
-                                            setBodyType(e.target.value)
-                                        }
-                                    />
-                                    <span className="text-xs">raw</span>
-                                </label>
-                                <label className="flex items-center gap-2">
-                                    <input
-                                        type="radio"
-                                        name="bodyType"
-                                        value="binary"
-                                        checked={bodyType === "binary"}
-                                        onChange={(e) =>
-                                            setBodyType(e.target.value)
-                                        }
-                                    />
-                                    <span className="text-xs">binary</span>
-                                </label>
-                                <label className="flex items-center gap-2">
-                                    <input
-                                        type="radio"
-                                        name="bodyType"
-                                        value="GraphQL"
-                                        checked={bodyType === "GraphQL"}
-                                        onChange={(e) =>
-                                            setBodyType(e.target.value)
-                                        }
-                                    />
-                                    <span className="text-xs">GraphQL</span>
-                                </label>
-                                {bodyType === "raw" && (
-                                    <Select
-                                        value={rawType}
-                                        onValueChange={setRawType}
-                                    >
-                                        <SelectTrigger className="ml-auto h-7 w-24 text-xs">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="Text">
-                                                Text
-                                            </SelectItem>
-                                            <SelectItem value="JavaScript">
-                                                JavaScript
-                                            </SelectItem>
-                                            <SelectItem value="JSON">
-                                                JSON
-                                            </SelectItem>
-                                            <SelectItem value="HTML">
-                                                HTML
-                                            </SelectItem>
-                                            <SelectItem value="XML">
-                                                XML
-                                            </SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                )}
-                            </div>
-                            <div className="flex-1 overflow-hidden">
-                                {(bodyType === "form-data" ||
-                                    bodyType === "x-www-form-urlencoded") && (
-                                    <div className="flex flex-col">
-                                        <div className="grid grid-cols-[40px_1fr_1fr_1fr_40px] gap-2 border-b border-border bg-muted px-4 py-2 text-xs font-medium text-muted-foreground">
-                                            <div></div>
-                                            <div>KEY</div>
-                                            <div>VALUE</div>
-                                            <div>DESCRIPTION</div>
-                                            <div></div>
-                                        </div>
-                                        {formData.map((item) => (
-                                            <div
-                                                key={item.id}
-                                                className="grid grid-cols-[40px_1fr_1fr_1fr_40px] gap-2 border-b border-border px-4 py-2"
-                                            >
-                                                <div className="flex items-center">
-                                                    <Checkbox
-                                                        checked={item.enabled}
-                                                        onCheckedChange={(
-                                                            checked
-                                                        ) =>
-                                                            updateKeyValuePair(
-                                                                formData,
-                                                                setFormData,
-                                                                item.id,
-                                                                "enabled",
-                                                                checked as boolean
-                                                            )
-                                                        }
-                                                    />
-                                                </div>
-                                                <Input
-                                                    value={item.key}
-                                                    onChange={(e) =>
-                                                        updateKeyValuePair(
-                                                            formData,
-                                                            setFormData,
-                                                            item.id,
-                                                            "key",
-                                                            e.target.value
-                                                        )
-                                                    }
-                                                    className="h-8 text-xs"
-                                                    placeholder="Key"
-                                                />
-                                                <Input
-                                                    value={item.value}
-                                                    onChange={(e) =>
-                                                        updateKeyValuePair(
-                                                            formData,
-                                                            setFormData,
-                                                            item.id,
-                                                            "value",
-                                                            e.target.value
-                                                        )
-                                                    }
-                                                    className="h-8 text-xs"
-                                                    placeholder="Value"
-                                                />
-                                                <Input
-                                                    value={
-                                                        item.description || ""
-                                                    }
-                                                    onChange={(e) =>
-                                                        updateKeyValuePair(
-                                                            formData,
-                                                            setFormData,
-                                                            item.id,
-                                                            "description",
-                                                            e.target.value
-                                                        )
-                                                    }
-                                                    className="h-8 text-xs"
-                                                    placeholder="Description"
-                                                />
-                                                <Button
-                                                    size="icon"
-                                                    variant="ghost"
-                                                    className="h-8 w-8"
-                                                    onClick={() =>
-                                                        removeKeyValuePair(
-                                                            formData,
-                                                            setFormData,
-                                                            item.id
-                                                        )
-                                                    }
-                                                >
-                                                    <Trash2 className="h-3 w-3" />
-                                                </Button>
-                                            </div>
-                                        ))}
-                                        <div className="px-4 py-2">
-                                            <Button
-                                                size="sm"
-                                                variant="ghost"
-                                                className="text-xs text-primary"
-                                                onClick={() =>
-                                                    addKeyValuePair(
-                                                        formData,
-                                                        setFormData
-                                                    )
-                                                }
-                                            >
-                                                + Add field
-                                            </Button>
-                                        </div>
-                                    </div>
-                                )}
-                                {bodyType === "raw" && <CodeEditor />}
-                                {bodyType === "none" && (
-                                    <div className="flex h-full items-center justify-center">
-                                        <p className="text-sm text-muted-foreground">
-                                            This request does not have a body
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </TabsContent>
-
-                    <TabsContent
-                        value="scripts"
-                        className="flex-1 overflow-auto p-4"
-                    >
-                        <div className="space-y-4">
-                            <div>
-                                <h3 className="mb-2 text-sm font-medium">
-                                    Pre-request Script
-                                </h3>
-                                <p className="mb-4 text-xs text-muted-foreground">
-                                    This script will execute before the request
-                                    runs
-                                </p>
-                                <div className="rounded border border-border bg-muted p-4 font-mono text-xs">
-                                    <div className="text-muted-foreground">
-                                        // Add pre-request scripts here
-                                    </div>
-                                    <div className="text-muted-foreground">
-                                        // Example:
-                                        pm.environment.set("variable", "value");
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </TabsContent>
-
-                    <TabsContent
-                        value="tests"
-                        className="flex-1 overflow-auto p-4"
-                    >
-                        <div className="space-y-4">
-                            <div>
-                                <h3 className="mb-2 text-sm font-medium">
-                                    Test Scripts
-                                </h3>
-                                <p className="mb-4 text-xs text-muted-foreground">
-                                    These scripts will execute after the request
-                                    runs
-                                </p>
-                                <div className="rounded border border-border bg-muted p-4 font-mono text-xs">
-                                    <div className="text-muted-foreground">
-                                        // Add test scripts here
-                                    </div>
-                                    <div className="text-muted-foreground">
-                                        // Example: pm.test("Status code is
-                                        200", function () {"{"}
-                                    </div>
-                                    <div className="text-muted-foreground">
-                                        // pm.response.to.have.status(200);
-                                    </div>
-                                    <div className="text-muted-foreground">
-                                        // {"}"});
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </TabsContent>
-
-                    <TabsContent
-                        value="settings"
-                        className="flex-1 overflow-auto p-4"
-                    >
-                        <div className="space-y-6">
-                            <div className="space-y-2">
-                                <h3 className="text-sm font-medium">
-                                    Request timeout
-                                </h3>
-                                <Input
-                                    type="number"
-                                    defaultValue="0"
-                                    className="w-32 text-xs"
-                                />
-                                <p className="text-xs text-muted-foreground">
-                                    0 means no timeout
-                                </p>
-                            </div>
-                            <div className="space-y-2">
-                                <h3 className="text-sm font-medium">
-                                    Follow redirects
-                                </h3>
-                                <label className="flex items-center gap-2">
-                                    <Checkbox defaultChecked />
-                                    <span className="text-xs">
-                                        Automatically follow redirects
-                                    </span>
-                                </label>
-                            </div>
-                            <div className="space-y-2">
-                                <h3 className="text-sm font-medium">
-                                    SSL certificate verification
-                                </h3>
-                                <label className="flex items-center gap-2">
-                                    <Checkbox defaultChecked />
-                                    <span className="text-xs">
-                                        Enable SSL certificate verification
-                                    </span>
-                                </label>
-                            </div>
-                        </div>
+                        <BodyTab
+                            bodyType={bodyType}
+                            rawType={rawType}
+                            formData={formData}
+                            bodyContent={bodyContent}
+                            onBodyTypeChange={(value) =>
+                                setValue("bodyType", value, {
+                                    shouldDirty: true,
+                                })
+                            }
+                            onRawTypeChange={(value) =>
+                                setValue("rawType", value, {
+                                    shouldDirty: true,
+                                })
+                            }
+                            onBodyContentChange={(value) =>
+                                setValue("bodyContent", value, {
+                                    shouldDirty: true,
+                                })
+                            }
+                            onFormDataAdd={handleAddFormData}
+                            onFormDataUpdate={handleUpdateFormData}
+                            onFormDataRemove={handleRemoveFormData}
+                        />
                     </TabsContent>
                 </Tabs>
             </div>
 
             {/* Response Section */}
-            <ResponseViewer requestSent={requestSent} />
+            <ResponseViewer requestSent={requestSent} response={responseData} />
         </div>
     );
 }
