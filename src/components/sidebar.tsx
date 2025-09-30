@@ -8,6 +8,7 @@ import {
     Plus,
     Search,
     DatabaseIcon,
+    Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,10 +18,58 @@ import {
 } from "@/store";
 import type { CollectionItem } from "@/store/slices/collections.slice";
 import { trpc } from "@/lib/trpc";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import { toast } from "sonner";
 
 interface SidebarProps {
     collapsed: boolean;
     onToggle: () => void;
+}
+
+function DeleteConfirmDialog({
+    open,
+    onOpenChange,
+    onConfirm,
+    itemName,
+    itemType,
+    isDeleting,
+}: {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    onConfirm: () => void;
+    itemName: string;
+    itemType: "collection" | "endpoint";
+    isDeleting: boolean;
+}) {
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Delete {itemType === "collection" ? "Collection" : "Endpoint"}</DialogTitle>
+                    <DialogDescription>
+                        Are you sure you want to delete <strong>{itemName}</strong>?
+                        {itemType === "collection" && " This will also delete all endpoints in this collection."}
+                        {" "}This action cannot be undone.
+                    </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isDeleting}>
+                        Cancel
+                    </Button>
+                    <Button variant="destructive" onClick={onConfirm} disabled={isDeleting}>
+                        {isDeleting ? "Deleting..." : "Delete"}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
 }
 
 function CollectionTree({
@@ -33,16 +82,50 @@ function CollectionTree({
     parentCollectionId?: string;
 }) {
     const [hoveredItem, setHoveredItem] = useState<string | null>(null);
+    const [deleteDialog, setDeleteDialog] = useState<{
+        open: boolean;
+        itemId: string | null;
+        itemName: string;
+        itemType: "collection" | "endpoint";
+    }>({
+        open: false,
+        itemId: null,
+        itemName: "",
+        itemType: "collection",
+    });
 
     const selectedItemId = useAppStore((state) => state.selectedItemId);
     const expandedItems = useAppStore((state) => state.expandedItems);
     const setSelectedItem = useAppStore((state) => state.setSelectedItem);
     const toggleExpanded = useAppStore((state) => state.toggleExpanded);
+    const removeTab = useAppStore((state) => state.removeTab);
 
     const utils = trpc.useUtils();
     const createEndpointMutation = trpc.monitoring.createEndpoint.useMutation({
         onSuccess: () => {
             utils.collection.getMyCollections.invalidate();
+        },
+    });
+
+    const deleteCollectionMutation = trpc.collection.deleteCollection.useMutation({
+        onSuccess: () => {
+            utils.collection.getMyCollections.invalidate();
+            toast.success("Collection deleted successfully");
+            setDeleteDialog({ open: false, itemId: null, itemName: "", itemType: "collection" });
+        },
+        onError: (error) => {
+            toast.error(error.message || "Failed to delete collection");
+        },
+    });
+
+    const deleteEndpointMutation = trpc.monitoring.deleteEndpoint.useMutation({
+        onSuccess: () => {
+            utils.collection.getMyCollections.invalidate();
+            toast.success("Endpoint deleted successfully");
+            setDeleteDialog({ open: false, itemId: null, itemName: "", itemType: "endpoint" });
+        },
+        onError: (error) => {
+            toast.error(error.message || "Failed to delete endpoint");
         },
     });
 
@@ -55,8 +138,38 @@ function CollectionTree({
         });
     };
 
+    const handleDeleteClick = (item: CollectionItem, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setDeleteDialog({
+            open: true,
+            itemId: item.id,
+            itemName: item.name,
+            itemType: item.type === "folder" ? "collection" : "endpoint",
+        });
+    };
+
+    const handleConfirmDelete = () => {
+        if (!deleteDialog.itemId) return;
+
+        if (deleteDialog.itemType === "collection") {
+            deleteCollectionMutation.mutate({ id: deleteDialog.itemId });
+        } else {
+            // Close tab if it's open
+            removeTab(deleteDialog.itemId);
+            deleteEndpointMutation.mutate({ id: deleteDialog.itemId });
+        }
+    };
+
     return (
-        <div>
+        <>
+            <DeleteConfirmDialog
+                open={deleteDialog.open}
+                onOpenChange={(open) => setDeleteDialog({ ...deleteDialog, open })}
+                onConfirm={handleConfirmDelete}
+                itemName={deleteDialog.itemName}
+                itemType={deleteDialog.itemType}
+                isDeleting={deleteCollectionMutation.isPending || deleteEndpointMutation.isPending}
+            />
             {items.map((item) => (
                 <div key={item.id}>
                     <div
@@ -126,19 +239,29 @@ function CollectionTree({
                         <span className="flex-1 truncate text-sidebar-foreground">
                             {item.name}
                         </span>
-                        {item.type === "folder" &&
-                            level === 0 &&
-                            hoveredItem === item.id && (
+                        {hoveredItem === item.id && (
+                            <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                {item.type === "folder" && level === 0 && (
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleAddRequest(item.id);
+                                        }}
+                                        className="p-0.5 hover:bg-primary/20 rounded group/add"
+                                        title="Add endpoint"
+                                    >
+                                        <Plus className="h-3 w-3 text-muted-foreground group-hover/add:text-primary transition-colors" />
+                                    </button>
+                                )}
                                 <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleAddRequest(item.id);
-                                    }}
-                                    className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-sidebar-accent rounded"
+                                    onClick={(e) => handleDeleteClick(item, e)}
+                                    className="p-0.5 hover:bg-destructive/20 rounded group/delete"
+                                    title={`Delete ${item.type === "folder" ? "collection" : "endpoint"}`}
                                 >
-                                    <Plus className="h-3 w-3 text-muted-foreground" />
+                                    <Trash2 className="h-3 w-3 text-muted-foreground group-hover/delete:text-destructive transition-colors" />
                                 </button>
-                            )}
+                            </div>
+                        )}
                     </div>
                     {item.children && expandedItems[item.id] && (
                         <CollectionTree
@@ -149,11 +272,13 @@ function CollectionTree({
                     )}
                 </div>
             ))}
-        </div>
+        </>
     );
 }
 
 export function Sidebar({}: SidebarProps) {
+    const [searchQuery, setSearchQuery] = useState("");
+
     // Use tRPC directly - don't duplicate in Zustand
     const utils = trpc.useUtils();
     const { data: collectionsData } = trpc.collection.getMyCollections.useQuery();
@@ -163,10 +288,11 @@ export function Sidebar({}: SidebarProps) {
         },
     });
 
-    // Transform server data to UI format
+    // Transform server data to UI format and filter based on search
     const collections: CollectionItem[] = useMemo(() => {
         if (!collectionsData) return [];
-        return collectionsData.map((collection: any) => ({
+
+        const transformedCollections = collectionsData.map((collection: any) => ({
             id: collection.id,
             name: collection.name,
             type: "folder" as const,
@@ -177,7 +303,34 @@ export function Sidebar({}: SidebarProps) {
                 method: endpoint.method as "GET" | "POST" | "PUT" | "DELETE",
             })) || [],
         }));
-    }, [collectionsData]);
+
+        // Filter collections and endpoints based on search query
+        if (!searchQuery.trim()) {
+            return transformedCollections;
+        }
+
+        const query = searchQuery.toLowerCase();
+        return transformedCollections
+            .map((collection) => {
+                // Filter endpoints that match the search
+                const matchingEndpoints = collection.children?.filter((endpoint) =>
+                    endpoint.name.toLowerCase().includes(query)
+                ) || [];
+
+                // Check if collection name matches
+                const collectionMatches = collection.name.toLowerCase().includes(query);
+
+                // Include collection if it matches OR if any of its endpoints match
+                if (collectionMatches || matchingEndpoints.length > 0) {
+                    return {
+                        ...collection,
+                        children: collectionMatches ? collection.children : matchingEndpoints,
+                    };
+                }
+                return null;
+            })
+            .filter((collection): collection is CollectionItem => collection !== null);
+    }, [collectionsData, searchQuery]);
 
     const handleAddCollection = () => {
         createCollectionMutation.mutate({
@@ -228,6 +381,8 @@ export function Sidebar({}: SidebarProps) {
                                 type="text"
                                 placeholder="Search collections"
                                 className="h-8 bg-muted pl-7 text-xs"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
                             />
                         </div>
                         <Button

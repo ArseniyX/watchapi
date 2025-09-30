@@ -2,20 +2,53 @@
 
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts"
 
-const data = [
-  { name: "Mon", uptime: 99.9 },
-  { name: "Tue", uptime: 100 },
-  { name: "Wed", uptime: 99.8 },
-  { name: "Thu", uptime: 99.95 },
-  { name: "Fri", uptime: 99.7 },
-  { name: "Sat", uptime: 100 },
-  { name: "Sun", uptime: 99.9 },
-]
+interface UptimeChartProps {
+  data?: Array<{
+    status: string
+    checkedAt: Date
+  }>
+}
 
-export function UptimeChart() {
+export function UptimeChart({ data }: UptimeChartProps) {
+  if (!data || data.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+        No data available yet
+      </div>
+    )
+  }
+
+  // Group data by day and calculate uptime percentage
+  const groupedData = data.reduce((acc, item) => {
+    const date = new Date(item.checkedAt)
+    const day = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+    const key = day.getTime()
+
+    if (!acc[key]) {
+      acc[key] = { time: day, total: 0, successful: 0 }
+    }
+    acc[key].total++
+    if (item.status === 'SUCCESS') {
+      acc[key].successful++
+    }
+    return acc
+  }, {} as Record<number, { time: Date; total: number; successful: number }>)
+
+  const chartData = Object.values(groupedData).map(group => ({
+    name: group.time.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+    uptime: group.total > 0 ? parseFloat(((group.successful / group.total) * 100).toFixed(2)) : 0,
+  })).sort((a, b) => {
+    const dateA = new Date(a.name)
+    const dateB = new Date(b.name)
+    return dateA.getTime() - dateB.getTime()
+  })
+
+  const minUptime = Math.min(...chartData.map(d => d.uptime))
+  const domain = [Math.max(0, minUptime - 5), 100]
+
   return (
     <ResponsiveContainer width="100%" height={300}>
-      <BarChart data={data}>
+      <BarChart data={chartData}>
         <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
         <YAxis
           stroke="#888888"
@@ -23,7 +56,7 @@ export function UptimeChart() {
           tickLine={false}
           axisLine={false}
           tickFormatter={(value) => `${value}%`}
-          domain={[99, 100]}
+          domain={domain}
         />
         <Tooltip
           contentStyle={{

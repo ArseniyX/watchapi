@@ -1,3 +1,6 @@
+"use client"
+
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -7,49 +10,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { UserPlus, Mail, MoreHorizontal, Crown, Shield, User } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-
-const teamMembers = [
-  {
-    id: 1,
-    name: "Sarah Chen",
-    email: "sarah@company.com",
-    role: "Owner",
-    avatar: "/professional-woman-diverse.png",
-    status: "active",
-    lastActive: "Online now",
-    joinedAt: "Jan 2024",
-  },
-  {
-    id: 2,
-    name: "Marcus Rodriguez",
-    email: "marcus@company.com",
-    role: "Admin",
-    avatar: "/professional-man.jpg",
-    status: "active",
-    lastActive: "2 hours ago",
-    joinedAt: "Feb 2024",
-  },
-  {
-    id: 3,
-    name: "Emily Watson",
-    email: "emily@company.com",
-    role: "Member",
-    avatar: "/professional-woman-engineer.png",
-    status: "active",
-    lastActive: "1 day ago",
-    joinedAt: "Mar 2024",
-  },
-  {
-    id: 4,
-    name: "David Kim",
-    email: "david@company.com",
-    role: "Member",
-    avatar: null,
-    status: "invited",
-    lastActive: "Pending invitation",
-    joinedAt: "Invited 2 days ago",
-  },
-]
+import { trpc } from "@/lib/trpc"
+import { OrganizationRole } from "@/generated/prisma"
+import { toast } from "sonner"
 
 const RoleIcon = ({ role }: { role: string }) => {
   switch (role) {
@@ -73,6 +36,64 @@ const RoleBadge = ({ role }: { role: string }) => {
 }
 
 export default function TeamPage() {
+  const [email, setEmail] = useState("")
+  const [role, setRole] = useState<OrganizationRole>(OrganizationRole.MEMBER)
+  const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null)
+
+  const { data: organizations } = trpc.organization.getMyOrganizations.useQuery()
+  const { data: members, refetch: refetchMembers } = trpc.organization.getMembers.useQuery(
+    { organizationId: selectedOrgId! },
+    { enabled: !!selectedOrgId }
+  )
+  const { data: invitations } = trpc.organization.getInvitations.useQuery(
+    { organizationId: selectedOrgId! },
+    { enabled: !!selectedOrgId }
+  )
+
+  const inviteMember = trpc.organization.inviteMember.useMutation({
+    onSuccess: () => {
+      toast.success("Member invited successfully")
+      setEmail("")
+      refetchMembers()
+    },
+    onError: (error) => {
+      toast.error(error.message)
+    },
+  })
+
+  const removeMember = trpc.organization.removeMember.useMutation({
+    onSuccess: () => {
+      toast.success("Member removed successfully")
+      refetchMembers()
+    },
+  })
+
+  const updateRole = trpc.organization.updateMemberRole.useMutation({
+    onSuccess: () => {
+      toast.success("Role updated successfully")
+      refetchMembers()
+    },
+  })
+
+  // Select first organization by default
+  if (organizations && organizations.length > 0 && !selectedOrgId) {
+    setSelectedOrgId(organizations[0].id)
+  }
+
+  const handleInvite = () => {
+    if (!selectedOrgId || !email) return
+
+    inviteMember.mutate({
+      email,
+      organizationId: selectedOrgId,
+      role,
+    })
+  }
+
+  const activeMembers = members?.filter(m => m.status === "ACTIVE").length || 0
+  const pendingInvitations = (invitations?.length || 0) + (members?.filter(m => m.status === "INVITED").length || 0)
+  const admins = members?.filter(m => m.role === "ADMIN" || m.role === "OWNER").length || 0
+
   return (
     <div className="flex flex-1 flex-col gap-4 p-4">
       <div className="flex items-center justify-between">
@@ -80,10 +101,20 @@ export default function TeamPage() {
           <h1 className="text-3xl font-bold tracking-tight">Team</h1>
           <p className="text-muted-foreground">Manage your team members and permissions</p>
         </div>
-        <Button>
-          <UserPlus className="mr-2 h-4 w-4" />
-          Invite Member
-        </Button>
+        {organizations && organizations.length > 0 && (
+          <Select value={selectedOrgId || undefined} onValueChange={setSelectedOrgId}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Select organization" />
+            </SelectTrigger>
+            <SelectContent>
+              {organizations.map((org) => (
+                <SelectItem key={org.id} value={org.id}>
+                  {org.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -95,27 +126,33 @@ export default function TeamPage() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email Address</Label>
-              <Input id="email" type="email" placeholder="colleague@company.com" />
+              <Input
+                id="email"
+                type="email"
+                placeholder="colleague@company.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="role">Role</Label>
-              <Select defaultValue="member">
+              <Select value={role} onValueChange={(v) => setRole(v as OrganizationRole)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="member">Member</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value={OrganizationRole.MEMBER}>Member</SelectItem>
+                  <SelectItem value={OrganizationRole.ADMIN}>Admin</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="message">Personal Message (Optional)</Label>
-              <Input id="message" placeholder="Welcome to the team!" />
-            </div>
-            <Button className="w-full">
+            <Button
+              className="w-full"
+              onClick={handleInvite}
+              disabled={!email || !selectedOrgId || inviteMember.isPending}
+            >
               <Mail className="mr-2 h-4 w-4" />
-              Send Invitation
+              {inviteMember.isPending ? "Sending..." : "Send Invitation"}
             </Button>
           </CardContent>
         </Card>
@@ -129,19 +166,19 @@ export default function TeamPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Total Members</span>
-                <span className="text-2xl font-bold">4</span>
+                <span className="text-2xl font-bold">{members?.length || 0}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Active Members</span>
-                <span className="text-2xl font-bold">3</span>
+                <span className="text-2xl font-bold">{activeMembers}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Pending Invitations</span>
-                <span className="text-2xl font-bold">1</span>
+                <span className="text-2xl font-bold">{pendingInvitations}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Admins</span>
-                <span className="text-2xl font-bold">2</span>
+                <span className="text-2xl font-bold">{admins}</span>
               </div>
             </div>
           </CardContent>
@@ -154,50 +191,84 @@ export default function TeamPage() {
           <CardDescription>Manage roles and permissions for your team</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {teamMembers.map((member) => (
-              <div key={member.id} className="flex items-center justify-between p-4 border rounded-lg">
-                <div className="flex items-center space-x-4">
-                  <Avatar>
-                    <AvatarImage src={member.avatar || "/placeholder.svg"} alt={member.name} />
-                    <AvatarFallback>
-                      {member.name
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <div className="flex items-center space-x-2">
-                      <p className="font-medium">{member.name}</p>
-                      <RoleIcon role={member.role} />
+          {!members || members.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No team members yet. Invite your first member to get started!
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {members.map((member) => (
+                <div key={member.id} className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex items-center space-x-4">
+                    <Avatar>
+                      <AvatarFallback>
+                        {member.user.name
+                          ? member.user.name.split(" ").map((n) => n[0]).join("")
+                          : member.user.email[0].toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <div className="flex items-center space-x-2">
+                        <p className="font-medium">{member.user.name || member.user.email}</p>
+                        <RoleIcon role={member.role} />
+                      </div>
+                      <p className="text-sm text-muted-foreground">{member.user.email}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {member.status === "ACTIVE" ? "Active" : "Pending invitation"}
+                      </p>
                     </div>
-                    <p className="text-sm text-muted-foreground">{member.email}</p>
-                    <p className="text-xs text-muted-foreground">{member.lastActive}</p>
+                  </div>
+                  <div className="flex items-center space-x-4">
+                    <div className="text-right">
+                      <RoleBadge role={member.role} />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {new Date(member.joinedAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <Badge variant={member.status === "ACTIVE" ? "default" : "secondary"}>
+                      {member.status.toLowerCase()}
+                    </Badge>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {member.role !== "OWNER" && (
+                          <DropdownMenuItem
+                            onClick={() => {
+                              const newRole = member.role === "ADMIN" ? OrganizationRole.MEMBER : OrganizationRole.ADMIN
+                              updateRole.mutate({
+                                userId: member.user.id,
+                                organizationId: selectedOrgId!,
+                                role: newRole,
+                              })
+                            }}
+                          >
+                            Change Role to {member.role === "ADMIN" ? "Member" : "Admin"}
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem
+                          className="text-destructive"
+                          onClick={() => {
+                            if (confirm("Are you sure you want to remove this member?")) {
+                              removeMember.mutate({
+                                userId: member.user.id,
+                                organizationId: selectedOrgId!,
+                              })
+                            }
+                          }}
+                        >
+                          Remove Member
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
-                <div className="flex items-center space-x-4">
-                  <div className="text-right">
-                    <RoleBadge role={member.role} />
-                    <p className="text-xs text-muted-foreground mt-1">{member.joinedAt}</p>
-                  </div>
-                  <Badge variant={member.status === "active" ? "default" : "secondary"}>{member.status}</Badge>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem>Change Role</DropdownMenuItem>
-                      <DropdownMenuItem>Resend Invitation</DropdownMenuItem>
-                      <DropdownMenuItem className="text-destructive">Remove Member</DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

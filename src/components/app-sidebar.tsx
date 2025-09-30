@@ -53,11 +53,11 @@ const items = [
         url: "/app/analytics",
         icon: BarChart3,
     },
-    // {
-    //   title: "Team",
-    //   url: "/app/team",
-    //   icon: Users,
-    // },
+    {
+        title: "Team",
+        url: "/app/team",
+        icon: Users,
+    },
 ];
 
 export function AppSidebar() {

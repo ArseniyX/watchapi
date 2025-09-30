@@ -187,8 +187,8 @@ Advanced (Post-MVP)
 
 🎯 Recommended Next Steps for MVP
 
-1. Fix save functionality - ensure requests persist to database properly
-2. Add monitoring scheduler - background job to check endpoints at intervals
-3. Add monitoring dashboard - list view showing endpoint status/uptime
-4. Add basic alerting - send email when endpoint goes down
-5. Add response history - show recent checks with status/time
+1. Connect Analytics to Real Data (High Priority - differentiator)
+2. Team Management (High Priority - enables Team tier pricing)
+3. Export Functionality (Medium Priority - common feature request)
+4. Environment Tags (Medium Priority - professional feature)
+5. Templates (Low Priority - nice to have)

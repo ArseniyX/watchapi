@@ -79,13 +79,13 @@ export class AuthService {
     const accessToken = jwt.sign(
       { userId: user.id, email: user.email, role: user.role },
       this.jwtSecret,
-      { expiresIn: '15m' }
+      { expiresIn: '7d' } // Increased to 7 days for better UX
     )
 
     const refreshToken = jwt.sign(
       { userId: user.id, type: 'refresh' },
       this.jwtSecret,
-      { expiresIn: '7d' }
+      { expiresIn: '30d' } // 30 days for refresh token
     )
 
     return { accessToken, refreshToken }

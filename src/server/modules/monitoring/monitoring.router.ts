@@ -126,4 +126,46 @@ export const createMonitoringRouter = (monitoringService: MonitoringService) =>
       .query(async ({ input }) => {
         return monitoringService.getResponseTimeHistory(input.endpointId, input.days)
       }),
+
+    // Analytics endpoints
+    getAnalytics: protectedProcedure
+      .input(
+        z.object({
+          days: z.number().default(7),
+        })
+      )
+      .query(async ({ input, ctx }) => {
+        return monitoringService.getAnalytics(ctx.user.id, input.days)
+      }),
+
+    getTopEndpoints: protectedProcedure
+      .input(
+        z.object({
+          days: z.number().default(7),
+          limit: z.number().default(5),
+        })
+      )
+      .query(async ({ input, ctx }) => {
+        return monitoringService.getTopEndpoints(ctx.user.id, input.days, input.limit)
+      }),
+
+    getResponseTimeChart: protectedProcedure
+      .input(
+        z.object({
+          days: z.number().default(7),
+        })
+      )
+      .query(async ({ input, ctx }) => {
+        return monitoringService.getResponseTimeChart(ctx.user.id, input.days)
+      }),
+
+    getUptimeChart: protectedProcedure
+      .input(
+        z.object({
+          days: z.number().default(7),
+        })
+      )
+      .query(async ({ input, ctx }) => {
+        return monitoringService.getUptimeChart(ctx.user.id, input.days)
+      }),
   })

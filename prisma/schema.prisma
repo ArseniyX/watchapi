@@ -83,17 +83,32 @@ model Organization {
 }
 
 model OrganizationMember {
-  id             String         @id @default(cuid())
+  id             String           @id @default(cuid())
   userId         String
   organizationId String
   role           OrganizationRole @default(MEMBER)
-  joinedAt       DateTime       @default(now())
+  status         MemberStatus     @default(ACTIVE)
+  invitedBy      String?
+  joinedAt       DateTime         @default(now())
 
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@unique([userId, organizationId])
   @@map("organization_members")
+}
+
+model OrganizationInvitation {
+  id             String   @id @default(cuid())
+  email          String
+  organizationId String
+  role           OrganizationRole @default(MEMBER)
+  invitedBy      String
+  token          String   @unique
+  expiresAt      DateTime
+  createdAt      DateTime @default(now())
+
+  @@map("organization_invitations")
 }
 
 // API monitoring core models
@@ -212,6 +227,12 @@ enum OrganizationRole {
   MEMBER
   ADMIN
   OWNER
+}
+
+enum MemberStatus {
+  ACTIVE
+  INVITED
+  SUSPENDED
 }
 
 enum HttpMethod {

@@ -20,14 +20,27 @@ export function CodeEditor({
         onChange?.(val);
     };
 
+    const handleBeforeMount = (monaco: any) => {
+        // Define custom theme that matches card background
+        monaco.editor.defineTheme('custom-dark', {
+            base: 'vs-dark',
+            inherit: true,
+            rules: [],
+            colors: {
+                'editor.background': '#1e1e1e',
+            }
+        });
+    };
+
     return (
-        <div className="h-full bg-card">
+        <div className="h-full">
             <Editor
                 height="100%"
                 language={language}
                 value={value}
                 onChange={handleChange}
-                theme="vs-dark"
+                theme="custom-dark"
+                beforeMount={handleBeforeMount}
                 options={{
                     minimap: { enabled: false },
                     fontSize: 12,

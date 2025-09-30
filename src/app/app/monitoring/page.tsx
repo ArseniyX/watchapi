@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Search, Settings, CheckCircle, XCircle, AlertTriangle } from "lucide-react"
 import { trpc } from "@/lib/trpc"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useRouter } from "next/navigation"
 
 function formatDuration(ms: number) {
   if (ms < 1000) return `${ms}ms`
@@ -66,6 +67,7 @@ const StatusBadge = ({ status }: { status: string }) => {
 }
 
 export default function MonitoringPage() {
+  const router = useRouter()
   const { data: endpoints, isLoading } = trpc.monitoring.getMyEndpoints.useQuery()
 
   if (isLoading) {
@@ -130,7 +132,7 @@ export default function MonitoringPage() {
           <h1 className="text-3xl font-bold tracking-tight">Monitoring</h1>
           <p className="text-muted-foreground">Real-time API health and performance monitoring</p>
         </div>
-        <Button>
+        <Button onClick={() => router.push('/app/collections')}>
           <Settings className="mr-2 h-4 w-4" />
           Configure Monitoring
         </Button>
@@ -163,7 +165,7 @@ export default function MonitoringPage() {
           {!endpoints || endpoints.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-muted-foreground mb-4">No API endpoints configured yet</p>
-              <Button>
+              <Button onClick={() => router.push('/app/collections')}>
                 <Settings className="mr-2 h-4 w-4" />
                 Add Your First Endpoint
               </Button>

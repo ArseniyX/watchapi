@@ -1,50 +1,63 @@
+"use client"
+
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Download, TrendingUp, TrendingDown, Activity, Clock } from "lucide-react"
 import { AnalyticsChart } from "@/components/analytics-chart"
 import { UptimeChart } from "@/components/uptime-chart"
-
-const metrics = [
-  {
-    title: "Total Requests",
-    value: "2.4M",
-    change: "+12.5%",
-    trend: "up",
-    icon: Activity,
-  },
-  {
-    title: "Avg Response Time",
-    value: "234ms",
-    change: "-8.2%",
-    trend: "up",
-    icon: Clock,
-  },
-  {
-    title: "Error Rate",
-    value: "0.12%",
-    change: "+0.02%",
-    trend: "down",
-    icon: TrendingDown,
-  },
-  {
-    title: "Uptime",
-    value: "99.94%",
-    change: "+0.1%",
-    trend: "up",
-    icon: TrendingUp,
-  },
-]
-
-const topEndpoints = [
-  { endpoint: "/api/users", requests: "456K", avgTime: "120ms", errors: "0.01%" },
-  { endpoint: "/api/products", requests: "324K", avgTime: "89ms", errors: "0.05%" },
-  { endpoint: "/api/orders", requests: "234K", avgTime: "156ms", errors: "0.02%" },
-  { endpoint: "/api/auth", requests: "189K", avgTime: "45ms", errors: "0.00%" },
-  { endpoint: "/api/payments", requests: "98K", avgTime: "234ms", errors: "0.08%" },
-]
+import { trpc } from "@/lib/trpc"
 
 export default function AnalyticsPage() {
+  const [days, setDays] = useState(7)
+
+  const { data: analytics } = trpc.monitoring.getAnalytics.useQuery({ days })
+  const { data: topEndpoints } = trpc.monitoring.getTopEndpoints.useQuery({ days, limit: 5 })
+  const { data: responseTimeData } = trpc.monitoring.getResponseTimeChart.useQuery({ days })
+  const { data: uptimeData } = trpc.monitoring.getUptimeChart.useQuery({ days })
+
+  const formatNumber = (num: number) => {
+    if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`
+    if (num >= 1000) return `${(num / 1000).toFixed(1)}K`
+    return num.toString()
+  }
+
+  const formatChange = (change: number) => {
+    const formatted = change.toFixed(1)
+    return change > 0 ? `+${formatted}%` : `${formatted}%`
+  }
+
+  const metrics = [
+    {
+      title: "Total Requests",
+      value: formatNumber(analytics?.current.totalChecks || 0),
+      change: formatChange(analytics?.changes.totalChecks || 0),
+      trend: (analytics?.changes.totalChecks || 0) >= 0 ? "up" : "down",
+      icon: Activity,
+    },
+    {
+      title: "Avg Response Time",
+      value: `${Math.round(analytics?.current.avgResponseTime || 0)}ms`,
+      change: formatChange(analytics?.changes.avgResponseTime || 0),
+      trend: (analytics?.changes.avgResponseTime || 0) <= 0 ? "up" : "down",
+      icon: Clock,
+    },
+    {
+      title: "Error Rate",
+      value: `${(analytics?.current.errorRate || 0).toFixed(2)}%`,
+      change: formatChange(analytics?.changes.errorRate || 0),
+      trend: (analytics?.changes.errorRate || 0) <= 0 ? "up" : "down",
+      icon: TrendingDown,
+    },
+    {
+      title: "Uptime",
+      value: `${(analytics?.current.uptimePercentage || 0).toFixed(2)}%`,
+      change: formatChange(analytics?.changes.uptimePercentage || 0),
+      trend: (analytics?.changes.uptimePercentage || 0) >= 0 ? "up" : "down",
+      icon: TrendingUp,
+    },
+  ]
   return (
     <div className="flex flex-1 flex-col gap-4 p-4">
       <div className="flex items-center justify-between">
@@ -53,15 +66,15 @@ export default function AnalyticsPage() {
           <p className="text-muted-foreground">Detailed insights into your API performance</p>
         </div>
         <div className="flex items-center space-x-2">
-          <Select defaultValue="7d">
+          <Select value={days.toString()} onValueChange={(v) => setDays(Number(v))}>
             <SelectTrigger className="w-32">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="24h">Last 24h</SelectItem>
-              <SelectItem value="7d">Last 7 days</SelectItem>
-              <SelectItem value="30d">Last 30 days</SelectItem>
-              <SelectItem value="90d">Last 90 days</SelectItem>
+              <SelectItem value="1">Last 24h</SelectItem>
+              <SelectItem value="7">Last 7 days</SelectItem>
+              <SelectItem value="30">Last 30 days</SelectItem>
+              <SelectItem value="90">Last 90 days</SelectItem>
             </SelectContent>
           </Select>
           <Button variant="outline">
@@ -103,7 +116,7 @@ export default function AnalyticsPage() {
             <CardDescription>Average response times over time</CardDescription>
           </CardHeader>
           <CardContent>
-            <AnalyticsChart />
+            <AnalyticsChart data={responseTimeData} />
           </CardContent>
         </Card>
         <Card className="col-span-1">
@@ -112,7 +125,7 @@ export default function AnalyticsPage() {
             <CardDescription>API availability percentage</CardDescription>
           </CardHeader>
           <CardContent>
-            <UptimeChart />
+            <UptimeChart data={uptimeData} />
           </CardContent>
         </Card>
       </div>
@@ -123,31 +136,38 @@ export default function AnalyticsPage() {
           <CardDescription>Most frequently accessed API endpoints</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {topEndpoints.map((endpoint, index) => (
-              <div key={endpoint.endpoint} className="flex items-center justify-between p-4 border rounded-lg">
-                <div className="flex items-center space-x-4">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold text-sm">
-                    {index + 1}
+          {!topEndpoints || topEndpoints.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No endpoint data available yet. Start monitoring endpoints to see analytics.
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {topEndpoints.map((endpoint, index) => (
+                <div key={endpoint.id} className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex items-center space-x-4">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold text-sm">
+                      {index + 1}
+                    </div>
+                    <div>
+                      <p className="font-medium">{endpoint.name}</p>
+                      <p className="text-sm text-muted-foreground font-mono">{endpoint.url}</p>
+                      <p className="text-xs text-muted-foreground">{formatNumber(endpoint.totalChecks)} checks</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-mono font-medium">{endpoint.endpoint}</p>
-                    <p className="text-sm text-muted-foreground">{endpoint.requests} requests</p>
+                  <div className="flex items-center space-x-6 text-sm">
+                    <div className="text-center">
+                      <p className="font-medium">{endpoint.avgResponseTime}ms</p>
+                      <p className="text-muted-foreground">Avg Time</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="font-medium">{endpoint.errorRate}%</p>
+                      <p className="text-muted-foreground">Error Rate</p>
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-center space-x-6 text-sm">
-                  <div className="text-center">
-                    <p className="font-medium">{endpoint.avgTime}</p>
-                    <p className="text-muted-foreground">Avg Time</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="font-medium">{endpoint.errors}</p>
-                    <p className="text-muted-foreground">Error Rate</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
