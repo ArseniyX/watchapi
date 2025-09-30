@@ -18,6 +18,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Eye, EyeOff, Github } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Logo } from "@/components/logo";
 
 export default function SignupPage() {
     const [showPassword, setShowPassword] = useState(false);
@@ -50,16 +51,7 @@ export default function SignupPage() {
         <div className="min-h-screen flex items-center justify-center bg-background p-4">
             <Card className="w-full max-w-md">
                 <CardHeader className="text-center">
-                    <div className="flex items-center justify-center space-x-2 mb-4">
-                        <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-                            <span className="text-primary-foreground font-bold text-sm">
-                                AM
-                            </span>
-                        </div>
-                        <span className="font-semibold text-lg">
-                            APIMonitor
-                        </span>
-                    </div>
+                    <Logo />
                     <CardTitle className="text-2xl">
                         Create your account
                     </CardTitle>

@@ -19,6 +19,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
+import Image from "next/image";
+import { Logo } from "@/components/logo";
 
 export default function LoginPage() {
     const [showPassword, setShowPassword] = useState(false);
@@ -62,16 +64,7 @@ export default function LoginPage() {
         <div className="min-h-screen flex items-center justify-center bg-background p-4">
             <Card className="w-full max-w-md">
                 <CardHeader className="text-center">
-                    <div className="flex items-center justify-center space-x-2 mb-4">
-                        <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-                            <span className="text-primary-foreground font-bold text-sm">
-                                AM
-                            </span>
-                        </div>
-                        <span className="font-semibold text-lg">
-                            APIMonitor
-                        </span>
-                    </div>
+                    <Logo />
                     <CardTitle className="text-2xl">Welcome back</CardTitle>
                     <CardDescription>
                         Sign in to your account to continue

@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Moon, Sun } from "lucide-react";
+import { Logo } from "./logo";
 
 export function Header() {
     const [isDark, setIsDark] = useState(true);
@@ -19,14 +20,7 @@ export function Header() {
                 <div className="flex h-16 items-center justify-between">
                     <div className="flex items-center">
                         <Link href="/" className="flex items-center space-x-2">
-                            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-                                <span className="text-primary-foreground font-bold text-sm">
-                                    AM
-                                </span>
-                            </div>
-                            <span className="font-semibold text-lg">
-                                APIMonitor
-                            </span>
+                            <Logo />
                         </Link>
                     </div>
 

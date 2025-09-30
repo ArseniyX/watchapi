@@ -1,26 +1,21 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
     ChevronRight,
     ChevronDown,
     Folder,
     Plus,
     Search,
-    Trash2,
-    Database,
-    Workflow,
-    Box,
-    Server,
-    Clock,
-    LayoutGrid,
-    Lock,
-    FolderOpen,
     DatabaseIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import {
+    useAppStore,
+} from "@/store";
+import type { CollectionItem } from "@/store/slices/collections.slice";
 import { trpc } from "@/lib/trpc";
 
 interface SidebarProps {
@@ -28,33 +23,34 @@ interface SidebarProps {
     onToggle: () => void;
 }
 
-interface CollectionItem {
-    id: string;
-    name: string;
-    type: "folder" | "request";
-    method?: "GET" | "POST" | "PUT" | "DELETE";
-    children?: CollectionItem[];
-}
-
-
 function CollectionTree({
     items,
     level = 0,
-    onAddRequest,
 }: {
     items: CollectionItem[];
     level?: number;
-    onAddRequest?: (collectionId: string) => void;
 }) {
-    const [expanded, setExpanded] = useState<Record<string, boolean>>({
-        "1": true,
-        "1-1": true,
-    });
-    const [selected, setSelected] = useState("1-1-1");
     const [hoveredItem, setHoveredItem] = useState<string | null>(null);
 
-    const toggleExpand = (id: string) => {
-        setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
+    const selectedItemId = useAppStore((state) => state.selectedItemId);
+    const expandedItems = useAppStore((state) => state.expandedItems);
+    const setSelectedItem = useAppStore((state) => state.setSelectedItem);
+    const toggleExpanded = useAppStore((state) => state.toggleExpanded);
+
+    const utils = trpc.useUtils();
+    const createEndpointMutation = trpc.monitoring.createEndpoint.useMutation({
+        onSuccess: () => {
+            utils.collection.getMyCollections.invalidate();
+        },
+    });
+
+    const handleAddRequest = (collectionId: string) => {
+        createEndpointMutation.mutate({
+            name: "New Request",
+            url: "https://api.example.com",
+            method: "GET" as any,
+            collectionId,
+        });
     };
 
     return (
@@ -64,7 +60,7 @@ function CollectionTree({
                     <div
                         className={cn(
                             "group relative flex items-center gap-1 rounded px-2 py-1.5 text-sm hover:bg-sidebar-accent",
-                            selected === item.id && "bg-sidebar-accent",
+                            selectedItemId === item.id && "bg-sidebar-accent",
                             "cursor-pointer"
                         )}
                         style={{ paddingLeft: `${level * 12 + 8}px` }}
@@ -72,9 +68,17 @@ function CollectionTree({
                         onMouseLeave={() => setHoveredItem(null)}
                         onClick={() => {
                             if (item.type === "folder") {
-                                toggleExpand(item.id);
+                                toggleExpanded(item.id);
                             } else {
-                                setSelected(item.id);
+                                setSelectedItem(item.id);
+                                // Open tab for request
+                                const addTab = useAppStore.getState().addTab;
+                                addTab({
+                                    id: item.id,
+                                    type: "request",
+                                    name: item.name,
+                                    collectionId: items.find(i => i.id === item.id)?.id,
+                                });
                             }
                         }}
                     >
@@ -82,11 +86,11 @@ function CollectionTree({
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    toggleExpand(item.id);
+                                    toggleExpanded(item.id);
                                 }}
                                 className="p-0"
                             >
-                                {expanded[item.id] ? (
+                                {expandedItems[item.id] ? (
                                     <ChevronDown className="h-3 w-3" />
                                 ) : (
                                     <ChevronRight className="h-3 w-3" />
@@ -119,23 +123,24 @@ function CollectionTree({
                         <span className="flex-1 truncate text-sidebar-foreground">
                             {item.name}
                         </span>
-                        {item.type === "folder" && level === 0 && hoveredItem === item.id && onAddRequest && (
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onAddRequest(item.id);
-                                }}
-                                className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-sidebar-accent rounded"
-                            >
-                                <Plus className="h-3 w-3 text-muted-foreground" />
-                            </button>
-                        )}
+                        {item.type === "folder" &&
+                            level === 0 &&
+                            hoveredItem === item.id && (
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleAddRequest(item.id);
+                                    }}
+                                    className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-sidebar-accent rounded"
+                                >
+                                    <Plus className="h-3 w-3 text-muted-foreground" />
+                                </button>
+                            )}
                     </div>
-                    {item.children && expanded[item.id] && (
+                    {item.children && expandedItems[item.id] && (
                         <CollectionTree
                             items={item.children}
                             level={level + 1}
-                            onAddRequest={onAddRequest}
                         />
                     )}
                 </div>
@@ -145,49 +150,34 @@ function CollectionTree({
 }
 
 export function Sidebar({}: SidebarProps) {
-    const [collections, setCollections] = useState<CollectionItem[]>([]);
-    const { data: collectionsData, refetch } = trpc.collection.getMyCollections.useQuery();
+    // Use tRPC directly - don't duplicate in Zustand
+    const utils = trpc.useUtils();
+    const { data: collectionsData } = trpc.collection.getMyCollections.useQuery();
     const createCollectionMutation = trpc.collection.createCollection.useMutation({
         onSuccess: () => {
-            refetch();
-        },
-    });
-    const createEndpointMutation = trpc.monitoring.createEndpoint.useMutation({
-        onSuccess: () => {
-            refetch();
+            utils.collection.getMyCollections.invalidate();
         },
     });
 
-    useEffect(() => {
-        if (collectionsData) {
-            // Transform API data to CollectionItem format
-            const transformedCollections: CollectionItem[] = collectionsData.map((collection) => ({
-                id: collection.id,
-                name: collection.name,
-                type: "folder" as const,
-                children: collection.apiEndpoints?.map((endpoint) => ({
-                    id: endpoint.id,
-                    name: endpoint.name,
-                    type: "request" as const,
-                    method: endpoint.method as "GET" | "POST" | "PUT" | "DELETE",
-                })) || [],
-            }));
-            setCollections(transformedCollections);
-        }
+    // Transform server data to UI format
+    const collections: CollectionItem[] = useMemo(() => {
+        if (!collectionsData) return [];
+        return collectionsData.map((collection: any) => ({
+            id: collection.id,
+            name: collection.name,
+            type: "folder" as const,
+            children: collection.apiEndpoints?.map((endpoint: any) => ({
+                id: endpoint.id,
+                name: endpoint.name,
+                type: "request" as const,
+                method: endpoint.method as "GET" | "POST" | "PUT" | "DELETE",
+            })) || [],
+        }));
     }, [collectionsData]);
 
     const handleAddCollection = () => {
         createCollectionMutation.mutate({
             name: "New Collection",
-        });
-    };
-
-    const handleAddRequest = (collectionId: string) => {
-        createEndpointMutation.mutate({
-            name: "New Request",
-            url: "https://api.example.com",
-            method: "GET" as any,
-            collectionId,
         });
     };
 
@@ -241,13 +231,12 @@ export function Sidebar({}: SidebarProps) {
                             variant="ghost"
                             className="h-8 w-8"
                             onClick={handleAddCollection}
-                            disabled={createCollectionMutation.isPending}
                         >
                             <Plus className="h-4 w-4" />
                         </Button>
                     </div>
 
-                    <CollectionTree items={collections} onAddRequest={handleAddRequest} />
+                    <CollectionTree items={collections} />
                 </div>
             </div>
         </aside>

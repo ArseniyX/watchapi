@@ -25,6 +25,7 @@ import {
     SidebarMenuItem,
     SidebarHeader,
 } from "@/components/ui/sidebar";
+import { Logo } from "./logo";
 
 const items = [
     {
@@ -65,16 +66,7 @@ export function AppSidebar() {
     return (
         <Sidebar collapsible="icon">
             <SidebarHeader className="border-b border-sidebar-border">
-                <div className="flex items-center group-data-[collapsible=icon]:justify-center">
-                    <div className="h-8 w-8 rounded-lg bg-sidebar-primary flex items-center justify-center shrink-0">
-                        <span className="text-sidebar-primary-foreground font-bold text-sm">
-                            AM
-                        </span>
-                    </div>
-                    <span className="font-semibold text-lg text-sidebar-foreground group-data-[collapsible=icon]:hidden">
-                        APIMonitor
-                    </span>
-                </div>
+                <Logo />
             </SidebarHeader>
             <SidebarContent>
                 <SidebarGroup>
