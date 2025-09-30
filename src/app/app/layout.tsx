@@ -9,7 +9,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <SidebarProvider defaultOpen={false}>
                 <AppSidebar />
                 <SidebarInset>
-                    <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+                    <div className="flex flex-1 flex-col gap-4 px-4 pt-0">
                         {children}
                     </div>
                 </SidebarInset>

@@ -50,18 +50,20 @@ export function RequestBreadcrumb({
         setCollectionEditValue(collection);
     }, [collection]);
 
-    // Measure text width with extra padding
+    // Measure text width with padding for px-1 (8px) + ring (2px) + buffer (6px) = 16px total
     useEffect(() => {
         if (measureRef.current) {
             measureRef.current.textContent = requestEditValue || "A";
-            setRequestWidth(Math.max(measureRef.current.offsetWidth + 8, 8));
+            setRequestWidth(Math.max(measureRef.current.offsetWidth + 10, 20));
         }
     }, [requestEditValue]);
 
     useEffect(() => {
         if (measureRef.current) {
             measureRef.current.textContent = collectionEditValue || "A";
-            setCollectionWidth(Math.max(measureRef.current.offsetWidth + 8, 0));
+            setCollectionWidth(
+                Math.max(measureRef.current.offsetWidth + 10, 20)
+            );
         }
     }, [collectionEditValue]);
 
@@ -111,8 +113,12 @@ export function RequestBreadcrumb({
             {/* Hidden span for measuring text width */}
             <span
                 ref={measureRef}
-                className="absolute invisible text-sm whitespace-pre"
-                style={{ font: "inherit" }}
+                className="absolute invisible text-sm whitespace-pre font-sans"
+                style={{
+                    fontSize: "0.875rem",
+                    fontFamily: "var(--font-geist-sans)",
+                    letterSpacing: "normal",
+                }}
             />
             <Breadcrumb>
                 <BreadcrumbList>
@@ -131,7 +137,7 @@ export function RequestBreadcrumb({
                                 }, 0);
                             }}
                             style={{ width: `${collectionWidth}px` }}
-                            className="h-6 min-w-[20px] px-1 text-sm text-primary border-none shadow-none focus-visible:ring-0 bg-transparent focus:bg-transparent"
+                            className="h-6 min-w-[20px] px-1 text-sm text-primary border-none shadow-none focus-visible:ring-1 focus-visible:ring-primary/50 bg-transparent focus:bg-muted/30 rounded transition-colors"
                         />
                     </BreadcrumbItem>
                     {folder && (
@@ -164,7 +170,7 @@ export function RequestBreadcrumb({
                                 }, 0);
                             }}
                             style={{ width: `${requestWidth}px` }}
-                            className="h-6 min-w-[10px] px-1 text-sm text-foreground border-none shadow-none focus-visible:ring-0 bg-transparent focus:bg-transparent"
+                            className="h-6 min-w-[10px] px-1 text-sm text-foreground border-none shadow-none focus-visible:ring-1 focus-visible:ring-primary/50 bg-transparent focus:bg-muted/30 rounded transition-colors"
                         />
                     </BreadcrumbItem>
                 </BreadcrumbList>

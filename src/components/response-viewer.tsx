@@ -1,9 +1,7 @@
 "use client";
 
-import { Clock } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { CodeEditor } from "@/components/code-editor";
 
 interface ResponseData {
     status: number;
@@ -53,7 +51,10 @@ export function ResponseViewer({ requestSent, response }: ResponseViewerProps) {
 
     return (
         <div className="flex h-80 flex-col border-t border-border bg-card">
-            <Tabs defaultValue="response" className="flex flex-1 flex-col">
+            <Tabs
+                defaultValue="response"
+                className="flex flex-1 flex-col min-h-0"
+            >
                 <div className="flex items-center justify-between border-b border-border px-4">
                     <TabsList className="h-10 bg-transparent">
                         <TabsTrigger value="response" className="text-xs">
@@ -101,7 +102,7 @@ export function ResponseViewer({ requestSent, response }: ResponseViewerProps) {
 
                 <TabsContent
                     value="response"
-                    className="flex-1 overflow-auto p-0"
+                    className="flex-1 overflow-auto p-0 min-h-0"
                 >
                     {requestSent ? (
                         <div className="flex h-full items-center justify-center">
@@ -114,43 +115,26 @@ export function ResponseViewer({ requestSent, response }: ResponseViewerProps) {
                         </div>
                     ) : (
                         <div className="flex h-full flex-col">
-                            <div className="flex flex-1 overflow-auto">
-                                {parsedBody ? (
-                                    <div className="flex-1 [&_.linenumber]:!text-[#858585]">
-                                        <SyntaxHighlighter
-                                            language="json"
-                                            style={vscDarkPlus}
-                                            showLineNumbers
-                                            customStyle={{
-                                                margin: 0,
-                                                padding: "12px",
-                                                fontSize: "12px",
-                                                backgroundColor: "transparent",
-                                                flex: 1,
-                                            }}
-                                            lineNumberStyle={{
-                                                minWidth: "3em",
-                                                paddingRight: "1em",
-                                                textAlign: "right",
-                                                userSelect: "none",
-                                            }}
-                                        >
-                                            {JSON.stringify(parsedBody, null, 2)}
-                                        </SyntaxHighlighter>
-                                    </div>
-                                ) : (
-                                    <pre className="flex-1 overflow-auto p-3 font-mono text-xs text-foreground">
-                                        {bodyText || "No response body"}
-                                    </pre>
-                                )}
-                            </div>
+                            {parsedBody ? (
+                                <CodeEditor
+                                    value={JSON.stringify(parsedBody, null, 2)}
+                                    language="json"
+                                    readOnly
+                                />
+                            ) : (
+                                <CodeEditor
+                                    value={bodyText || "No response body"}
+                                    language="plaintext"
+                                    readOnly
+                                />
+                            )}
                         </div>
                     )}
                 </TabsContent>
 
                 <TabsContent
                     value="cookies"
-                    className="flex-1 overflow-auto p-4"
+                    className="flex-1 overflow-auto p-4 min-h-0"
                 >
                     <p className="text-sm text-muted-foreground">
                         No cookies in this response
@@ -159,7 +143,7 @@ export function ResponseViewer({ requestSent, response }: ResponseViewerProps) {
 
                 <TabsContent
                     value="headers"
-                    className="flex-1 overflow-auto p-0"
+                    className="flex-1 overflow-auto p-0 min-h-0"
                 >
                     <div className="flex flex-col">
                         <div className="grid grid-cols-[1fr_2fr] gap-2 border-b border-border bg-muted px-4 py-2 text-xs font-medium text-muted-foreground">

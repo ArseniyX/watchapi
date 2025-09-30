@@ -17,34 +17,8 @@ import { HeadersTab } from "@/components/request/tabs/headers-tab";
 import { BodyTab } from "@/components/request/tabs/body-tab";
 import Image from "next/image";
 
-// Store form state per tab with localStorage persistence
-const CACHE_KEY = "request-builder-cache";
-
-const loadCacheFromStorage = () => {
-    if (typeof window === "undefined") return new Map();
-    try {
-        const stored = localStorage.getItem(CACHE_KEY);
-        if (stored) {
-            const parsed = JSON.parse(stored);
-            return new Map(Object.entries(parsed));
-        }
-    } catch (error) {
-        console.error("Failed to load cache from localStorage:", error);
-    }
-    return new Map();
-};
-
-const saveCacheToStorage = (cache: Map<string, any>) => {
-    if (typeof window === "undefined") return;
-    try {
-        const obj = Object.fromEntries(cache);
-        localStorage.setItem(CACHE_KEY, JSON.stringify(obj));
-    } catch (error) {
-        console.error("Failed to save cache to localStorage:", error);
-    }
-};
-
-const tabFormsCache = loadCacheFromStorage();
+// Store form state per tab in memory only
+const tabFormsCache = new Map<string, any>();
 
 export function RequestBuilder() {
     // Get active tab and collections data
@@ -63,7 +37,11 @@ export function RequestBuilder() {
     // Find collection and endpoint data
     const breadcrumbData = useMemo(() => {
         if (!activeTab || !collectionsData) {
-            return { collection: "My Collection", request: "New Request", collectionId: null };
+            return {
+                collection: "My Collection",
+                request: "New Request",
+                collectionId: null,
+            };
         }
 
         // Find the collection
@@ -72,7 +50,11 @@ export function RequestBuilder() {
         );
 
         if (!collection) {
-            return { collection: "My Collection", request: activeTab.name, collectionId: activeTab.collectionId };
+            return {
+                collection: "My Collection",
+                request: activeTab.name,
+                collectionId: activeTab.collectionId,
+            };
         }
 
         return {
@@ -87,6 +69,43 @@ export function RequestBuilder() {
         if (activeTabId && tabFormsCache.has(activeTabId)) {
             return tabFormsCache.get(activeTabId);
         }
+
+        // Try to load from collections data
+        if (activeTabId && collectionsData) {
+            for (const collection of collectionsData) {
+                const endpoint = collection.apiEndpoints?.find(
+                    (e) => e.id === activeTabId
+                );
+                if (endpoint) {
+                    // Parse headers from JSON string to array format
+                    const headersArray: KeyValuePair[] = endpoint.headers
+                        ? Object.entries(JSON.parse(endpoint.headers)).map(
+                              ([key, value]) => ({
+                                  id: Date.now().toString() + Math.random(),
+                                  key,
+                                  value: value as string,
+                                  enabled: true,
+                              })
+                          )
+                        : [];
+
+                    return {
+                        method: endpoint.method,
+                        url: endpoint.url,
+                        queryParams: [] as KeyValuePair[],
+                        headers: headersArray,
+                        authType: "no-auth",
+                        authToken: "",
+                        bodyType: endpoint.body ? "raw" : "none",
+                        rawType: "JSON",
+                        formData: [] as KeyValuePair[],
+                        bodyContent: endpoint.body || "",
+                        responseData: null,
+                    };
+                }
+            }
+        }
+
         return {
             method: "GET",
             url: "",
@@ -98,8 +117,9 @@ export function RequestBuilder() {
             rawType: "JSON",
             formData: [] as KeyValuePair[],
             bodyContent: "",
+            responseData: null,
         };
-    }, [activeTabId]);
+    }, [activeTabId, collectionsData]);
 
     // Request State with React Hook Form
     const {
@@ -121,9 +141,9 @@ export function RequestBuilder() {
     const rawType = watch("rawType");
     const formData = watch("formData");
     const bodyContent = watch("bodyContent");
+    const responseData = watch("responseData");
 
     const [requestSent, setRequestSent] = useState(false);
-    const [responseData, setResponseData] = useState<any>(null);
 
     // Config Tab State (renamed to avoid conflict)
     const [activeConfigTab, setActiveConfigTab] = useState("body");
@@ -145,9 +165,9 @@ export function RequestBuilder() {
                 rawType,
                 formData,
                 bodyContent,
+                responseData,
             };
             tabFormsCache.set(prevTabIdRef.current, currentValues);
-            saveCacheToStorage(tabFormsCache);
         }
 
         // Load new tab's state
@@ -314,22 +334,36 @@ export function RequestBuilder() {
             // Build headers object
             const requestHeaders: Record<string, string> = {};
             headers
-                .filter(h => h.enabled && h.key)
-                .forEach(h => {
+                .filter((h) => h.enabled && h.key)
+                .forEach((h) => {
                     requestHeaders[h.key] = h.value;
                 });
 
             // Build query string from params
-            const enabledParams = queryParams.filter(p => p.enabled && p.key);
-            const queryString = enabledParams.length > 0
-                ? '?' + enabledParams.map(p => `${encodeURIComponent(p.key)}=${encodeURIComponent(p.value)}`).join('&')
-                : '';
+            const enabledParams = queryParams.filter((p) => p.enabled && p.key);
+            const queryString =
+                enabledParams.length > 0
+                    ? "?" +
+                      enabledParams
+                          .map(
+                              (p) =>
+                                  `${encodeURIComponent(
+                                      p.key
+                                  )}=${encodeURIComponent(p.value)}`
+                          )
+                          .join("&")
+                    : "";
 
             const fullUrl = url + queryString;
 
             // Get body if applicable
             let requestBody: string | undefined;
-            if (method !== 'GET' && method !== 'HEAD' && bodyType === 'raw' && bodyContent) {
+            if (
+                method !== "GET" &&
+                method !== "HEAD" &&
+                bodyType === "raw" &&
+                bodyContent
+            ) {
                 requestBody = bodyContent;
             }
 
@@ -340,22 +374,29 @@ export function RequestBuilder() {
                 body: requestBody,
             });
 
-            console.log('Response:', result);
-            setResponseData(result);
-
+            console.log("Response:", result);
+            setValue("responseData", result, { shouldDirty: false });
         } catch (error) {
-            console.error('Request failed:', error);
+            console.error("Request failed:", error);
         } finally {
             setTimeout(() => {
                 setRequestSent(false);
             }, 1000);
         }
-    }, [method, url, queryParams, headers, bodyType, bodyContent, sendRequestMutation]);
+    }, [
+        method,
+        url,
+        queryParams,
+        headers,
+        bodyType,
+        bodyContent,
+        sendRequestMutation,
+    ]);
 
     // Mutation for updating endpoint
     const updateEndpointMutation = trpc.monitoring.updateEndpoint.useMutation({
-        onSuccess: () => {
-            utils.collection.getMyCollections.invalidate();
+        onSuccess: async () => {
+            await utils.collection.getMyCollections.invalidate();
         },
     });
 
@@ -372,17 +413,24 @@ export function RequestBuilder() {
                 }, {} as Record<string, string>);
 
             // Save to API
-            await updateEndpointMutation.mutateAsync({
+            const updateData: any = {
                 id: activeTabId,
                 name: activeTab.name,
-                url,
+                url: url || "",
                 method: method as any,
                 headers: headersRecord,
-                body:
-                    bodyType === "raw"
-                        ? JSON.stringify({ type: rawType })
-                        : undefined,
-            });
+            };
+
+            // Include body field
+            if (bodyType === "raw") {
+                updateData.body = bodyContent || "";
+            }
+
+            console.log("Saving to DB:", updateData);
+            await updateEndpointMutation.mutateAsync(updateData);
+
+            // Wait for collections to refresh
+            await utils.collection.getMyCollections.invalidate();
 
             // Save current values to cache
             const currentValues = {
@@ -396,12 +444,12 @@ export function RequestBuilder() {
                 rawType,
                 formData,
                 bodyContent,
+                responseData,
             };
             tabFormsCache.set(activeTabId, currentValues);
-            saveCacheToStorage(tabFormsCache);
 
-            // Reset form to mark as not dirty
-            reset(currentValues, { keepDefaultValues: true });
+            // Reset form to mark as not dirty - update the default values
+            reset(currentValues, { keepDefaultValues: false });
 
             // Update tab to mark as saved
             updateTab(activeTabId, { isDirty: false });
@@ -421,9 +469,11 @@ export function RequestBuilder() {
         rawType,
         formData,
         bodyContent,
+        responseData,
         reset,
         updateTab,
         updateEndpointMutation,
+        utils,
     ]);
 
     const handleRequestNameChange = useCallback(
@@ -432,7 +482,7 @@ export function RequestBuilder() {
 
             try {
                 // Update via API
-                await updateEndpointMutation.mutateAsync({
+                const updateData: any = {
                     id: activeTabId,
                     name: newName,
                     url,
@@ -443,11 +493,14 @@ export function RequestBuilder() {
                             acc[h.key] = h.value;
                             return acc;
                         }, {} as Record<string, string>),
-                    body:
-                        bodyType === "raw"
-                            ? JSON.stringify({ type: rawType })
-                            : undefined,
-                });
+                };
+
+                // Only include body if it has content
+                if (bodyType === "raw" && bodyContent) {
+                    updateData.body = bodyContent;
+                }
+
+                await updateEndpointMutation.mutateAsync(updateData);
 
                 // Update tab name in store
                 updateTab(activeTabId, { name: newName });
@@ -462,17 +515,18 @@ export function RequestBuilder() {
             method,
             headers,
             bodyType,
-            rawType,
+            bodyContent,
             updateTab,
             updateEndpointMutation,
         ]
     );
 
-    const updateCollectionMutation = trpc.collection.updateCollection.useMutation({
-        onSuccess: () => {
-            utils.collection.getMyCollections.invalidate();
-        },
-    });
+    const updateCollectionMutation =
+        trpc.collection.updateCollection.useMutation({
+            onSuccess: () => {
+                utils.collection.getMyCollections.invalidate();
+            },
+        });
 
     const handleCollectionNameChange = useCallback(
         async (newName: string) => {

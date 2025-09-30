@@ -35,7 +35,7 @@ export function RequestTabs() {
                 <div
                     key={tab.id}
                     className={cn(
-                        "group flex items-center gap-2 rounded-t px-3 py-1.5 cursor-pointer transition-all border-b-2 -mb-[9px]",
+                        "group flex items-center gap-2 rounded-t px-3 py-1.5 cursor-pointer transition-all border-b-2 -mb-[9px] max-w-[200px]",
                         activeTabId === tab.id
                             ? "bg-card border-primary"
                             : "bg-muted border-transparent hover:bg-muted/80"
@@ -44,15 +44,17 @@ export function RequestTabs() {
                 >
                     <span
                         className={cn(
-                            "text-xs font-medium",
+                            "text-xs font-medium flex-shrink-0",
                             getMethodColor(
                                 tab.type === "request" ? tab.method : undefined
                             )
                         )}
                     >
-                        {tab.type === "request" ? (tab.method || "GET") : "COLLECTION"}
+                        {tab.type === "request"
+                            ? tab.method || "GET"
+                            : "COLLECTION"}
                     </span>
-                    <span className="text-xs text-foreground whitespace-nowrap">
+                    <span className="text-xs text-foreground truncate">
                         {tab.name}
                         {tab.isDirty && " *"}
                     </span>
@@ -70,7 +72,7 @@ export function RequestTabs() {
             <Button
                 size="icon"
                 variant="ghost"
-                className="h-7 w-7 flex-shrink-0"
+                className="h-7 w-7 flex-shrink-0 invisible"
             >
                 <Plus className="h-4 w-4" />
             </Button>

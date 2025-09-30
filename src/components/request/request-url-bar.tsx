@@ -29,7 +29,7 @@ export function RequestUrlBar({
     return (
         <div className="flex items-center gap-2 border-b border-border bg-card p-4">
             <Select value={method} onValueChange={onMethodChange}>
-                <SelectTrigger className="w-32">
+                <SelectTrigger className="w-32 border-border">
                     <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -44,7 +44,7 @@ export function RequestUrlBar({
                 type="text"
                 value={url}
                 onChange={(e) => onUrlChange(e.target.value)}
-                className="flex-1 font-mono text-xs"
+                className="flex-1 font-mono text-xs border-border"
                 placeholder="Enter request URL"
             />
             <Button onClick={onSend} className="bg-primary hover:bg-primary/90">

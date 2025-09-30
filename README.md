@@ -10,53 +10,57 @@ This application provides a comprehensive dashboard for monitoring API performan
 
 ### System Requirements
 
-- **Node.js**: Version 18.x or higher
-- **npm**: Version 8.x or higher (or yarn equivalent)
-- **Operating System**: macOS, Linux, or Windows
-- **Browser**: Modern browsers (Chrome 90+, Firefox 88+, Safari 14+, Edge 90+)
+-   **Node.js**: Version 18.x or higher
+-   **npm**: Version 8.x or higher (or yarn equivalent)
+-   **Operating System**: macOS, Linux, or Windows
+-   **Browser**: Modern browsers (Chrome 90+, Firefox 88+, Safari 14+, Edge 90+)
 
 ### Development Environment
 
-- **TypeScript**: Version 5.x
-- **React**: Version 19.x
-- **Next.js**: Version 14.2.x
-- **Tailwind CSS**: Version 4.x for styling
+-   **TypeScript**: Version 5.x
+-   **React**: Version 19.x
+-   **Next.js**: Version 14.2.x
+-   **Tailwind CSS**: Version 4.x for styling
 
 ### Dependencies
 
 The application uses the following key dependencies:
 
 #### UI Framework & Components
-- **@radix-ui/react-***: Complete set of unstyled, accessible UI components
-- **lucide-react**: Icon library for consistent iconography
-- **tailwindcss**: Utility-first CSS framework
-- **tailwindcss-animate**: Animation utilities
-- **class-variance-authority**: For component variants
-- **clsx** & **tailwind-merge**: Utility functions for styling
+
+-   **@radix-ui/react-\***: Complete set of unstyled, accessible UI components
+-   **lucide-react**: Icon library for consistent iconography
+-   **tailwindcss**: Utility-first CSS framework
+-   **tailwindcss-animate**: Animation utilities
+-   **class-variance-authority**: For component variants
+-   **clsx** & **tailwind-merge**: Utility functions for styling
 
 #### Charts & Data Visualization
-- **recharts**: Responsive chart library for React
-- **date-fns**: Date utility library
+
+-   **recharts**: Responsive chart library for React
+-   **date-fns**: Date utility library
 
 #### Forms & Validation
-- **react-hook-form**: Performant forms library
-- **@hookform/resolvers**: Resolvers for validation libraries
-- **zod**: TypeScript-first schema validation
+
+-   **react-hook-form**: Performant forms library
+-   **@hookform/resolvers**: Resolvers for validation libraries
+-   **zod**: TypeScript-first schema validation
 
 #### Additional Features
-- **next-themes**: Theme switching capabilities
-- **sonner**: Toast notifications
-- **cmdk**: Command palette component
-- **vaul**: Drawer component for mobile
+
+-   **next-themes**: Theme switching capabilities
+-   **sonner**: Toast notifications
+-   **cmdk**: Command palette component
+-   **vaul**: Drawer component for mobile
 
 ## Features
 
 ### Core Functionality
 
-- **Real-time API Monitoring**: Track API uptime, response times, and error rates
-- **Interactive Dashboard**: Visual analytics with charts and statistics
-- **Team Collaboration**: Shared workspaces and API collections
-- **Responsive Design**: Works seamlessly across desktop and mobile devices
+-   **Real-time API Monitoring**: Track API uptime, response times, and error rates
+-   **Interactive Dashboard**: Visual analytics with charts and statistics
+-   **Team Collaboration**: Shared workspaces and API collections
+-   **Responsive Design**: Works seamlessly across desktop and mobile devices
 
 ### Application Structure
 
@@ -64,21 +68,21 @@ The application consists of:
 
 1. **Landing Page** (`/`): Marketing site with hero, features, pricing, and testimonials
 2. **Dashboard** (`/app`): Main monitoring interface with:
-   - Overview dashboard with key metrics
-   - API collections management
-   - Real-time monitoring views
-   - Analytics and reporting
-   - Alert configuration
-   - Team management
+    - Overview dashboard with key metrics
+    - API collections management
+    - Real-time monitoring views
+    - Analytics and reporting
+    - Alert configuration
+    - Team management
 
 ### Technical Features
 
-- **TypeScript**: Full type safety throughout the application
-- **Server-Side Rendering**: Optimized performance with Next.js
-- **Component Library**: Reusable UI components built with Radix UI
-- **Theme Support**: Light/dark mode switching
-- **Responsive Layout**: Mobile-first design approach
-- **Analytics Integration**: Vercel Analytics support
+-   **TypeScript**: Full type safety throughout the application
+-   **Server-Side Rendering**: Optimized performance with Next.js
+-   **Component Library**: Reusable UI components built with Radix UI
+-   **Theme Support**: Light/dark mode switching
+-   **Responsive Layout**: Mobile-first design approach
+-   **Analytics Integration**: Vercel Analytics support
 
 ## Installation & Setup
 
@@ -138,21 +142,53 @@ src/
 
 ## Browser Support
 
-- Chrome 90+
-- Firefox 88+
-- Safari 14+
-- Edge 90+
+-   Chrome 90+
+-   Firefox 88+
+-   Safari 14+
+-   Edge 90+
 
 ## Performance Requirements
 
-- **First Contentful Paint**: < 1.5s
-- **Largest Contentful Paint**: < 2.5s
-- **Time to Interactive**: < 3.5s
-- **Cumulative Layout Shift**: < 0.1
+-   **First Contentful Paint**: < 1.5s
+-   **Largest Contentful Paint**: < 2.5s
+-   **Time to Interactive**: < 3.5s
+-   **Cumulative Layout Shift**: < 0.1
 
 ## Security Requirements
 
-- All data transmission over HTTPS
-- Input validation and sanitization
-- XSS protection through React's built-in safety
-- CSRF protection for state-changing operations
+-   All data transmission over HTTPS
+-   Input validation and sanitization
+-   XSS protection through React's built-in safety
+-   CSRF protection for state-changing operations
+
+critical for MVP
+
+1. Save requests to database - requests aren't persisted (only in localStorage)
+2. Basic monitoring - scheduled checks for saved endpoints
+3. Response status tracking - success/failure history
+4. Simple uptime dashboard - show which APIs are up/down
+5. Basic alerts - email/webhook when endpoint fails
+
+Important but Can Wait
+
+6. Multi-environment support (dev/staging/prod)
+7. Response time charts (trending over time)
+8. Error rate analytics
+9. Team collaboration (sharing collections)
+
+Advanced (Post-MVP)
+
+-   AI anomaly detection
+-   CI/CD integration
+-   GraphQL/gRPC support
+-   Advanced analytics/forecasting
+-   Cost optimization insights
+-   Slack/Teams integrations
+
+🎯 Recommended Next Steps for MVP
+
+1. Fix save functionality - ensure requests persist to database properly
+2. Add monitoring scheduler - background job to check endpoints at intervals
+3. Add monitoring dashboard - list view showing endpoint status/uptime
+4. Add basic alerting - send email when endpoint goes down
+5. Add response history - show recent checks with status/time
