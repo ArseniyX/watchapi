@@ -21,6 +21,7 @@ export interface IApiEndpointRepository {
         orderBy?: Prisma.ApiEndpointOrderByWithRelationInput;
         include?: Prisma.ApiEndpointInclude;
     }): Promise<ApiEndpoint[]>;
+    search(query: string, userId: string): Promise<ApiEndpoint[]>;
 }
 
 export class ApiEndpointRepository
@@ -43,7 +44,7 @@ export class ApiEndpointRepository
         });
     }
 
-    async findByUserId(userId: string): Promise<ApiEndpoint[]> {
+    async findByUserId(userId: string) {
         return this.prisma.apiEndpoint.findMany({
             where: { userId },
             include: {
@@ -124,5 +125,25 @@ export class ApiEndpointRepository
         } = {}
     ): Promise<ApiEndpoint[]> {
         return this.prisma.apiEndpoint.findMany(options);
+    }
+
+    async search(query: string, userId: string): Promise<ApiEndpoint[]> {
+        return this.prisma.apiEndpoint.findMany({
+            where: {
+                userId,
+                OR: [
+                    { name: { contains: query } },
+                    { url: { contains: query } },
+                ],
+            },
+            include: {
+                collection: true,
+                monitoringChecks: {
+                    orderBy: { checkedAt: "desc" },
+                    take: 5,
+                },
+            },
+            orderBy: { createdAt: "desc" },
+        });
     }
 }

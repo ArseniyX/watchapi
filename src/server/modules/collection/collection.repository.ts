@@ -78,4 +78,19 @@ export class CollectionRepository extends BaseRepository {
             where: organizationId ? { organizationId } : undefined,
         });
     }
+
+    async search(query: string): Promise<Collection[]> {
+        return this.prisma.collection.findMany({
+            where: {
+                OR: [
+                    { name: { contains: query } },
+                    { description: { contains: query } },
+                ],
+            },
+            include: {
+                apiEndpoints: true,
+            },
+            orderBy: { updatedAt: "desc" },
+        });
+    }
 }

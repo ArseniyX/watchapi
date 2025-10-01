@@ -13,7 +13,7 @@ export const createCollectionRouter = (collectionService: CollectionService) =>
         })
       )
       .mutation(async ({ input }) => {
-        return collectionService.createCollection(input)
+        return collectionService.createCollection(input as any)
       }),
 
     getCollection: protectedProcedure
@@ -66,5 +66,11 @@ export const createCollectionRouter = (collectionService: CollectionService) =>
           description: originalCollection.description || undefined,
           organizationId: originalCollection.organizationId || undefined,
         })
+      }),
+
+    searchCollections: protectedProcedure
+      .input(z.object({ query: z.string() }))
+      .query(async ({ input }) => {
+        return collectionService.searchCollections(input.query)
       }),
   })

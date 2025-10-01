@@ -103,6 +103,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }
 
+  const loginWithOAuth = (provider: 'github' | 'google') => {
+    // Store the provider in session storage to handle callback
+    sessionStorage.setItem('oauth_provider', provider)
+
+    // Redirect to OAuth provider
+    const baseUrl = window.location.origin
+    const redirectUri = `${baseUrl}/api/auth/callback/${provider}`
+
+    if (provider === 'github') {
+      const clientId = process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID
+      const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=user:email`
+      window.location.href = githubAuthUrl
+    } else if (provider === 'google') {
+      const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
+      const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=email profile`
+      window.location.href = googleAuthUrl
+    }
+  }
+
   const logout = () => {
     removeStoredToken()
     setUser(null)
@@ -167,6 +186,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         user,
         login,
         register,
+        loginWithOAuth,
         logout,
         isLoading,
       }}

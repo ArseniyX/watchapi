@@ -13,10 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import {
-    useAppStore,
-} from "@/store";
-import type { CollectionItem } from "@/store/slices/collections.slice";
+import { useAppStore } from "@/store";
 import { trpc } from "@/lib/trpc";
 import {
     Dialog,
@@ -27,6 +24,23 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+
+interface CollectionTreeItemFolder {
+    id: string;
+    name: string;
+    type: "folder";
+    children: CollectionTreeItem[];
+}
+
+interface CollectionTreeItemRequest {
+    id: string;
+    name: string;
+    type: "request";
+    method: "GET" | "POST" | "PUT" | "DELETE";
+    children?: never;
+}
+
+type CollectionTreeItem = CollectionTreeItemFolder | CollectionTreeItemRequest;
 
 interface SidebarProps {
     collapsed: boolean;
@@ -52,18 +66,31 @@ function DeleteConfirmDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>Delete {itemType === "collection" ? "Collection" : "Endpoint"}</DialogTitle>
+                    <DialogTitle>
+                        Delete{" "}
+                        {itemType === "collection" ? "Collection" : "Endpoint"}
+                    </DialogTitle>
                     <DialogDescription>
-                        Are you sure you want to delete <strong>{itemName}</strong>?
-                        {itemType === "collection" && " This will also delete all endpoints in this collection."}
-                        {" "}This action cannot be undone.
+                        Are you sure you want to delete{" "}
+                        <strong>{itemName}</strong>?
+                        {itemType === "collection" &&
+                            " This will also delete all endpoints in this collection."}{" "}
+                        This action cannot be undone.
                     </DialogDescription>
                 </DialogHeader>
                 <DialogFooter>
-                    <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isDeleting}>
+                    <Button
+                        variant="outline"
+                        onClick={() => onOpenChange(false)}
+                        disabled={isDeleting}
+                    >
                         Cancel
                     </Button>
-                    <Button variant="destructive" onClick={onConfirm} disabled={isDeleting}>
+                    <Button
+                        variant="destructive"
+                        onClick={onConfirm}
+                        disabled={isDeleting}
+                    >
                         {isDeleting ? "Deleting..." : "Delete"}
                     </Button>
                 </DialogFooter>
@@ -77,7 +104,7 @@ function CollectionTree({
     level = 0,
     parentCollectionId,
 }: {
-    items: CollectionItem[];
+    items: CollectionTreeItem[];
     level?: number;
     parentCollectionId?: string;
 }) {
@@ -107,22 +134,33 @@ function CollectionTree({
         },
     });
 
-    const deleteCollectionMutation = trpc.collection.deleteCollection.useMutation({
-        onSuccess: () => {
-            utils.collection.getMyCollections.invalidate();
-            toast.success("Collection deleted successfully");
-            setDeleteDialog({ open: false, itemId: null, itemName: "", itemType: "collection" });
-        },
-        onError: (error) => {
-            toast.error(error.message || "Failed to delete collection");
-        },
-    });
+    const deleteCollectionMutation =
+        trpc.collection.deleteCollection.useMutation({
+            onSuccess: () => {
+                utils.collection.getMyCollections.invalidate();
+                toast.success("Collection deleted successfully");
+                setDeleteDialog({
+                    open: false,
+                    itemId: null,
+                    itemName: "",
+                    itemType: "collection",
+                });
+            },
+            onError: (error) => {
+                toast.error(error.message || "Failed to delete collection");
+            },
+        });
 
     const deleteEndpointMutation = trpc.apiEndpoint.delete.useMutation({
         onSuccess: () => {
             utils.collection.getMyCollections.invalidate();
             toast.success("Endpoint deleted successfully");
-            setDeleteDialog({ open: false, itemId: null, itemName: "", itemType: "endpoint" });
+            setDeleteDialog({
+                open: false,
+                itemId: null,
+                itemName: "",
+                itemType: "endpoint",
+            });
         },
         onError: (error) => {
             toast.error(error.message || "Failed to delete endpoint");
@@ -133,12 +171,15 @@ function CollectionTree({
         createEndpointMutation.mutate({
             name: "New Request",
             url: "https://api.example.com",
-            method: "GET" as any,
+            method: "GET",
             collectionId,
         });
     };
 
-    const handleDeleteClick = (item: CollectionItem, e: React.MouseEvent) => {
+    const handleDeleteClick = (
+        item: CollectionTreeItem,
+        e: React.MouseEvent
+    ) => {
         e.stopPropagation();
         setDeleteDialog({
             open: true,
@@ -164,11 +205,16 @@ function CollectionTree({
         <>
             <DeleteConfirmDialog
                 open={deleteDialog.open}
-                onOpenChange={(open) => setDeleteDialog({ ...deleteDialog, open })}
+                onOpenChange={(open) =>
+                    setDeleteDialog({ ...deleteDialog, open })
+                }
                 onConfirm={handleConfirmDelete}
                 itemName={deleteDialog.itemName}
                 itemType={deleteDialog.itemType}
-                isDeleting={deleteCollectionMutation.isPending || deleteEndpointMutation.isPending}
+                isDeleting={
+                    deleteCollectionMutation.isPending ||
+                    deleteEndpointMutation.isPending
+                }
             />
             {items.map((item) => (
                 <div key={item.id}>
@@ -188,7 +234,8 @@ function CollectionTree({
                                 setSelectedItem(item.id);
                                 // Open tab for request
                                 const addTab = useAppStore.getState().addTab;
-                                const collectionId = level === 0 ? item.id : parentCollectionId;
+                                const collectionId =
+                                    level === 0 ? item.id : parentCollectionId;
                                 addTab({
                                     id: item.id,
                                     type: "request",
@@ -256,7 +303,11 @@ function CollectionTree({
                                 <button
                                     onClick={(e) => handleDeleteClick(item, e)}
                                     className="p-0.5 hover:bg-destructive/20 rounded group/delete"
-                                    title={`Delete ${item.type === "folder" ? "collection" : "endpoint"}`}
+                                    title={`Delete ${
+                                        item.type === "folder"
+                                            ? "collection"
+                                            : "endpoint"
+                                    }`}
                                 >
                                     <Trash2 className="h-3 w-3 text-muted-foreground group-hover/delete:text-destructive transition-colors" />
                                 </button>
@@ -267,7 +318,9 @@ function CollectionTree({
                         <CollectionTree
                             items={item.children}
                             level={level + 1}
-                            parentCollectionId={level === 0 ? item.id : parentCollectionId}
+                            parentCollectionId={
+                                level === 0 ? item.id : parentCollectionId
+                            }
                         />
                     )}
                 </div>
@@ -281,27 +334,34 @@ export function Sidebar({}: SidebarProps) {
 
     // Use tRPC directly - don't duplicate in Zustand
     const utils = trpc.useUtils();
-    const { data: collectionsData } = trpc.collection.getMyCollections.useQuery();
-    const createCollectionMutation = trpc.collection.createCollection.useMutation({
-        onSuccess: () => {
-            utils.collection.getMyCollections.invalidate();
-        },
-    });
+    const { data: collectionsData } =
+        trpc.collection.getMyCollections.useQuery();
+    const createCollectionMutation =
+        trpc.collection.createCollection.useMutation({
+            onSuccess: () => {
+                utils.collection.getMyCollections.invalidate();
+            },
+        });
 
     // Transform server data to UI format and filter based on search
-    const collections: CollectionItem[] = useMemo(() => {
+    const collections = useMemo(() => {
         if (!collectionsData) return [];
 
-        const transformedCollections = collectionsData.map((collection: any) => ({
+        const transformedCollections = collectionsData.map((collection) => ({
             id: collection.id,
             name: collection.name,
             type: "folder" as const,
-            children: collection.apiEndpoints?.map((endpoint: any) => ({
-                id: endpoint.id,
-                name: endpoint.name,
-                type: "request" as const,
-                method: endpoint.method as "GET" | "POST" | "PUT" | "DELETE",
-            })) || [],
+            children:
+                collection.apiEndpoints?.map((endpoint) => ({
+                    id: endpoint.id,
+                    name: endpoint.name,
+                    type: "request" as const,
+                    method: endpoint.method as
+                        | "GET"
+                        | "POST"
+                        | "PUT"
+                        | "DELETE",
+                })) || [],
         }));
 
         // Filter collections and endpoints based on search query
@@ -313,23 +373,28 @@ export function Sidebar({}: SidebarProps) {
         return transformedCollections
             .map((collection) => {
                 // Filter endpoints that match the search
-                const matchingEndpoints = collection.children?.filter((endpoint) =>
-                    endpoint.name.toLowerCase().includes(query)
-                ) || [];
+                const matchingEndpoints =
+                    collection.children?.filter((endpoint) =>
+                        endpoint.name.toLowerCase().includes(query)
+                    ) || [];
 
                 // Check if collection name matches
-                const collectionMatches = collection.name.toLowerCase().includes(query);
+                const collectionMatches = collection.name
+                    .toLowerCase()
+                    .includes(query);
 
                 // Include collection if it matches OR if any of its endpoints match
                 if (collectionMatches || matchingEndpoints.length > 0) {
                     return {
                         ...collection,
-                        children: collectionMatches ? collection.children : matchingEndpoints,
+                        children: collectionMatches
+                            ? collection.children
+                            : matchingEndpoints,
                     };
                 }
                 return null;
             })
-            .filter((collection): collection is CollectionItem => collection !== null);
+            .filter((collection) => collection !== null);
     }, [collectionsData, searchQuery]);
 
     const handleAddCollection = () => {

@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -8,7 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Search, Settings, CheckCircle, XCircle, AlertTriangle } from "lucide-react"
 import { trpc } from "@/lib/trpc"
-import { Skeleton } from "@/components/ui/skeleton"
 import { useRouter } from "next/navigation"
 
 function formatDuration(ms: number) {
@@ -68,59 +68,25 @@ const StatusBadge = ({ status }: { status: string }) => {
 
 export default function MonitoringPage() {
   const router = useRouter()
+  const [searchQuery, setSearchQuery] = useState("")
   const { data: endpoints, isLoading } = trpc.apiEndpoint.getMyEndpoints.useQuery()
+
+  const filteredEndpoints = useMemo(() => {
+    if (!endpoints) return []
+    if (!searchQuery.trim()) return endpoints
+
+    const query = searchQuery.toLowerCase()
+    return endpoints.filter((endpoint) =>
+      endpoint.name.toLowerCase().includes(query) ||
+      endpoint.url.toLowerCase().includes(query)
+    )
+  }, [endpoints, searchQuery])
 
   if (isLoading) {
     return (
-      <div className="flex flex-1 flex-col gap-4 p-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Monitoring</h1>
-            <p className="text-muted-foreground">Real-time API health and performance monitoring</p>
-          </div>
-          <Button>
-            <Settings className="mr-2 h-4 w-4" />
-            Configure Monitoring
-          </Button>
-        </div>
-
-        <div className="flex items-center space-x-4">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search endpoints..." className="pl-8" />
-          </div>
-          <Select defaultValue="1min">
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Monitoring interval" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="30s">Every 30 seconds</SelectItem>
-              <SelectItem value="1min">Every minute</SelectItem>
-              <SelectItem value="5min">Every 5 minutes</SelectItem>
-              <SelectItem value="15min">Every 15 minutes</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>API Health Status</CardTitle>
-            <CardDescription>Current status of all monitored endpoints</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="flex items-center space-x-4 p-4 border rounded">
-                  <Skeleton className="h-4 w-4 rounded-full" />
-                  <Skeleton className="h-4 w-32" />
-                  <Skeleton className="h-4 w-16" />
-                  <Skeleton className="h-4 w-20" />
-                  <Skeleton className="h-4 w-16" />
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+      <div className="flex flex-1 flex-col items-center justify-center p-4 min-h-[400px]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <p className="text-muted-foreground mt-4">Loading monitoring data...</p>
       </div>
     )
   }
@@ -141,7 +107,12 @@ export default function MonitoringPage() {
       <div className="flex items-center space-x-4">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search endpoints..." className="pl-8" />
+          <Input
+            placeholder="Search endpoints..."
+            className="pl-8"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </div>
         <Select defaultValue="1min">
           <SelectTrigger className="w-48">
@@ -170,6 +141,10 @@ export default function MonitoringPage() {
                 Add Your First Endpoint
               </Button>
             </div>
+          ) : filteredEndpoints.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">No endpoints match your search</p>
+            </div>
           ) : (
             <Table>
               <TableHeader>
@@ -184,7 +159,7 @@ export default function MonitoringPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {endpoints.map((endpoint) => (
+                {filteredEndpoints.map((endpoint) => (
                   <EndpointRow key={endpoint.id} endpoint={endpoint} />
                 ))}
               </TableBody>

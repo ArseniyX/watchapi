@@ -4,8 +4,8 @@ import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "rec
 
 interface AnalyticsChartProps {
   data?: Array<{
-    responseTime: number | null
-    checkedAt: Date
+    responseTime?: number | null
+    checkedAt?: Date | string
   }>
 }
 

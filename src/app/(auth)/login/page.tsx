@@ -2,7 +2,7 @@
 
 import type React from "react";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
     Card,
@@ -14,7 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Eye, EyeOff, Github } from "lucide-react";
+import { Eye, EyeOff, Github, Mail } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
@@ -32,8 +32,40 @@ export default function LoginPage() {
     );
     const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
-    const { login } = useAuth();
+    const { login, loginWithOAuth } = useAuth();
     const { toast } = useToast();
+
+    // Handle OAuth callback
+    useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const oauthSuccess = urlParams.get("oauth_success");
+        const accessToken = urlParams.get("access_token");
+        const refreshToken = urlParams.get("refresh_token");
+        const error = urlParams.get("error");
+
+        if (error) {
+            toast({
+                title: "Authentication failed",
+                description: `OAuth error: ${error}`,
+                variant: "destructive",
+            });
+            // Clean URL
+            window.history.replaceState({}, "", "/login");
+        } else if (oauthSuccess && accessToken && refreshToken) {
+            // Store tokens
+            localStorage.setItem("accessToken", accessToken);
+            localStorage.setItem("refreshToken", refreshToken);
+
+            toast({
+                title: "Success",
+                description: "Successfully logged in!",
+            });
+
+            // Clean URL and redirect
+            window.history.replaceState({}, "", "/login");
+            router.push("/app");
+        }
+    }, [toast, router]);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -61,10 +93,10 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <div className="min-h-screen flex items-center justify-center bg-background p-4 flex-col gap-4">
+            <Logo />
             <Card className="w-full max-w-md">
                 <CardHeader className="text-center">
-                    <Logo />
                     <CardTitle className="text-2xl">Welcome back</CardTitle>
                     <CardDescription>
                         Sign in to your account to continue
@@ -141,10 +173,24 @@ export default function LoginPage() {
                         </div>
                     </div>
 
-                    <Button variant="outline" className="w-full bg-transparent">
-                        <Github className="mr-2 h-4 w-4" />
-                        GitHub
-                    </Button>
+                    <div className="grid grid-cols-2 gap-4">
+                        <Button
+                            variant="outline"
+                            onClick={() => loginWithOAuth("github")}
+                            type="button"
+                        >
+                            <Github className="mr-2 h-4 w-4" />
+                            GitHub
+                        </Button>
+                        <Button
+                            variant="outline"
+                            onClick={() => loginWithOAuth("google")}
+                            type="button"
+                        >
+                            <Mail className="mr-2 h-4 w-4" />
+                            Google
+                        </Button>
+                    </div>
 
                     <div className="text-center text-sm">
                         <span className="text-muted-foreground">

@@ -1,3 +1,5 @@
+"use client"
+
 import { Button } from "@/components/ui/button";
 import {
     Card,
@@ -13,13 +15,12 @@ const plans = [
     {
         name: "Free",
         price: "$0",
-        description: "Perfect for getting started",
+        description: "Perfect for small projects",
         features: [
-            "10k API calls/month",
-            "5 monitoring endpoints",
-            "Basic alerting",
-            "Email support",
-            "7-day data retention",
+            "Up to 5 endpoints",
+            "Hourly health checks",
+            "Email alerts",
+            "7-day history",
         ],
         cta: "Start Free",
         popular: false,
@@ -27,14 +28,13 @@ const plans = [
     {
         name: "Team",
         price: "$39",
-        description: "For growing teams",
+        description: "For development teams",
         features: [
-            "1M API calls/month",
             "Unlimited endpoints",
-            "Advanced alerting",
-            "Slack/Discord integration",
-            "30-day data retention",
-            "Team collaboration",
+            "Every-minute checks",
+            "Email & webhook alerts",
+            "30-day history",
+            "Team workspaces",
             "Priority support",
         ],
         cta: "Start Free Trial",
@@ -43,33 +43,16 @@ const plans = [
     {
         name: "Business",
         price: "$99",
-        description: "For established businesses",
+        description: "For production teams",
         features: [
-            "10M API calls/month",
-            "Custom monitoring intervals",
+            "Everything in Team",
+            "Custom check intervals",
             "Advanced analytics",
-            "API access",
-            "90-day data retention",
-            "SSO integration",
+            "90-day history",
+            "SLA monitoring",
             "Phone support",
         ],
         cta: "Start Free Trial",
-        popular: false,
-    },
-    {
-        name: "Enterprise",
-        price: "$299",
-        description: "For large organizations",
-        features: [
-            "Unlimited API calls",
-            "Custom SLA monitoring",
-            "White-label options",
-            "Dedicated support",
-            "Unlimited data retention",
-            "Custom integrations",
-            "On-premise deployment",
-        ],
-        cta: "Contact Sales",
         popular: false,
     },
 ];
@@ -83,53 +66,53 @@ export function Pricing() {
                         Simple, transparent pricing
                     </h2>
                     <p className="mt-6 text-lg leading-8 text-muted-foreground text-pretty">
-                        Choose the plan that&apos;s right for your team. All
-                        plans include a 14-day free trial.
+                        Start free. Upgrade when you need more. All paid plans include a 14-day free trial.
                     </p>
                 </div>
-                <div className="mx-auto mt-16 max-w-7xl">
-                    <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
-                        {plans.map((plan) => (
+                <div className="mx-auto mt-16 max-w-5xl">
+                    <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+                        {plans.map((plan, index) => (
                             <Card
                                 key={plan.name}
-                                className={`relative ${
-                                    plan.popular ? "ring-2 ring-primary" : ""
+                                className={`relative transition-all duration-300 hover:scale-105 ${
+                                    plan.popular ? "ring-2 ring-primary shadow-xl" : ""
                                 }`}
+                                style={{
+                                    animation: `fadeInUp 0.5s ease-out ${index * 0.1}s both`
+                                }}
                             >
                                 {plan.popular && (
-                                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                                        <span className="inline-flex items-center rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground">
+                                    <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                                        <span className="inline-flex items-center rounded-full bg-primary px-4 py-1.5 text-sm font-semibold text-primary-foreground shadow-lg">
                                             Most Popular
                                         </span>
                                     </div>
                                 )}
-                                <CardHeader className="text-center">
-                                    <CardTitle className="text-2xl">
+                                <CardHeader className="text-center pb-8">
+                                    <CardTitle className="text-2xl mb-2">
                                         {plan.name}
                                     </CardTitle>
-                                    <div className="mt-4">
-                                        <span className="text-4xl font-bold text-foreground">
-                                            {plan.price}
-                                        </span>
-                                        {plan.price !== "$0" && (
-                                            <span className="text-muted-foreground">
-                                                /month
-                                            </span>
-                                        )}
-                                    </div>
-                                    <CardDescription className="mt-2">
+                                    <CardDescription className="mb-4">
                                         {plan.description}
                                     </CardDescription>
+                                    <div className="mt-4">
+                                        <span className="text-5xl font-bold text-foreground">
+                                            {plan.price}
+                                        </span>
+                                        <span className="text-muted-foreground text-lg">
+                                            {plan.price !== "$0" && "/mo"}
+                                        </span>
+                                    </div>
                                 </CardHeader>
                                 <CardContent className="space-y-6">
-                                    <ul className="space-y-3">
+                                    <ul className="space-y-4">
                                         {plan.features.map((feature) => (
                                             <li
                                                 key={feature}
-                                                className="flex items-center space-x-3"
+                                                className="flex items-start space-x-3"
                                             >
-                                                <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                                                <span className="text-sm text-muted-foreground">
+                                                <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                                                <span className="text-sm text-foreground">
                                                     {feature}
                                                 </span>
                                             </li>
@@ -137,6 +120,7 @@ export function Pricing() {
                                     </ul>
                                     <Link href="/signup" className="block">
                                         <Button
+                                            size="lg"
                                             className="w-full"
                                             variant={
                                                 plan.popular

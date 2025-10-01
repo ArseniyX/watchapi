@@ -149,7 +149,7 @@ model ApiEndpoint {
 
   user            User                @relation(fields: [userId], references: [id])
   organization    Organization?       @relation(fields: [organizationId], references: [id])
-  collection      Collection?         @relation(fields: [collectionId], references: [id])
+  collection      Collection?         @relation(fields: [collectionId], references: [id], onDelete: Cascade)
   monitoringChecks MonitoringCheck[]
   alerts          Alert[]
 

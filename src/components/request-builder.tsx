@@ -334,19 +334,19 @@ export function RequestBuilder() {
             // Build headers object
             const requestHeaders: Record<string, string> = {};
             headers
-                .filter((h) => h.enabled && h.key)
-                .forEach((h) => {
+                .filter((h: KeyValuePair) => h.enabled && h.key)
+                .forEach((h: KeyValuePair) => {
                     requestHeaders[h.key] = h.value;
                 });
 
             // Build query string from params
-            const enabledParams = queryParams.filter((p) => p.enabled && p.key);
+            const enabledParams = queryParams.filter((p: KeyValuePair) => p.enabled && p.key);
             const queryString =
                 enabledParams.length > 0
                     ? "?" +
                       enabledParams
                           .map(
-                              (p) =>
+                              (p: KeyValuePair) =>
                                   `${encodeURIComponent(
                                       p.key
                                   )}=${encodeURIComponent(p.value)}`
@@ -406,8 +406,8 @@ export function RequestBuilder() {
         try {
             // Convert headers array to record format
             const headersRecord = headers
-                .filter((h) => h.enabled && h.key)
-                .reduce((acc, h) => {
+                .filter((h: KeyValuePair) => h.enabled && h.key)
+                .reduce((acc: Record<string, string>, h: KeyValuePair) => {
                     acc[h.key] = h.value;
                     return acc;
                 }, {} as Record<string, string>);
@@ -488,8 +488,8 @@ export function RequestBuilder() {
                     url,
                     method: method as any,
                     headers: headers
-                        .filter((h) => h.enabled && h.key)
-                        .reduce((acc, h) => {
+                        .filter((h: KeyValuePair) => h.enabled && h.key)
+                        .reduce((acc: Record<string, string>, h: KeyValuePair) => {
                             acc[h.key] = h.value;
                             return acc;
                         }, {} as Record<string, string>),
@@ -612,7 +612,7 @@ export function RequestBuilder() {
                             >
                                 Headers{" "}
                                 <span className="ml-1 text-muted-foreground">
-                                    ({headers.filter((h) => h.enabled).length})
+                                    ({headers.filter((h: KeyValuePair) => h.enabled).length})
                                 </span>
                             </TabsTrigger>
                             <TabsTrigger

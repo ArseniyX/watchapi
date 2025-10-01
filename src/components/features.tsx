@@ -1,71 +1,94 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Activity, GitBranch, Users, DollarSign, Zap, Shield } from "lucide-react"
+"use client"
+
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Activity, Bell, TrendingUp, Clock } from "lucide-react"
+import { useEffect, useRef, useState } from "react"
 
 const features = [
   {
     icon: Activity,
-    title: "Real-time Monitoring",
+    title: "API Health Checks",
     description:
-      "Monitor your APIs 24/7 with instant alerts when issues arise. Get detailed insights into response times, error rates, and uptime.",
+      "Automated monitoring checks every minute. Track response times, status codes, and uptime across all your endpoints.",
   },
   {
-    icon: GitBranch,
-    title: "CI/CD Integration",
+    icon: Bell,
+    title: "Instant Alerts",
     description:
-      "Seamlessly integrate with your existing CI/CD pipeline. Run automated tests and monitor deployments with zero configuration.",
+      "Get notified immediately via email or webhook when your APIs go down or respond slowly. Stay ahead of issues.",
   },
   {
-    icon: Users,
-    title: "Team Collaboration",
+    icon: TrendingUp,
+    title: "Performance Analytics",
     description:
-      "Share API collections, collaborate on tests, and keep your entire team in sync with shared workspaces and real-time updates.",
+      "Visualize response times, error rates, and uptime trends. Understand your API performance at a glance.",
   },
   {
-    icon: DollarSign,
-    title: "Affordable Pricing",
-    description:
-      "Start free and scale as you grow. Our transparent pricing is designed for small teams without enterprise complexity.",
-  },
-  {
-    icon: Zap,
-    title: "Lightning Fast",
-    description: "Built for speed with global monitoring nodes. Get results in milliseconds, not seconds.",
-  },
-  {
-    icon: Shield,
-    title: "Enterprise Security",
-    description: "Bank-level security with SOC 2 compliance, encrypted data, and secure API key management.",
+    icon: Clock,
+    title: "Response Time Tracking",
+    description: "Monitor how fast your APIs respond. Set thresholds and get alerted when performance degrades.",
   },
 ]
 
 export function Features() {
+  const [isVisible, setIsVisible] = useState(false)
+  const sectionRef = useRef<HTMLElement>(null)
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true)
+        }
+      },
+      { threshold: 0.1 }
+    )
+
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current)
+    }
+
+    return () => observer.disconnect()
+  }, [])
+
   return (
-    <section id="features" className="py-20 sm:py-32">
+    <section ref={sectionRef} id="features" className="py-20 sm:py-32 bg-muted/30">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl text-balance">
-            Everything you need to monitor your APIs
+            Everything you need to keep your APIs healthy
           </h2>
           <p className="mt-6 text-lg leading-8 text-muted-foreground text-pretty">
-            From real-time monitoring to team collaboration, we've got all the tools your team needs to keep your APIs
-            running smoothly.
+            Simple, powerful monitoring tools that actually work. No bloat, no complexity.
           </p>
         </div>
-        <div className="mx-auto mt-16 max-w-7xl">
-          <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
-            {features.map((feature) => (
-              <Card key={feature.title} className="relative overflow-hidden">
+        <div className="mx-auto mt-16 max-w-5xl">
+          <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
+            {features.map((feature, index) => (
+              <Card
+                key={feature.title}
+                className={`relative overflow-hidden border-2 transition-all duration-500 hover:shadow-lg hover:border-primary/50 ${
+                  isVisible
+                    ? 'opacity-100 translate-y-0'
+                    : 'opacity-0 translate-y-8'
+                }`}
+                style={{
+                  transitionDelay: `${index * 100}ms`
+                }}
+              >
                 <CardHeader>
-                  <div className="flex items-center space-x-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                      <feature.icon className="h-5 w-5 text-primary" />
+                  <div className="flex items-start space-x-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 ring-2 ring-primary/20 transition-transform hover:scale-110">
+                      <feature.icon className="h-6 w-6 text-primary" />
                     </div>
-                    <CardTitle className="text-xl">{feature.title}</CardTitle>
+                    <div className="flex-1">
+                      <CardTitle className="text-xl">{feature.title}</CardTitle>
+                      <CardDescription className="text-base leading-relaxed mt-2">
+                        {feature.description}
+                      </CardDescription>
+                    </div>
                   </div>
                 </CardHeader>
-                <CardContent>
-                  <CardDescription className="text-base leading-relaxed">{feature.description}</CardDescription>
-                </CardContent>
               </Card>
             ))}
           </div>

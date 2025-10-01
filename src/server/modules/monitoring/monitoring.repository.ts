@@ -71,7 +71,7 @@ export class MonitoringRepository {
     return result._avg.responseTime || 0
   }
 
-  async getResponseTimeHistory(
+  async getResponseTimeHistoryByEndpoint(
     apiEndpointId: string,
     from: Date,
     to: Date,
@@ -190,7 +190,7 @@ export class MonitoringRepository {
       .slice(0, limit)
   }
 
-  async getResponseTimeHistory(userId: string, from: Date, to: Date, intervalHours: number = 1) {
+  async getResponseTimeHistoryByUser(userId: string, from: Date, to: Date) {
     return this.prisma.monitoringCheck.findMany({
       where: {
         userId,

@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge"
 import { Activity, Clock, AlertTriangle, TrendingUp } from "lucide-react"
 import { DashboardChart } from "@/components/dashboard-chart"
 import { trpc } from "@/lib/trpc"
-import { Skeleton } from "@/components/ui/skeleton"
 
 function formatDuration(ms: number) {
   if (ms < 1000) return `${ms}ms`
@@ -67,27 +66,9 @@ export default function DashboardPage() {
 
   if (endpointsLoading) {
     return (
-      <div className="flex flex-1 flex-col gap-4 p-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-            <p className="text-muted-foreground">Monitor your API performance at a glance</p>
-          </div>
-        </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {[1, 2, 3, 4].map((i) => (
-            <Card key={i}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <Skeleton className="h-4 w-20" />
-                <Skeleton className="h-4 w-4 rounded" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-8 w-16 mb-2" />
-                <Skeleton className="h-4 w-24" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+      <div className="flex flex-1 flex-col items-center justify-center p-4 min-h-[400px]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <p className="text-muted-foreground mt-4">Loading dashboard...</p>
       </div>
     )
   }
@@ -173,21 +154,9 @@ export default function DashboardPage() {
           <CardContent>
             <div className="space-y-4">
               {historyLoading ? (
-                [1, 2, 3, 4, 5].map((i) => (
-                  <div key={i} className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <Skeleton className="h-2 w-2 rounded-full" />
-                      <div>
-                        <Skeleton className="h-4 w-24 mb-1" />
-                        <Skeleton className="h-3 w-16" />
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <Skeleton className="h-4 w-12 mb-1" />
-                      <Skeleton className="h-5 w-16" />
-                    </div>
-                  </div>
-                ))
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
               ) : history && history.length > 0 ? (
                 history.slice(0, 5).map((check) => {
                   const endpoint = endpoints?.find(e => e.id === check.apiEndpointId)

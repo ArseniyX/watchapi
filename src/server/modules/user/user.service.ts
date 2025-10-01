@@ -50,6 +50,9 @@ export class UserService {
       email: input.email.trim(),
       name: input.name?.trim() || null,
       password: hashedPassword,
+      avatar: null,
+      provider: null,
+      providerId: null,
       role: 'USER',
     })
   }

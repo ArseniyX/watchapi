@@ -187,8 +187,8 @@ Advanced (Post-MVP)
 
 🎯 Recommended Next Steps for MVP
 
-1. Connect Analytics to Real Data (High Priority - differentiator)
-2. Team Management (High Priority - enables Team tier pricing)
-3. Export Functionality (Medium Priority - common feature request)
-4. Environment Tags (Medium Priority - professional feature)
-5. Templates (Low Priority - nice to have)
+1. API call metering (tracks usage against pricing tiers)
+2. CI/CD webhooks/integrations (one-click setup)
+3. Smart alerting (reduce false positives - even basic heuristics)
+4. Template library (REST, GraphQL, webhook patterns)
+5. Team collaboration (shared debugging, comments on failures)

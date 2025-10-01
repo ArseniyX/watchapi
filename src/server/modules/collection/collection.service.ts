@@ -124,6 +124,27 @@ export class CollectionService {
         };
     }
 
+    async searchCollections(query: string): Promise<CollectionWithStats[]> {
+        if (!query || query.trim() === "") {
+            return [];
+        }
+
+        const collections = await this.collectionRepository.search(
+            query.trim()
+        );
+
+        return collections.map((collection) => {
+            const collectionWithEndpoints = collection as Collection & {
+                apiEndpoints: ApiEndpoint[];
+            };
+            return {
+                ...collectionWithEndpoints,
+                requestCount: collectionWithEndpoints.apiEndpoints.length,
+                lastModified: this.formatLastModified(collection.updatedAt),
+            };
+        });
+    }
+
     private formatLastModified(date: Date): string {
         const now = new Date();
         const diffMs = now.getTime() - date.getTime();

@@ -1,8 +1,9 @@
+import { cn } from "@/lib/utils";
 import Image from "next/image";
 
-export const Logo = () => {
+export const Logo = ({ className }: { className?: string }) => {
     return (
-        <div className="flex items-center justify-center">
+        <div className={cn("flex items-center space-x-2", className)}>
             <Image
                 src="/logo.png"
                 alt="WatchAPI logo"

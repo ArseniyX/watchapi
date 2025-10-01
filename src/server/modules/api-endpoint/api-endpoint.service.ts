@@ -74,7 +74,7 @@ export class ApiEndpointService {
         return this.apiEndpointRepository.findById(id);
     }
 
-    async getUserApiEndpoints(userId: string): Promise<ApiEndpoint[]> {
+    async getUserApiEndpoints(userId: string) {
         if (!userId || userId.trim() === "") {
             throw new Error("User ID is required");
         }
@@ -190,5 +190,18 @@ export class ApiEndpointService {
 
     async getActiveEndpoints(): Promise<ApiEndpoint[]> {
         return this.apiEndpointRepository.findActive();
+    }
+
+    async searchEndpoints(
+        userId: string,
+        query: string
+    ): Promise<ApiEndpoint[]> {
+        if (!userId || userId.trim() === "") {
+            throw new Error("User ID is required");
+        }
+        if (!query || query.trim() === "") {
+            return [];
+        }
+        return this.apiEndpointRepository.search(query.trim(), userId);
     }
 }

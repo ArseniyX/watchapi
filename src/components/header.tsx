@@ -37,18 +37,6 @@ export function Header() {
                         >
                             Pricing
                         </Link>
-                        <Link
-                            href="/docs"
-                            className="text-muted-foreground hover:text-foreground transition-colors"
-                        >
-                            Docs
-                        </Link>
-                        <Link
-                            href="/blog"
-                            className="text-muted-foreground hover:text-foreground transition-colors"
-                        >
-                            Blog
-                        </Link>
                     </nav>
 
                     <div className="flex items-center space-x-4">

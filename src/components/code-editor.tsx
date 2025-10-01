@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Editor from "@monaco-editor/react";
 
 interface CodeEditorProps {
@@ -15,21 +16,34 @@ export function CodeEditor({
     language = "json",
     readOnly = false,
 }: CodeEditorProps) {
+    const [theme, setTheme] = useState<"vs-dark" | "light">("vs-dark");
+
+    useEffect(() => {
+        // Check if dark mode is active
+        const isDark = document.documentElement.classList.contains("dark");
+        setTheme(isDark ? "vs-dark" : "light");
+
+        // Watch for theme changes
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.attributeName === "class") {
+                    const isDark = document.documentElement.classList.contains("dark");
+                    setTheme(isDark ? "vs-dark" : "light");
+                }
+            });
+        });
+
+        observer.observe(document.documentElement, {
+            attributes: true,
+            attributeFilter: ["class"],
+        });
+
+        return () => observer.disconnect();
+    }, []);
+
     const handleChange = (newValue: string | undefined) => {
         const val = newValue || "";
         onChange?.(val);
-    };
-
-    const handleBeforeMount = (monaco: any) => {
-        // Define custom theme that matches card background
-        monaco.editor.defineTheme('custom-dark', {
-            base: 'vs-dark',
-            inherit: true,
-            rules: [],
-            colors: {
-                'editor.background': '#1e1e1e',
-            }
-        });
     };
 
     return (
@@ -39,8 +53,7 @@ export function CodeEditor({
                 language={language}
                 value={value}
                 onChange={handleChange}
-                theme="custom-dark"
-                beforeMount={handleBeforeMount}
+                theme={theme}
                 options={{
                     minimap: { enabled: false },
                     fontSize: 12,

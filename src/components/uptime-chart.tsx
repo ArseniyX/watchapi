@@ -4,8 +4,8 @@ import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recha
 
 interface UptimeChartProps {
   data?: Array<{
-    status: string
-    checkedAt: Date
+    status?: string
+    checkedAt?: Date | string
   }>
 }
 

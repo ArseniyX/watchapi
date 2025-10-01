@@ -1,5 +1,5 @@
 import { createTRPCReact } from '@trpc/react-query'
-import { httpBatchLink } from '@trpc/client'
+import { createTRPCProxyClient, httpBatchLink } from '@trpc/client'
 import type { AppRouter } from '../server/app'
 
 export const trpc = createTRPCReact<AppRouter>()
@@ -19,6 +19,24 @@ export const trpcClient = trpc.createClient({
         return {
           authorization: token ? `Bearer ${token}` : undefined,
         }
+      },
+    }),
+  ],
+})
+
+// Vanilla tRPC client for non-React code (e.g., store actions)
+export const vanillaTrpc = createTRPCProxyClient<AppRouter>({
+  links: [
+    httpBatchLink({
+      url: `${getBaseUrl()}/api/trpc`,
+      headers() {
+        if (typeof window !== 'undefined') {
+          const token = localStorage.getItem('accessToken')
+          return {
+            authorization: token ? `Bearer ${token}` : undefined,
+          }
+        }
+        return {}
       },
     }),
   ],
