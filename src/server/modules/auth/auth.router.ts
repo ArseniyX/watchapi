@@ -73,4 +73,34 @@ export const createAuthRouter = (authService: AuthService) =>
           role: user.role,
         }
       }),
+
+    oauthCallback: publicProcedure
+      .input(
+        z.object({
+          provider: z.enum(['google', 'github']),
+          profile: z.object({
+            id: z.string(),
+            email: z.string().email(),
+            name: z.string().optional(),
+            avatar: z.string().optional(),
+          }),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const result = await authService.authenticateWithOAuth({
+          ...input.profile,
+          provider: input.provider,
+        })
+        return {
+          user: {
+            id: result.user.id,
+            email: result.user.email,
+            name: result.user.name,
+            role: result.user.role,
+            avatar: result.user.avatar,
+          },
+          tokens: result.tokens,
+          isNewUser: result.isNewUser,
+        }
+      }),
   })

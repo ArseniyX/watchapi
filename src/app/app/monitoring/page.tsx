@@ -68,7 +68,7 @@ const StatusBadge = ({ status }: { status: string }) => {
 
 export default function MonitoringPage() {
   const router = useRouter()
-  const { data: endpoints, isLoading } = trpc.monitoring.getMyEndpoints.useQuery()
+  const { data: endpoints, isLoading } = trpc.apiEndpoint.getMyEndpoints.useQuery()
 
   if (isLoading) {
     return (

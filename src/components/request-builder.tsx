@@ -394,7 +394,7 @@ export function RequestBuilder() {
     ]);
 
     // Mutation for updating endpoint
-    const updateEndpointMutation = trpc.monitoring.updateEndpoint.useMutation({
+    const updateEndpointMutation = trpc.apiEndpoint.update.useMutation({
         onSuccess: async () => {
             await utils.collection.getMyCollections.invalidate();
         },

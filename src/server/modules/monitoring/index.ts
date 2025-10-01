@@ -2,6 +2,7 @@ import { PrismaClient } from '../../../generated/prisma'
 import { MonitoringRepository } from './monitoring.repository'
 import { MonitoringService } from './monitoring.service'
 import { createMonitoringRouter } from './monitoring.router'
+import { ApiEndpointRepository } from '../api-endpoint/api-endpoint.repository'
 
 export class MonitoringModule {
   public readonly repository: MonitoringRepository
@@ -10,7 +11,8 @@ export class MonitoringModule {
 
   constructor(prisma: PrismaClient) {
     this.repository = new MonitoringRepository(prisma)
-    this.service = new MonitoringService(this.repository)
+    const apiEndpointRepository = new ApiEndpointRepository(prisma)
+    this.service = new MonitoringService(this.repository, apiEndpointRepository)
     this.router = createMonitoringRouter(this.service)
   }
 }

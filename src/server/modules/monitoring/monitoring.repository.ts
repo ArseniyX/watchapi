@@ -1,72 +1,7 @@
-import { PrismaClient, ApiEndpoint, MonitoringCheck, CheckStatus, Prisma } from '../../../generated/prisma'
+import { PrismaClient, MonitoringCheck, CheckStatus, Prisma } from '../../../generated/prisma'
 
 export class MonitoringRepository {
   constructor(private readonly prisma: PrismaClient) {}
-
-  // API Endpoints
-  async createApiEndpoint(data: Omit<ApiEndpoint, 'id' | 'createdAt' | 'updatedAt'>): Promise<ApiEndpoint> {
-    return this.prisma.apiEndpoint.create({
-      data,
-      include: {
-        user: true,
-        collection: true,
-      },
-    })
-  }
-
-  async findApiEndpointById(id: string): Promise<ApiEndpoint | null> {
-    return this.prisma.apiEndpoint.findUnique({
-      where: { id },
-      include: {
-        user: true,
-        collection: true,
-        monitoringChecks: {
-          orderBy: { checkedAt: 'desc' },
-          take: 10,
-        },
-        alerts: true,
-      },
-    })
-  }
-
-  async findApiEndpointsByUserId(userId: string) {
-    return this.prisma.apiEndpoint.findMany({
-      where: { userId },
-      include: {
-        collection: true,
-        monitoringChecks: {
-          orderBy: { checkedAt: 'desc' },
-          take: 5,
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-    })
-  }
-
-  async updateApiEndpoint(id: string, data: Partial<Omit<ApiEndpoint, 'id' | 'createdAt' | 'updatedAt'>>): Promise<ApiEndpoint> {
-    return this.prisma.apiEndpoint.update({
-      where: { id },
-      data,
-      include: {
-        collection: true,
-      },
-    })
-  }
-
-  async deleteApiEndpoint(id: string): Promise<void> {
-    await this.prisma.apiEndpoint.delete({
-      where: { id },
-    })
-  }
-
-  async findActiveEndpoints(): Promise<ApiEndpoint[]> {
-    return this.prisma.apiEndpoint.findMany({
-      where: { isActive: true },
-      include: {
-        user: true,
-      },
-    })
-  }
 
   // Monitoring Checks
   async createMonitoringCheck(data: Omit<MonitoringCheck, 'id' | 'checkedAt'>): Promise<MonitoringCheck> {

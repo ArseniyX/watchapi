@@ -13,6 +13,14 @@ export interface RegisterInput {
   password: string
 }
 
+export interface OAuthProfile {
+  id: string
+  email: string
+  name?: string
+  avatar?: string
+  provider: 'google' | 'github'
+}
+
 export interface AuthTokens {
   accessToken: string
   refreshToken: string
@@ -73,6 +81,47 @@ export class AuthService {
     } catch (error) {
       throw new Error('Invalid refresh token')
     }
+  }
+
+  async authenticateWithOAuth(profile: OAuthProfile): Promise<{ user: User; tokens: AuthTokens; isNewUser: boolean }> {
+    // Check if user exists with this provider
+    let user = await this.userService.getUserByProvider(profile.provider, profile.id)
+
+    let isNewUser = false
+
+    if (!user) {
+      // Check if user exists with this email (from different provider or local)
+      const existingUser = await this.userService.getUserByEmail(profile.email)
+
+      if (existingUser) {
+        // Link OAuth to existing account
+        user = await this.userService.updateUser(existingUser.id, {
+          provider: profile.provider,
+          providerId: profile.id,
+          avatar: profile.avatar,
+        })
+      } else {
+        // Create new user
+        user = await this.userService.createOAuthUser({
+          email: profile.email,
+          name: profile.name,
+          provider: profile.provider,
+          providerId: profile.id,
+          avatar: profile.avatar,
+        })
+        isNewUser = true
+      }
+    } else {
+      // Update user info from OAuth profile
+      user = await this.userService.updateUser(user.id, {
+        name: profile.name || user.name,
+        avatar: profile.avatar || user.avatar,
+      })
+    }
+
+    const tokens = this.generateTokens(user)
+
+    return { user, tokens, isNewUser }
   }
 
   private generateTokens(user: User): AuthTokens {

@@ -5,61 +5,6 @@ import { HttpMethod } from '../../../generated/prisma'
 
 export const createMonitoringRouter = (monitoringService: MonitoringService) =>
   router({
-    createEndpoint: protectedProcedure
-      .input(
-        z.object({
-          name: z.string(),
-          url: z.string(),
-          method: z.nativeEnum(HttpMethod).default(HttpMethod.GET),
-          headers: z.record(z.string()).optional(),
-          body: z.string().optional(),
-          expectedStatus: z.number().default(200),
-          timeout: z.number().default(30000),
-          interval: z.number().default(300000), // 5 minutes
-          collectionId: z.string().optional(),
-        })
-      )
-      .mutation(async ({ input, ctx }) => {
-        return monitoringService.createApiEndpoint(ctx.user.id, input)
-      }),
-
-    getEndpoint: protectedProcedure
-      .input(z.object({ id: z.string() }))
-      .query(async ({ input }) => {
-        return monitoringService.getApiEndpoint(input.id)
-      }),
-
-    getMyEndpoints: protectedProcedure
-      .query(async ({ ctx }) => {
-        return monitoringService.getUserApiEndpoints(ctx.user.id)
-      }),
-
-    updateEndpoint: protectedProcedure
-      .input(
-        z.object({
-          id: z.string(),
-          name: z.string().optional(),
-          url: z.string().optional(),
-          method: z.nativeEnum(HttpMethod).optional(),
-          headers: z.record(z.string()).optional(),
-          body: z.string().optional(),
-          expectedStatus: z.number().optional(),
-          timeout: z.number().optional(),
-          interval: z.number().optional(),
-          isActive: z.boolean().optional(),
-        })
-      )
-      .mutation(async ({ input }) => {
-        const { id, ...updateData } = input
-        return monitoringService.updateApiEndpoint(id, updateData)
-      }),
-
-    deleteEndpoint: protectedProcedure
-      .input(z.object({ id: z.string() }))
-      .mutation(async ({ input }) => {
-        return monitoringService.deleteApiEndpoint(input.id)
-      }),
-
     checkEndpoint: protectedProcedure
       .input(z.object({ id: z.string() }))
       .mutation(async ({ input }) => {

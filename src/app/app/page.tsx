@@ -27,7 +27,7 @@ function formatTime(date: Date) {
 }
 
 export default function DashboardPage() {
-  const { data: endpoints, isLoading: endpointsLoading } = trpc.monitoring.getMyEndpoints.useQuery()
+  const { data: endpoints, isLoading: endpointsLoading } = trpc.apiEndpoint.getMyEndpoints.useQuery()
   const { data: history, isLoading: historyLoading } = trpc.monitoring.getHistory.useQuery(
     { endpointId: endpoints?.[0]?.id || '', take: 5 },
     { enabled: !!endpoints?.[0]?.id }

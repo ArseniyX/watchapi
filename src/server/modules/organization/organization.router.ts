@@ -36,15 +36,15 @@ export const createOrganizationRouter = (organizationService: OrganizationServic
           description: z.string().optional(),
         })
       )
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
         const { id, ...data } = input
-        return organizationService.updateOrganization(id, data)
+        return organizationService.updateOrganization(ctx.user.id, id, data)
       }),
 
     delete: protectedProcedure
       .input(z.object({ id: z.string() }))
-      .mutation(async ({ input }) => {
-        return organizationService.deleteOrganization(input.id)
+      .mutation(async ({ input, ctx }) => {
+        return organizationService.deleteOrganization(ctx.user.id, input.id)
       }),
 
     getMembers: protectedProcedure
@@ -82,8 +82,8 @@ export const createOrganizationRouter = (organizationService: OrganizationServic
           role: z.nativeEnum(OrganizationRole),
         })
       )
-      .mutation(async ({ input }) => {
-        return organizationService.updateMemberRole(input.userId, input.organizationId, input.role)
+      .mutation(async ({ input, ctx }) => {
+        return organizationService.updateMemberRole(ctx.user.id, input.userId, input.organizationId, input.role)
       }),
 
     removeMember: protectedProcedure
@@ -93,8 +93,8 @@ export const createOrganizationRouter = (organizationService: OrganizationServic
           organizationId: z.string(),
         })
       )
-      .mutation(async ({ input }) => {
-        return organizationService.removeMember(input.userId, input.organizationId)
+      .mutation(async ({ input, ctx }) => {
+        return organizationService.removeMember(ctx.user.id, input.userId, input.organizationId)
       }),
 
     getInvitations: protectedProcedure

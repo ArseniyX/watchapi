@@ -106,7 +106,7 @@ export const createCollectionsActions = (getStore: () => any) => {
       store.addRequestToCollectionOptimistic(collectionId, tempRequest)
 
       try {
-        await trpc.monitoring.createEndpoint.mutate({
+        await trpc.apiEndpoint.create.mutate({
           name,
           url,
           method: 'GET' as any,
@@ -138,7 +138,7 @@ export const createCollectionsActions = (getStore: () => any) => {
       store.removeRequestFromCollectionOptimistic(collectionId, requestId)
 
       try {
-        await trpc.monitoring.deleteEndpoint.mutate({ id: requestId })
+        await trpc.apiEndpoint.delete.mutate({ id: requestId })
       } catch (error) {
         // Rollback on error
         if (backup) {

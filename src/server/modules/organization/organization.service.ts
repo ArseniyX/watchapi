@@ -6,6 +6,12 @@ export class OrganizationService {
   constructor(private readonly organizationRepository: OrganizationRepository) {}
 
   async createOrganization(userId: string, data: { name: string; slug: string; description?: string }) {
+    // Check if slug already exists
+    const existing = await this.organizationRepository.findOrganizationBySlug(data.slug)
+    if (existing) {
+      throw new Error('An organization with this slug already exists')
+    }
+
     // Create organization
     const organization = await this.organizationRepository.createOrganization(data)
 
@@ -28,11 +34,23 @@ export class OrganizationService {
     return this.organizationRepository.findUserOrganizations(userId)
   }
 
-  async updateOrganization(id: string, data: { name?: string; description?: string }) {
+  async updateOrganization(userId: string, id: string, data: { name?: string; description?: string }) {
+    // Check if user is owner or admin
+    const hasPermission = await this.checkMemberPermission(userId, id, OrganizationRole.ADMIN)
+    if (!hasPermission) {
+      throw new Error('You do not have permission to update this organization')
+    }
+
     return this.organizationRepository.updateOrganization(id, data)
   }
 
-  async deleteOrganization(id: string) {
+  async deleteOrganization(userId: string, id: string) {
+    // Only owners can delete organizations
+    const member = await this.organizationRepository.findMember(userId, id)
+    if (!member || member.role !== OrganizationRole.OWNER) {
+      throw new Error('Only organization owners can delete organizations')
+    }
+
     return this.organizationRepository.deleteOrganization(id)
   }
 
@@ -46,6 +64,12 @@ export class OrganizationService {
     role: OrganizationRole
     invitedBy: string
   }) {
+    // Check if inviter has permission (must be admin or owner)
+    const hasPermission = await this.checkMemberPermission(data.invitedBy, data.organizationId, OrganizationRole.ADMIN)
+    if (!hasPermission) {
+      throw new Error('You do not have permission to invite members to this organization')
+    }
+
     // Check if user already exists
     const existingUser = await this.organizationRepository.findUserByEmail(data.email)
 
@@ -110,11 +134,35 @@ export class OrganizationService {
     return member
   }
 
-  async updateMemberRole(userId: string, organizationId: string, role: OrganizationRole) {
+  async updateMemberRole(requestorId: string, userId: string, organizationId: string, role: OrganizationRole) {
+    // Check if requestor has permission (must be admin or owner)
+    const hasPermission = await this.checkMemberPermission(requestorId, organizationId, OrganizationRole.ADMIN)
+    if (!hasPermission) {
+      throw new Error('You do not have permission to update member roles')
+    }
+
+    // Cannot change owner role
+    const targetMember = await this.organizationRepository.findMember(userId, organizationId)
+    if (targetMember?.role === OrganizationRole.OWNER) {
+      throw new Error('Cannot change the role of an organization owner')
+    }
+
     return this.organizationRepository.updateMemberRole(userId, organizationId, role)
   }
 
-  async removeMember(userId: string, organizationId: string) {
+  async removeMember(requestorId: string, userId: string, organizationId: string) {
+    // Check if requestor has permission (must be admin or owner)
+    const hasPermission = await this.checkMemberPermission(requestorId, organizationId, OrganizationRole.ADMIN)
+    if (!hasPermission) {
+      throw new Error('You do not have permission to remove members')
+    }
+
+    // Cannot remove owner
+    const targetMember = await this.organizationRepository.findMember(userId, organizationId)
+    if (targetMember?.role === OrganizationRole.OWNER) {
+      throw new Error('Cannot remove an organization owner')
+    }
+
     return this.organizationRepository.removeMember(userId, organizationId)
   }
 

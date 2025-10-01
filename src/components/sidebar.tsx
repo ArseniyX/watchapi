@@ -101,7 +101,7 @@ function CollectionTree({
     const removeTab = useAppStore((state) => state.removeTab);
 
     const utils = trpc.useUtils();
-    const createEndpointMutation = trpc.monitoring.createEndpoint.useMutation({
+    const createEndpointMutation = trpc.apiEndpoint.create.useMutation({
         onSuccess: () => {
             utils.collection.getMyCollections.invalidate();
         },
@@ -118,7 +118,7 @@ function CollectionTree({
         },
     });
 
-    const deleteEndpointMutation = trpc.monitoring.deleteEndpoint.useMutation({
+    const deleteEndpointMutation = trpc.apiEndpoint.delete.useMutation({
         onSuccess: () => {
             utils.collection.getMyCollections.invalidate();
             toast.success("Endpoint deleted successfully");
