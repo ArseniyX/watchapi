@@ -21,7 +21,7 @@ export default async function handler(
         client_id: process.env.GOOGLE_CLIENT_ID,
         client_secret: process.env.GOOGLE_CLIENT_SECRET,
         code,
-        redirect_uri: `${process.env.NEXTAUTH_URL || `http://localhost:3000`}/api/auth/callback/google`,
+        redirect_uri: `${process.env.NEXT_PUBLIC_DOMAIN || `http://localhost:3000`}/api/auth/callback/google`,
         grant_type: 'authorization_code',
       }),
     })
@@ -29,7 +29,8 @@ export default async function handler(
     const tokenData = await tokenResponse.json()
 
     if (!tokenData.access_token) {
-      return res.redirect('/login?error=google_auth_failed')
+      console.error('Google token exchange failed:', tokenData)
+      return res.redirect(`/login?error=google_auth_failed&details=${encodeURIComponent(tokenData.error_description || tokenData.error || 'unknown')}`)
     }
 
     // Get user info from Google
@@ -55,7 +56,7 @@ export default async function handler(
 
     // Call tRPC mutation to authenticate
     const authResponse = await fetch(
-      `${process.env.NEXTAUTH_URL || `http://localhost:3000`}/api/trpc/auth.oauthCallback`,
+      `${process.env.NEXT_PUBLIC_DOMAIN || `http://localhost:3000`}/api/trpc/auth.oauthCallback`,
       {
         method: 'POST',
         headers: {

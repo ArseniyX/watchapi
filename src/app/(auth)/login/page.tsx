@@ -62,9 +62,10 @@ export default function LoginPage() {
 
         const error = urlParams.get("error");
         if (error) {
+            const details = urlParams.get("details");
             toast({
                 title: "Authentication failed",
-                description: `OAuth error: ${error}`,
+                description: details ? `${error}: ${details}` : `OAuth error: ${error}`,
                 variant: "destructive",
             });
             window.history.replaceState({}, "", "/login");

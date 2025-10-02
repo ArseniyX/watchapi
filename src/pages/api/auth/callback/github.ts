@@ -22,14 +22,15 @@ export default async function handler(
         client_id: process.env.GH_CLIENT_ID,
         client_secret: process.env.GH_CLIENT_SECRET,
         code,
-        redirect_uri: `${process.env.NEXTAUTH_URL || `http://localhost:3000`}/api/auth/callback/github`,
+        redirect_uri: `${process.env.NEXT_PUBLIC_DOMAIN || `http://localhost:3000`}/api/auth/callback/github`,
       }),
     })
 
     const tokenData = await tokenResponse.json()
 
     if (!tokenData.access_token) {
-      return res.redirect('/login?error=github_auth_failed')
+      console.error('GitHub token exchange failed:', tokenData)
+      return res.redirect(`/login?error=github_auth_failed&details=${encodeURIComponent(tokenData.error_description || tokenData.error || 'unknown')}`)
     }
 
     // Get user info from GitHub
@@ -68,7 +69,7 @@ export default async function handler(
 
     // Call tRPC mutation to authenticate
     const authResponse = await fetch(
-      `${process.env.NEXTAUTH_URL || `http://localhost:3000`}/api/trpc/auth.oauthCallback`,
+      `${process.env.NEXT_PUBLIC_DOMAIN || `http://localhost:3000`}/api/trpc/auth.oauthCallback`,
       {
         method: 'POST',
         headers: {
