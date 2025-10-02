@@ -69,15 +69,18 @@ export function Hero() {
 
                             {/* Main image container with 3D transform */}
                             <div
-                                className="relative transition-all duration-700 ease-out will-change-transform animate-in slide-in-from-bottom-12 duration-1000 delay-800"
+                                className="relative will-change-transform animate-in slide-in-from-bottom-12 duration-1000 delay-800"
                                 style={{
                                     transform: 'perspective(1500px) rotateY(15deg) rotateX(10deg) scale(0.95)',
                                     transformStyle: 'preserve-3d',
+                                    transition: 'transform 0.7s cubic-bezier(0.4, 0, 0.2, 1)',
                                 }}
                                 onMouseEnter={(e) => {
+                                    e.currentTarget.style.transition = 'transform 0.7s cubic-bezier(0.4, 0, 0.2, 1)';
                                     e.currentTarget.style.transform = 'perspective(3000px) rotateY(0deg) rotateX(0deg) scale(1)';
                                 }}
                                 onMouseLeave={(e) => {
+                                    e.currentTarget.style.transition = 'transform 0.7s cubic-bezier(0.4, 0, 0.2, 1)';
                                     e.currentTarget.style.transform = 'perspective(1500px) rotateY(15deg) rotateX(10deg) scale(0.95)';
                                 }}
                                 onMouseMove={(e) => {
@@ -88,6 +91,7 @@ export function Hero() {
                                     const centerY = rect.height / 2;
                                     const rotateX = ((y - centerY) / centerY) * -5;
                                     const rotateY = ((x - centerX) / centerX) * 5;
+                                    e.currentTarget.style.transition = 'transform 0.15s ease-out';
                                     e.currentTarget.style.transform = `perspective(3000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1)`;
                                 }}
                             >
