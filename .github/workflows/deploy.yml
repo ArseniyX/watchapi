@@ -100,7 +100,7 @@ jobs:
         build-args: |
           DATABASE_URL=${{ secrets.DATABASE_URL }}
           NEXT_PUBLIC_DOMAIN=${{ vars.NEXT_PUBLIC_DOMAIN }}
-          NEXT_PUBLIC_GITHUB_CLIENT_ID=${{ vars.GITHUB_CLIENT_ID }}
+          NEXT_PUBLIC_GITHUB_CLIENT_ID=${{ vars.GH_CLIENT_ID }}
           NEXT_PUBLIC_GOOGLE_CLIENT_ID=${{ vars.GOOGLE_CLIENT_ID }}
           NODE_ENV=production
           
