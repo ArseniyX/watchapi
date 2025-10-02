@@ -6,6 +6,7 @@ import jwt from 'jsonwebtoken'
 // Mock UserService
 const mockUserService = {
   createUser: vi.fn(),
+  getUserById: vi.fn(),
   getUserByEmail: vi.fn(),
   getUserByProvider: vi.fn(),
   createOAuthUser: vi.fn(),
