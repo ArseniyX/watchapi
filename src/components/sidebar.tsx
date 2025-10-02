@@ -36,7 +36,7 @@ interface CollectionTreeItemRequest {
     id: string;
     name: string;
     type: "request";
-    method: "GET" | "POST" | "PUT" | "DELETE";
+    method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
     children?: never;
 }
 
@@ -270,12 +270,14 @@ function CollectionTree({
                             <span
                                 className={cn(
                                     "rounded px-1.5 py-0.5 text-xs font-semibold",
-                                    item.method === "POST" &&
-                                        "bg-green-500/20 text-green-400",
                                     item.method === "GET" &&
-                                        "bg-blue-500/20 text-blue-400",
-                                    item.method === "PUT" &&
+                                        "bg-green-500/20 text-green-400",
+                                    item.method === "POST" &&
                                         "bg-yellow-500/20 text-yellow-400",
+                                    item.method === "PUT" &&
+                                        "bg-blue-500/20 text-blue-400",
+                                    item.method === "PATCH" &&
+                                        "bg-purple-500/20 text-purple-400",
                                     item.method === "DELETE" &&
                                         "bg-red-500/20 text-red-400"
                                 )}
@@ -360,6 +362,7 @@ export function Sidebar({}: SidebarProps) {
                         | "GET"
                         | "POST"
                         | "PUT"
+                        | "PATCH"
                         | "DELETE",
                 })) || [],
         }));

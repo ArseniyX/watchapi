@@ -25,6 +25,12 @@ import {
     SidebarMenuItem,
     SidebarHeader,
 } from "@/components/ui/sidebar";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Logo } from "./logo";
 
 const items = [
@@ -111,27 +117,32 @@ function UserProfile() {
     if (!user) return null;
 
     return (
-        <div className="flex items-center justify-between group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:gap-2">
-            <div className="flex items-center space-x-2 group-data-[collapsible=icon]:space-x-0">
-                <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center shrink-0">
-                    <User className="h-4 w-4 text-primary-foreground" />
-                </div>
-                <div className="flex flex-col group-data-[collapsible=icon]:hidden">
-                    <span className="text-sm font-medium">
-                        {user.name || user.email}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                        {user.email}
-                    </span>
-                </div>
-            </div>
-            <button
-                onClick={handleLogout}
-                className="flex items-center justify-center h-8 w-8 rounded-md hover:bg-accent transition-colors"
-                title="Logout"
-            >
-                <LogOut className="h-4 w-4" />
-            </button>
-        </div>
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <button className="cursor-pointer flex items-center w-full rounded-md transition-colors group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0">
+                    <div className="h-8 w-8 rounded-full bg-secondary flex items-center justify-center shrink-0 transition-all hover:bg-primary/80">
+                        <User className="h-4 w-4" />
+                    </div>
+                    <div className="flex flex-col group-data-[collapsible=icon]:hidden text-left">
+                        <span className="text-sm font-medium">
+                            {user.name || user.email}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                            {user.email}
+                        </span>
+                    </div>
+                </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem>
+                    <User className="mr-2 h-4 w-4" />
+                    <span>Profile</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Sign Out</span>
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
     );
 }

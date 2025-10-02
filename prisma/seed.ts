@@ -25,16 +25,16 @@ async function main() {
   // Create demo collections
   const collections = [
     {
-      name: 'User Management API',
-      description: 'Authentication and user profile endpoints for demo purposes',
+      name: 'ReqRes API - User Management',
+      description: 'User CRUD operations and authentication endpoints',
     },
     {
-      name: 'External APIs',
-      description: 'Third-party API integrations and monitoring',
+      name: 'RESTful API - Device Catalog',
+      description: 'Product and device management API endpoints',
     },
     {
-      name: 'Payment Processing',
-      description: 'Payment gateway and transaction monitoring (placeholder)',
+      name: 'GoRest API - Social Platform',
+      description: 'Posts, comments, and todos management',
     },
   ]
 
@@ -57,50 +57,286 @@ async function main() {
 
   // Create demo API endpoints
   const endpoints = [
+    // ReqRes API - User Management Collection
     {
-      name: 'JSONPlaceholder Posts',
-      url: 'https://jsonplaceholder.typicode.com/posts',
+      name: 'List All Users',
+      url: 'https://reqres.in/api/users?page=1',
       method: 'GET' as const,
+      headers: JSON.stringify({
+        'Accept': 'application/json',
+      }),
       expectedStatus: 200,
       timeout: 10000,
-      interval: 300000, // 5 minutes
-      collectionId: createdCollections[1].id, // External APIs
+      interval: 300000,
+      collectionId: createdCollections[0].id,
     },
     {
-      name: 'JSONPlaceholder Users',
-      url: 'https://jsonplaceholder.typicode.com/users',
+      name: 'Get User Details',
+      url: 'https://reqres.in/api/users/2',
       method: 'GET' as const,
+      headers: JSON.stringify({
+        'Accept': 'application/json',
+      }),
       expectedStatus: 200,
       timeout: 10000,
-      interval: 600000, // 10 minutes
-      collectionId: createdCollections[0].id, // User Management API
+      interval: 300000,
+      collectionId: createdCollections[0].id,
     },
     {
-      name: 'GitHub API',
-      url: 'https://api.github.com/users/octocat',
-      method: 'GET' as const,
-      expectedStatus: 200,
-      timeout: 15000,
-      interval: 900000, // 15 minutes
-      collectionId: createdCollections[1].id, // External APIs
+      name: 'Create New User',
+      url: 'https://reqres.in/api/users',
+      method: 'POST' as const,
+      headers: JSON.stringify({
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      }),
+      body: JSON.stringify({
+        name: 'John Doe',
+        job: 'Software Engineer',
+      }),
+      expectedStatus: 201,
+      timeout: 10000,
+      interval: 600000,
+      collectionId: createdCollections[0].id,
     },
     {
-      name: 'Local User Endpoint',
-      url: 'http://localhost:3000/api/users/profile',
-      method: 'GET' as const,
-      expectedStatus: 200,
-      timeout: 5000,
-      interval: 300000, // 5 minutes
-      collectionId: createdCollections[0].id, // User Management API
-    },
-    {
-      name: 'Payment Gateway Health',
-      url: 'https://httpstat.us/200',
-      method: 'GET' as const,
+      name: 'Update User (PUT)',
+      url: 'https://reqres.in/api/users/2',
+      method: 'PUT' as const,
+      headers: JSON.stringify({
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      }),
+      body: JSON.stringify({
+        name: 'Jane Smith',
+        job: 'Product Manager',
+      }),
       expectedStatus: 200,
       timeout: 10000,
-      interval: 600000, // 10 minutes
-      collectionId: createdCollections[2].id, // Payment Processing
+      interval: 600000,
+      collectionId: createdCollections[0].id,
+    },
+    {
+      name: 'Update User (PATCH)',
+      url: 'https://reqres.in/api/users/2',
+      method: 'PATCH' as const,
+      headers: JSON.stringify({
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      }),
+      body: JSON.stringify({
+        job: 'Senior Product Manager',
+      }),
+      expectedStatus: 200,
+      timeout: 10000,
+      interval: 600000,
+      collectionId: createdCollections[0].id,
+    },
+    {
+      name: 'Delete User',
+      url: 'https://reqres.in/api/users/2',
+      method: 'DELETE' as const,
+      headers: JSON.stringify({
+        'Accept': 'application/json',
+      }),
+      expectedStatus: 204,
+      timeout: 10000,
+      interval: 600000,
+      collectionId: createdCollections[0].id,
+    },
+    {
+      name: 'User Login',
+      url: 'https://reqres.in/api/login',
+      method: 'POST' as const,
+      headers: JSON.stringify({
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      }),
+      body: JSON.stringify({
+        email: 'eve.holt@reqres.in',
+        password: 'cityslicka',
+      }),
+      expectedStatus: 200,
+      timeout: 10000,
+      interval: 600000,
+      collectionId: createdCollections[0].id,
+    },
+    {
+      name: 'User Registration',
+      url: 'https://reqres.in/api/register',
+      method: 'POST' as const,
+      headers: JSON.stringify({
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      }),
+      body: JSON.stringify({
+        email: 'eve.holt@reqres.in',
+        password: 'pistol',
+      }),
+      expectedStatus: 200,
+      timeout: 10000,
+      interval: 600000,
+      collectionId: createdCollections[0].id,
+    },
+
+    // RESTful API - Device Catalog Collection
+    {
+      name: 'List All Devices',
+      url: 'https://api.restful-api.dev/objects',
+      method: 'GET' as const,
+      headers: JSON.stringify({
+        'Accept': 'application/json',
+      }),
+      expectedStatus: 200,
+      timeout: 10000,
+      interval: 300000,
+      collectionId: createdCollections[1].id,
+    },
+    {
+      name: 'Get Device by ID',
+      url: 'https://api.restful-api.dev/objects/7',
+      method: 'GET' as const,
+      headers: JSON.stringify({
+        'Accept': 'application/json',
+      }),
+      expectedStatus: 200,
+      timeout: 10000,
+      interval: 300000,
+      collectionId: createdCollections[1].id,
+    },
+    {
+      name: 'Add New Device',
+      url: 'https://api.restful-api.dev/objects',
+      method: 'POST' as const,
+      headers: JSON.stringify({
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      }),
+      body: JSON.stringify({
+        name: 'Apple MacBook Pro 16',
+        data: {
+          year: 2023,
+          price: 2499.99,
+          'CPU model': 'Apple M3 Pro',
+          'Hard disk size': '1 TB',
+        },
+      }),
+      expectedStatus: 200,
+      timeout: 10000,
+      interval: 600000,
+      collectionId: createdCollections[1].id,
+    },
+    {
+      name: 'Update Device (PUT)',
+      url: 'https://api.restful-api.dev/objects/7',
+      method: 'PUT' as const,
+      headers: JSON.stringify({
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      }),
+      body: JSON.stringify({
+        name: 'Apple iPhone 15 Pro Max',
+        data: {
+          year: 2024,
+          price: 1199.99,
+          'CPU model': 'A17 Pro',
+          'Hard disk size': '512 GB',
+        },
+      }),
+      expectedStatus: 200,
+      timeout: 10000,
+      interval: 600000,
+      collectionId: createdCollections[1].id,
+    },
+    {
+      name: 'Update Device (PATCH)',
+      url: 'https://api.restful-api.dev/objects/7',
+      method: 'PATCH' as const,
+      headers: JSON.stringify({
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      }),
+      body: JSON.stringify({
+        name: 'Apple iPhone 15 Pro (Updated)',
+      }),
+      expectedStatus: 200,
+      timeout: 10000,
+      interval: 600000,
+      collectionId: createdCollections[1].id,
+    },
+    {
+      name: 'Delete Device',
+      url: 'https://api.restful-api.dev/objects/7',
+      method: 'DELETE' as const,
+      headers: JSON.stringify({
+        'Accept': 'application/json',
+      }),
+      expectedStatus: 200,
+      timeout: 10000,
+      interval: 600000,
+      collectionId: createdCollections[1].id,
+    },
+
+    // GoRest API - Social Platform Collection
+    {
+      name: 'List All Posts',
+      url: 'https://gorest.co.in/public/v2/posts',
+      method: 'GET' as const,
+      headers: JSON.stringify({
+        'Accept': 'application/json',
+      }),
+      expectedStatus: 200,
+      timeout: 10000,
+      interval: 300000,
+      collectionId: createdCollections[2].id,
+    },
+    {
+      name: 'Get Post by ID',
+      url: 'https://gorest.co.in/public/v2/posts/1',
+      method: 'GET' as const,
+      headers: JSON.stringify({
+        'Accept': 'application/json',
+      }),
+      expectedStatus: 200,
+      timeout: 10000,
+      interval: 300000,
+      collectionId: createdCollections[2].id,
+    },
+    {
+      name: 'List All Comments',
+      url: 'https://gorest.co.in/public/v2/comments',
+      method: 'GET' as const,
+      headers: JSON.stringify({
+        'Accept': 'application/json',
+      }),
+      expectedStatus: 200,
+      timeout: 10000,
+      interval: 300000,
+      collectionId: createdCollections[2].id,
+    },
+    {
+      name: 'List All Todos',
+      url: 'https://gorest.co.in/public/v2/todos',
+      method: 'GET' as const,
+      headers: JSON.stringify({
+        'Accept': 'application/json',
+      }),
+      expectedStatus: 200,
+      timeout: 10000,
+      interval: 300000,
+      collectionId: createdCollections[2].id,
+    },
+    {
+      name: 'Get User Posts',
+      url: 'https://gorest.co.in/public/v2/users/1/posts',
+      method: 'GET' as const,
+      headers: JSON.stringify({
+        'Accept': 'application/json',
+      }),
+      expectedStatus: 200,
+      timeout: 10000,
+      interval: 300000,
+      collectionId: createdCollections[2].id,
     },
   ]
 

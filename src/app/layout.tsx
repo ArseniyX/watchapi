@@ -23,6 +23,15 @@ export default function RootLayout({
 }>) {
     return (
         <html lang="en" className="dark">
+            <head>
+                <link
+                    style={{
+                        borderRadius: "0.5rem",
+                    }}
+                    rel="icon"
+                    href="/favicon.png"
+                />
+            </head>
             <body
                 className={`font-sans ${GeistSans.variable} ${GeistMono.variable} antialiased`}
             >

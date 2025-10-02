@@ -17,11 +17,13 @@ export function RequestTabs() {
     const getMethodColor = (method?: string) => {
         switch (method?.toUpperCase()) {
             case "GET":
-                return "text-blue-500";
-            case "POST":
                 return "text-green-500";
-            case "PUT":
+            case "POST":
                 return "text-yellow-500";
+            case "PUT":
+                return "text-blue-500";
+            case "PATCH":
+                return "text-purple-500";
             case "DELETE":
                 return "text-red-500";
             default:

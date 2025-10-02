@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ArrowRight, Activity } from "lucide-react";
+import Image from "next/image";
 
 export function Hero() {
     return (
@@ -56,6 +57,83 @@ export function Hero() {
                         <div>
                             <div className="text-3xl font-bold text-foreground">24/7</div>
                             <div className="text-sm text-muted-foreground mt-1">Monitoring</div>
+                        </div>
+                    </div>
+
+                    {/* Hero Image with 3D Effect */}
+                    <div className="mt-20 relative animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-1000">
+                        <div className="relative mx-auto max-w-5xl" style={{ perspective: '1500px' }}>
+                            {/* Floating background blobs for depth */}
+                            <div className="absolute -top-12 -left-12 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-pulse" style={{ transform: 'translateZ(-100px)' }} />
+                            <div className="absolute -bottom-12 -right-12 w-96 h-96 bg-primary/5 rounded-full blur-3xl animate-pulse" style={{ transform: 'translateZ(-100px)', animationDelay: '1s' }} />
+
+                            {/* Main image container with 3D transform */}
+                            <div
+                                className="relative transition-all duration-700 ease-out will-change-transform"
+                                style={{
+                                    transform: 'perspective(1500px) rotateY(15deg) rotateX(10deg) scale(0.95)',
+                                    transformStyle: 'preserve-3d',
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.transform = 'perspective(3000px) rotateY(0deg) rotateX(0deg) scale(1)';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.transform = 'perspective(1500px) rotateY(15deg) rotateX(10deg) scale(0.95)';
+                                }}
+                                onMouseMove={(e) => {
+                                    const rect = e.currentTarget.getBoundingClientRect();
+                                    const x = e.clientX - rect.left;
+                                    const y = e.clientY - rect.top;
+                                    const centerX = rect.width / 2;
+                                    const centerY = rect.height / 2;
+                                    const rotateX = ((y - centerY) / centerY) * -5;
+                                    const rotateY = ((x - centerX) / centerX) * 5;
+                                    e.currentTarget.style.transform = `perspective(3000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1)`;
+                                }}
+                            >
+                                {/* Shadow/depth layer - positioned behind */}
+                                <div
+                                    className="absolute inset-0 bg-gradient-to-b from-primary/10 via-primary/5 to-transparent rounded-2xl blur-3xl opacity-70"
+                                    style={{
+                                        transform: 'translateZ(-80px) scale(0.9)',
+                                        transformStyle: 'preserve-3d',
+                                    }}
+                                />
+
+                                {/* Secondary shadow for more depth */}
+                                <div
+                                    className="absolute inset-0 bg-primary/5 rounded-2xl blur-2xl"
+                                    style={{
+                                        transform: 'translateZ(-40px) scale(0.95)',
+                                        transformStyle: 'preserve-3d',
+                                    }}
+                                />
+
+                                {/* Image with border and glow */}
+                                <div
+                                    className="relative rounded-2xl border border-border/50 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-sm p-3 shadow-2xl"
+                                    style={{
+                                        transform: 'translateZ(20px)',
+                                        transformStyle: 'preserve-3d',
+                                        backfaceVisibility: 'hidden',
+                                    }}
+                                >
+                                    <div className="relative overflow-hidden rounded-xl ring-1 ring-primary/20 shadow-inner">
+                                        <Image
+                                            src="/hero-image.png"
+                                            alt="API Monitoring Dashboard"
+                                            width={1200}
+                                            height={800}
+                                            className="w-full h-auto"
+                                            priority
+                                        />
+                                        {/* Gradient overlay for polish */}
+                                        <div className="absolute inset-0 bg-gradient-to-t from-background/30 via-transparent to-primary/5 pointer-events-none" />
+                                        {/* Subtle light reflection */}
+                                        <div className="absolute top-0 left-0 right-0 h-1/3 bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
