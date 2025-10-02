@@ -80,12 +80,12 @@ spec:
                   key: google-client-secret
             {{- end }}
             {{- if .Values.oauth.github.clientId }}
-            - name: GITHUB_CLIENT_ID
+            - name: GH_CLIENT_ID
               valueFrom:
                 secretKeyRef:
                   name: {{ include "watchapi.fullname" . }}-secret
                   key: github-client-id
-            - name: GITHUB_CLIENT_SECRET
+            - name: GH_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
                   name: {{ include "watchapi.fullname" . }}-secret
