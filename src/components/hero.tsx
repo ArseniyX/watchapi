@@ -62,37 +62,17 @@ export function Hero() {
 
                     {/* Hero Image with 3D Effect */}
                     <div className="mt-20 relative animate-in fade-in scale-in-95 duration-1000 delay-700">
-                        <div className="relative mx-auto max-w-5xl" style={{ perspective: '1500px' }}>
+                        <div className="relative mx-auto max-w-6xl" style={{ perspective: '2000px' }}>
                             {/* Floating background blobs for depth */}
-                            <div className="absolute -top-12 -left-12 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-in fade-in duration-1000 delay-800" style={{ transform: 'translateZ(-100px)', animation: 'pulse 4s ease-in-out infinite' }} />
-                            <div className="absolute -bottom-12 -right-12 w-96 h-96 bg-primary/5 rounded-full blur-3xl animate-in fade-in duration-1000 delay-900" style={{ transform: 'translateZ(-100px)', animation: 'pulse 4s ease-in-out infinite 2s' }} />
+                            <div className="absolute -top-12 -left-12 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-in fade-in duration-1000 delay-800" style={{ transform: 'translateZ(-100px)' }} />
+                            <div className="absolute -bottom-12 -right-12 w-96 h-96 bg-primary/5 rounded-full blur-3xl animate-in fade-in duration-1000 delay-900" style={{ transform: 'translateZ(-100px)' }} />
 
                             {/* Main image container with 3D transform */}
                             <div
-                                className="relative will-change-transform animate-in slide-in-from-bottom-12 duration-1000 delay-800"
+                                className="relative animate-in slide-in-from-bottom-12 duration-1000 delay-800"
                                 style={{
-                                    transform: 'perspective(1500px) rotateY(15deg) rotateX(10deg) scale(0.95)',
+                                    transform: 'perspective(2000px) rotateY(8deg) rotateX(6deg) scale(1.05)',
                                     transformStyle: 'preserve-3d',
-                                    transition: 'transform 0.7s cubic-bezier(0.4, 0, 0.2, 1)',
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.transition = 'transform 0.7s cubic-bezier(0.4, 0, 0.2, 1)';
-                                    e.currentTarget.style.transform = 'perspective(3000px) rotateY(0deg) rotateX(0deg) scale(1)';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.transition = 'transform 0.7s cubic-bezier(0.4, 0, 0.2, 1)';
-                                    e.currentTarget.style.transform = 'perspective(1500px) rotateY(15deg) rotateX(10deg) scale(0.95)';
-                                }}
-                                onMouseMove={(e) => {
-                                    const rect = e.currentTarget.getBoundingClientRect();
-                                    const x = e.clientX - rect.left;
-                                    const y = e.clientY - rect.top;
-                                    const centerX = rect.width / 2;
-                                    const centerY = rect.height / 2;
-                                    const rotateX = ((y - centerY) / centerY) * -5;
-                                    const rotateY = ((x - centerX) / centerX) * 5;
-                                    e.currentTarget.style.transition = 'transform 0.15s ease-out';
-                                    e.currentTarget.style.transform = `perspective(3000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1)`;
                                 }}
                             >
                                 {/* Shadow/depth layer - positioned behind */}
