@@ -9,24 +9,24 @@ export function Hero() {
     return (
         <section className="relative py-20 sm:py-32 overflow-hidden">
             {/* Animated background gradient */}
-            <div className="absolute inset-0 -z-10 bg-[radial-gradient(45rem_50rem_at_top,theme(colors.primary.100),white)] dark:bg-[radial-gradient(45rem_50rem_at_top,theme(colors.primary.950),theme(colors.background))] opacity-20" />
+            <div className="absolute inset-0 -z-10 bg-[radial-gradient(45rem_50rem_at_top,theme(colors.primary.100),white)] dark:bg-[radial-gradient(45rem_50rem_at_top,theme(colors.primary.950),theme(colors.background))] opacity-20 animate-in fade-in duration-1000" />
 
             <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="mx-auto max-w-4xl text-center">
+                <div className="mx-auto max-w-7xl text-center">
                     {/* Badge */}
-                    <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-sm animate-in fade-in slide-in-from-bottom-3 duration-1000">
+                    <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-sm animate-in fade-in slide-in-from-top-4 duration-700">
                         <Activity className="h-3.5 w-3.5 text-primary animate-pulse" />
                         <span className="text-primary font-medium">Real-time API Monitoring</span>
                     </div>
 
-                    <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-6xl text-balance animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-150">
+                    <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-6xl text-balance animate-in fade-in slide-in-from-top-6 duration-700 delay-100">
                         Simple API Monitoring for Development Teams
                     </h1>
-                    <p className="mt-6 text-lg leading-8 text-muted-foreground text-pretty max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-5 duration-1000 delay-300">
+                    <p className="mt-6 text-lg leading-8 text-muted-foreground text-pretty max-w-2xl mx-auto animate-in fade-in slide-in-from-top-8 duration-700 delay-200">
                         Monitor your APIs 24/7. Get instant alerts when things break.
                         Track uptime and performance. No complexity, no enterprise pricing.
                     </p>
-                    <div className="mt-10 flex items-center justify-center gap-x-6 animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-500">
+                    <div className="mt-10 flex items-center justify-center gap-x-6 animate-in fade-in zoom-in-50 duration-700 delay-300">
                         <Link href="/signup">
                             <Button size="lg" className="px-8 group">
                                 Start Monitoring Free
@@ -45,7 +45,7 @@ export function Hero() {
                     </div>
 
                     {/* Stats */}
-                    <div className="mt-16 grid grid-cols-3 gap-8 animate-in fade-in slide-in-from-bottom-7 duration-1000 delay-700">
+                    <div className="mt-16 grid grid-cols-3 gap-8 animate-in fade-in slide-in-from-top-4 duration-700 delay-500">
                         <div>
                             <div className="text-3xl font-bold text-foreground">99.9%</div>
                             <div className="text-sm text-muted-foreground mt-1">Uptime</div>
@@ -61,15 +61,15 @@ export function Hero() {
                     </div>
 
                     {/* Hero Image with 3D Effect */}
-                    <div className="mt-20 relative animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-1000">
+                    <div className="mt-20 relative animate-in fade-in scale-in-95 duration-1000 delay-700">
                         <div className="relative mx-auto max-w-5xl" style={{ perspective: '1500px' }}>
                             {/* Floating background blobs for depth */}
-                            <div className="absolute -top-12 -left-12 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-pulse" style={{ transform: 'translateZ(-100px)' }} />
-                            <div className="absolute -bottom-12 -right-12 w-96 h-96 bg-primary/5 rounded-full blur-3xl animate-pulse" style={{ transform: 'translateZ(-100px)', animationDelay: '1s' }} />
+                            <div className="absolute -top-12 -left-12 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-in fade-in duration-1000 delay-800" style={{ transform: 'translateZ(-100px)', animation: 'pulse 4s ease-in-out infinite' }} />
+                            <div className="absolute -bottom-12 -right-12 w-96 h-96 bg-primary/5 rounded-full blur-3xl animate-in fade-in duration-1000 delay-900" style={{ transform: 'translateZ(-100px)', animation: 'pulse 4s ease-in-out infinite 2s' }} />
 
                             {/* Main image container with 3D transform */}
                             <div
-                                className="relative transition-all duration-700 ease-out will-change-transform"
+                                className="relative transition-all duration-700 ease-out will-change-transform animate-in slide-in-from-bottom-12 duration-1000 delay-800"
                                 style={{
                                     transform: 'perspective(1500px) rotateY(15deg) rotateX(10deg) scale(0.95)',
                                     transformStyle: 'preserve-3d',
