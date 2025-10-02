@@ -1,0 +1,18 @@
+apiVersion: v2
+name: watchapi
+description: A lightweight API monitoring and testing platform for development teams - Simple alternative to Postman and DataDog
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - nextjs
+  - api-monitoring
+  - api-testing
+  - uptime-monitoring
+  - alerting
+  - devops
+home: https://watchapi.dev
+sources:
+  - https://github.com/username/api-monitoring
+maintainers:
+  - name: WatchAPI Team

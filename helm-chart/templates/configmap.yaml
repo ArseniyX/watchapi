@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "watchapi.fullname" . }}-config
+  labels:
+    {{- include "watchapi.labels" . | nindent 4 }}
+data:
+  next-public-domain: {{ .Values.nextPublicDomain | quote }}
