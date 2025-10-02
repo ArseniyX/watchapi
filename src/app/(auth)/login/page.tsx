@@ -25,7 +25,7 @@ import { Logo } from "@/components/logo";
 export default function LoginPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [email, setEmail] = useState(
-        process.env.NODE_ENV === "development" ? "demo@apimonitor.com" : ""
+        process.env.NODE_ENV === "development" ? "demo@watchapi.dev" : ""
     );
     const [password, setPassword] = useState(
         process.env.NODE_ENV === "development" ? "demo123" : ""
