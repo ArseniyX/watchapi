@@ -69,7 +69,10 @@ const StatusBadge = ({ status }: { status: string }) => {
 export default function MonitoringPage() {
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState("")
-  const { data: endpoints, isLoading } = trpc.apiEndpoint.getMyEndpoints.useQuery()
+  const { data: endpoints, isLoading } = trpc.apiEndpoint.getMyEndpoints.useQuery(undefined, {
+    refetchOnWindowFocus: true,
+    refetchInterval: 60000, // Refetch every 60 seconds
+  })
 
   const filteredEndpoints = useMemo(() => {
     if (!endpoints) return []
