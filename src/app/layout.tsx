@@ -6,6 +6,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { Suspense } from "react";
 import { TRPCProvider } from "../components/providers/trpc-provider";
 import { AuthProvider } from "../components/providers/auth-provider";
+import { ThemeProvider } from "../components/providers/theme-provider";
 import { Toaster } from "@/components/ui/toast";
 import { StructuredData } from "@/components/structured-data";
 import "./globals.css";
@@ -92,7 +93,7 @@ export default function RootLayout({
     children: React.ReactNode;
 }>) {
     return (
-        <html lang="en" className="dark">
+        <html lang="en" suppressHydrationWarning>
             <head>
                 <link
                     style={{
@@ -108,8 +109,10 @@ export default function RootLayout({
             >
                 <TRPCProvider>
                     <AuthProvider>
-                        <Suspense fallback={null}>{children}</Suspense>
-                        <Toaster />
+                        <ThemeProvider>
+                            <Suspense fallback={null}>{children}</Suspense>
+                            <Toaster />
+                        </ThemeProvider>
                     </AuthProvider>
                 </TRPCProvider>
                 <Analytics />

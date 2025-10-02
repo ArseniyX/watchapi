@@ -20,6 +20,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Logo } from "@/components/logo";
 import { useAuth } from "@/lib/auth";
+import { useToast } from "@/hooks/use-toast";
 
 export default function SignupPage() {
     const [showPassword, setShowPassword] = useState(false);
@@ -32,17 +33,32 @@ export default function SignupPage() {
     });
     const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
-    const { loginWithOAuth } = useAuth();
+    const { loginWithOAuth, register } = useAuth();
+    const { toast } = useToast();
 
     const handleSignup = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
 
-        // Mock signup - simulate API call
-        setTimeout(() => {
-            setIsLoading(false);
+        try {
+            await register(formData.email, formData.password, formData.name);
+            toast({
+                title: "Success",
+                description: "Account created successfully!",
+            });
             router.push("/app");
-        }, 1000);
+        } catch (error) {
+            toast({
+                title: "Signup failed",
+                description:
+                    error instanceof Error
+                        ? error.message
+                        : "Failed to create account",
+                variant: "destructive",
+            });
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleInputChange = (field: string, value: string | boolean) => {
@@ -117,11 +133,9 @@ export default function SignupPage() {
                                     }
                                     required
                                 />
-                                <Button
+                                <button
                                     type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-muted-foreground hover:text-primary transition-colors"
                                     onClick={() =>
                                         setShowPassword(!showPassword)
                                     }
@@ -131,7 +145,7 @@ export default function SignupPage() {
                                     ) : (
                                         <Eye className="h-4 w-4" />
                                     )}
-                                </Button>
+                                </button>
                             </div>
                         </div>
                         <div className="flex items-center space-x-2">

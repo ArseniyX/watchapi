@@ -32,40 +32,44 @@ export default function LoginPage() {
     );
     const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
-    const { login, loginWithOAuth } = useAuth();
+    const { user, login, loginWithOAuth } = useAuth();
     const { toast } = useToast();
 
-    // Handle OAuth callback
+    // Redirect if already logged in
+    useEffect(() => {
+        if (user) {
+            router.replace("/app");
+        }
+    }, [user, router]);
+
+    // Handle OAuth callback - runs immediately, no render
     useEffect(() => {
         const urlParams = new URLSearchParams(window.location.search);
         const oauthSuccess = urlParams.get("oauth_success");
-        const accessToken = urlParams.get("access_token");
-        const refreshToken = urlParams.get("refresh_token");
-        const error = urlParams.get("error");
 
+        if (oauthSuccess) {
+            const accessToken = urlParams.get("access_token");
+            const refreshToken = urlParams.get("refresh_token");
+
+            if (accessToken && refreshToken) {
+                localStorage.setItem("accessToken", accessToken);
+                localStorage.setItem("refreshToken", refreshToken);
+                // Immediate redirect, no state update
+                window.location.replace("/app");
+                return;
+            }
+        }
+
+        const error = urlParams.get("error");
         if (error) {
             toast({
                 title: "Authentication failed",
                 description: `OAuth error: ${error}`,
                 variant: "destructive",
             });
-            // Clean URL
             window.history.replaceState({}, "", "/login");
-        } else if (oauthSuccess && accessToken && refreshToken) {
-            // Store tokens
-            localStorage.setItem("accessToken", accessToken);
-            localStorage.setItem("refreshToken", refreshToken);
-
-            toast({
-                title: "Success",
-                description: "Successfully logged in!",
-            });
-
-            // Clean URL and redirect
-            window.history.replaceState({}, "", "/login");
-            router.push("/app");
         }
-    }, [toast, router]);
+    }, [toast])
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -128,11 +132,9 @@ export default function LoginPage() {
                                     }
                                     required
                                 />
-                                <Button
+                                <button
                                     type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-muted-foreground hover:text-primary transition-colors"
                                     onClick={() =>
                                         setShowPassword(!showPassword)
                                     }
@@ -142,7 +144,7 @@ export default function LoginPage() {
                                     ) : (
                                         <Eye className="h-4 w-4" />
                                     )}
-                                </Button>
+                                </button>
                             </div>
                         </div>
                         <div className="flex items-center justify-between">

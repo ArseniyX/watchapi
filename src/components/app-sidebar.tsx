@@ -72,7 +72,9 @@ export function AppSidebar() {
     return (
         <Sidebar collapsible="icon">
             <SidebarHeader className="border-b border-sidebar-border">
-                <Logo />
+                <Link href="/app">
+                    <Logo />
+                </Link>
             </SidebarHeader>
             <SidebarContent>
                 <SidebarGroup>
@@ -120,7 +122,7 @@ function UserProfile() {
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <button className="cursor-pointer flex items-center w-full rounded-md transition-colors group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0">
-                    <div className="h-8 w-8 rounded-full bg-secondary flex items-center justify-center shrink-0 transition-all hover:bg-primary/80">
+                    <div className="h-8 w-8 rounded-full bg-secondary flex items-center justify-center shrink-0 transition-all hover:bg-primary/10">
                         <User className="h-4 w-4" />
                     </div>
                     <div className="flex flex-col group-data-[collapsible=icon]:hidden text-left">
@@ -134,9 +136,11 @@ function UserProfile() {
                 </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuItem>
-                    <User className="mr-2 h-4 w-4" />
-                    <span>Profile</span>
+                <DropdownMenuItem asChild>
+                    <Link href="/app/profile" className="flex items-center">
+                        <User className="mr-2 h-4 w-4" />
+                        <span>Profile</span>
+                    </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />

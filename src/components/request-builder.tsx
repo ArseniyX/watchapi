@@ -555,7 +555,7 @@ export function RequestBuilder() {
                         alt="WatchAPI logo"
                         width={400}
                         height={400}
-                        className="shrink-0"
+                        className="shrink-0 opacity-30"
                     />
                 </div>
             </div>

@@ -9,7 +9,7 @@ export const Logo = ({ className }: { className?: string }) => {
                 alt="WatchAPI logo"
                 width={40}
                 height={40}
-                className="shrink-0"
+                className="shrink-0 dark:invert-0 invert"
             />
             <span className="font-semibold text-lg group-data-[collapsible=icon]:hidden">
                 WatchAPI

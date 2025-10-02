@@ -1,17 +1,16 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Moon, Sun } from "lucide-react";
 import { Logo } from "./logo";
+import { useTheme } from "@/components/providers/theme-provider";
 
 export function Header() {
-    const [isDark, setIsDark] = useState(true);
+    const { theme, setTheme } = useTheme();
 
     const toggleTheme = () => {
-        setIsDark(!isDark);
-        document.documentElement.classList.toggle("dark");
+        setTheme(theme === "dark" ? "light" : "dark");
     };
 
     return (
@@ -46,7 +45,7 @@ export function Header() {
                             onClick={toggleTheme}
                             className="h-9 w-9"
                         >
-                            {isDark ? (
+                            {theme === "dark" ? (
                                 <Sun className="h-4 w-4" />
                             ) : (
                                 <Moon className="h-4 w-4" />
