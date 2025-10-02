@@ -21,6 +21,7 @@ import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
 import { Logo } from "@/components/logo";
+import { Google } from "@/components/icons/Google";
 
 export default function LoginPage() {
     const [showPassword, setShowPassword] = useState(false);
@@ -65,7 +66,9 @@ export default function LoginPage() {
             const details = urlParams.get("details");
             toast({
                 title: "Authentication failed",
-                description: details ? `${error}: ${details}` : `OAuth error: ${error}`,
+                description: details
+                    ? `${error}: ${details}`
+                    : `OAuth error: ${error}`,
                 variant: "destructive",
             });
             window.history.replaceState({}, "", "/login");
@@ -192,7 +195,7 @@ export default function LoginPage() {
                             onClick={() => loginWithOAuth("google")}
                             type="button"
                         >
-                            <Mail className="mr-2 h-4 w-4" />
+                            <Google />
                             Google
                         </Button>
                     </div>
