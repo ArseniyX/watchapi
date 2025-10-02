@@ -56,6 +56,9 @@ describe('UserService', () => {
         email: input.email,
         name: input.name,
         password: 'hashed-password123',
+        avatar: null,
+        provider: null,
+        providerId: null,
         role: 'USER',
       })
       expect(result).toEqual(mockUser)
@@ -120,6 +123,9 @@ describe('UserService', () => {
         email: 'test@example.com',
         name: 'Test User',
         password: expect.any(String),
+        avatar: null,
+        provider: null,
+        providerId: null,
         role: 'USER',
       })
     })
