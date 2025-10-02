@@ -69,7 +69,7 @@ export default function LoginPage() {
             });
             window.history.replaceState({}, "", "/login");
         }
-    }, [toast])
+    }, [toast]);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -149,14 +149,14 @@ export default function LoginPage() {
                                 </button>
                             </div>
                         </div>
-                        <div className="flex items-center justify-between">
+                        {/* <div className="flex items-center justify-between">
                             <Link
                                 href="/forgot-password"
                                 className="text-sm text-muted-foreground hover:text-foreground"
                             >
                                 Forgot password?
                             </Link>
-                        </div>
+                        </div> */}
                         <Button
                             type="submit"
                             className="w-full"
