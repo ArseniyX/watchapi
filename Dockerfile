@@ -50,6 +50,9 @@ COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/src/generated/prisma ./src/generated/prisma
 
+# Copy custom server with graceful shutdown
+COPY --from=builder /app/server-custom.js ./server-custom.js
+
 # Automatically leverage output traces to reduce image size
 # https://nextjs.org/docs/advanced-features/output-file-tracing
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
@@ -62,5 +65,9 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# Run the application
-CMD ["node", "server.js"]
+# Health check to ensure container is ready
+HEALTHCHECK --interval=10s --timeout=3s --start-period=30s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3000/api/health', (r) => {if(r.statusCode === 200){let data='';r.on('data',d=>data+=d);r.on('end',()=>{try{const j=JSON.parse(data);process.exit(j.status==='ok'?0:1)}catch(e){process.exit(1)}})}else{process.exit(1)}}).on('error',()=>process.exit(1))"
+
+# Run the application with graceful shutdown support
+CMD ["node", "server-custom.js"]
