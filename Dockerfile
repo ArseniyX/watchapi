@@ -27,8 +27,20 @@ COPY . .
 # Generate Prisma client
 RUN npx prisma generate
 
-# Build Next.js application
+# Accept build args for Next.js env vars
+ARG NEXT_PUBLIC_GITHUB_CLIENT_ID
+ARG NEXT_PUBLIC_GOOGLE_CLIENT_ID
+ARG NEXT_PUBLIC_DOMAIN
+ARG DATABASE_URL
+
+# Set environment variables for build
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV NEXT_PUBLIC_GITHUB_CLIENT_ID=$NEXT_PUBLIC_GITHUB_CLIENT_ID
+ENV NEXT_PUBLIC_GOOGLE_CLIENT_ID=$NEXT_PUBLIC_GOOGLE_CLIENT_ID
+ENV NEXT_PUBLIC_DOMAIN=$NEXT_PUBLIC_DOMAIN
+ENV DATABASE_URL=$DATABASE_URL
+
+# Build Next.js application
 RUN pnpm build
 
 # Production image, copy all the files and run next
