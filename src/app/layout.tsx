@@ -118,6 +118,12 @@ export default function RootLayout({
                 </TRPCProvider>
                 <Analytics />
                 <Script
+                    defer
+                    src="https://cloud.umami.is/script.js"
+                    data-website-id="b5d3961e-dfe3-4d62-9c70-c1a3103033db"
+                    strategy="afterInteractive"
+                />
+                <Script
                     id="crisp-chat"
                     strategy="afterInteractive"
                     dangerouslySetInnerHTML={{

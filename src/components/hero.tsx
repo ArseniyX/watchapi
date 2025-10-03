@@ -28,7 +28,11 @@ export function Hero() {
                     </p>
                     <div className="mt-10 flex items-center justify-center gap-x-6 animate-in fade-in zoom-in-50 duration-700 delay-300">
                         <Link href="/signup">
-                            <Button size="lg" className="px-8 group">
+                            <Button
+                                size="lg"
+                                className="px-8 group"
+                                data-umami-event="cta-start-free"
+                            >
                                 Start Monitoring Free
                                 <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
                             </Button>
@@ -38,6 +42,7 @@ export function Hero() {
                                 variant="outline"
                                 size="lg"
                                 className="px-8"
+                                data-umami-event="cta-view-pricing"
                             >
                                 View Pricing
                             </Button>

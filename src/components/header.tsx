@@ -52,10 +52,17 @@ export function Header() {
                             )}
                         </Button>
                         <Link href="/login">
-                            <Button variant="ghost">Sign In</Button>
+                            <Button
+                                variant="ghost"
+                                data-umami-event="nav-signin"
+                            >
+                                Sign In
+                            </Button>
                         </Link>
                         <Link href="/signup">
-                            <Button>Get Started</Button>
+                            <Button data-umami-event="nav-get-started">
+                                Get Started
+                            </Button>
                         </Link>
                     </div>
                 </div>
