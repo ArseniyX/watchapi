@@ -6,6 +6,8 @@ import { MonitoringModule } from './modules/monitoring'
 import { CollectionModule } from './modules/collection'
 import { OrganizationModule } from './modules/organization'
 import { ApiEndpointModule } from './modules/api-endpoint'
+import { contactRouter } from './modules/contact'
+import { notificationChannelRouter } from './modules/notification-channel'
 import './scheduler' // Initialize monitoring scheduler
 
 // Initialize modules
@@ -24,6 +26,8 @@ export const appRouter = router({
   monitoring: monitoringModule.router,
   collection: collectionModule.router,
   organization: organizationModule.router,
+  contact: contactRouter,
+  notificationChannel: notificationChannelRouter,
 })
 
 export type AppRouter = typeof appRouter

@@ -9,10 +9,11 @@ import { Label } from "@/components/ui/label"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { UserPlus, Mail, MoreHorizontal, Crown, Shield, User } from "lucide-react"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
 import { trpc } from "@/lib/trpc"
 import { OrganizationRole } from "@/generated/prisma"
 import { toast } from "sonner"
+import { useAuth } from "@/lib/auth"
 
 const RoleIcon = ({ role }: { role: string }) => {
   switch (role) {
@@ -36,6 +37,7 @@ const RoleBadge = ({ role }: { role: string }) => {
 }
 
 export default function TeamPage() {
+  const { user: currentUser } = useAuth()
   const [email, setEmail] = useState("")
   const [role, setRole] = useState<OrganizationRole>(OrganizationRole.MEMBER)
   const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null)
@@ -66,12 +68,18 @@ export default function TeamPage() {
       toast.success("Member removed successfully")
       refetchMembers()
     },
+    onError: (error) => {
+      toast.error(error.message)
+    },
   })
 
   const updateRole = trpc.organization.updateMemberRole.useMutation({
     onSuccess: () => {
       toast.success("Role updated successfully")
       refetchMembers()
+    },
+    onError: (error) => {
+      toast.error(error.message)
     },
   })
 
@@ -230,38 +238,59 @@ export default function TeamPage() {
                     </Badge>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          disabled={member.user.id === currentUser?.id && member.role === "OWNER"}
+                        >
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        {member.role !== "OWNER" && (
+                        {member.role !== "OWNER" && member.user.id !== currentUser?.id && (
+                          <>
+                            <DropdownMenuItem
+                              onClick={() => {
+                                const newRole = member.role === "ADMIN" ? OrganizationRole.MEMBER : OrganizationRole.ADMIN
+                                updateRole.mutate({
+                                  userId: member.user.id,
+                                  organizationId: selectedOrgId!,
+                                  role: newRole,
+                                })
+                              }}
+                              disabled={updateRole.isPending}
+                            >
+                              {updateRole.isPending ? "Updating..." : `Change to ${member.role === "ADMIN" ? "Member" : "Admin"}`}
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                          </>
+                        )}
+                        {member.user.id !== currentUser?.id && member.role !== "OWNER" && (
                           <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
                             onClick={() => {
-                              const newRole = member.role === "ADMIN" ? OrganizationRole.MEMBER : OrganizationRole.ADMIN
-                              updateRole.mutate({
-                                userId: member.user.id,
-                                organizationId: selectedOrgId!,
-                                role: newRole,
-                              })
+                              if (confirm(`Are you sure you want to remove ${member.user.name || member.user.email} from this organization?`)) {
+                                removeMember.mutate({
+                                  userId: member.user.id,
+                                  organizationId: selectedOrgId!,
+                                })
+                              }
                             }}
+                            disabled={removeMember.isPending}
                           >
-                            Change Role to {member.role === "ADMIN" ? "Member" : "Admin"}
+                            {removeMember.isPending ? "Removing..." : "Remove from Team"}
                           </DropdownMenuItem>
                         )}
-                        <DropdownMenuItem
-                          className="text-destructive"
-                          onClick={() => {
-                            if (confirm("Are you sure you want to remove this member?")) {
-                              removeMember.mutate({
-                                userId: member.user.id,
-                                organizationId: selectedOrgId!,
-                              })
-                            }
-                          }}
-                        >
-                          Remove Member
-                        </DropdownMenuItem>
+                        {member.user.id === currentUser?.id && (
+                          <DropdownMenuItem disabled className="text-muted-foreground">
+                            You cannot modify your own membership
+                          </DropdownMenuItem>
+                        )}
+                        {member.role === "OWNER" && member.user.id !== currentUser?.id && (
+                          <DropdownMenuItem disabled className="text-muted-foreground">
+                            Owner cannot be modified
+                          </DropdownMenuItem>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>

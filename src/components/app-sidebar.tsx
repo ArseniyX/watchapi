@@ -9,10 +9,13 @@ import {
     Zap,
     LogOut,
     User,
+    Moon,
+    Sun,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
+import { useTheme } from "@/components/providers/theme-provider";
 
 import {
     Sidebar,
@@ -107,6 +110,25 @@ export function AppSidebar() {
     );
 }
 
+function ThemeToggle() {
+    const { theme, setTheme } = useTheme();
+
+    const toggleTheme = () => {
+        setTheme(theme === "dark" ? "light" : "dark");
+    };
+
+    return (
+        <DropdownMenuItem onClick={toggleTheme}>
+            {theme === "dark" ? (
+                <Sun className="mr-2 h-4 w-4" />
+            ) : (
+                <Moon className="mr-2 h-4 w-4" />
+            )}
+            <span>{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
+        </DropdownMenuItem>
+    );
+}
+
 function UserProfile() {
     const { user, logout } = useAuth();
     const router = useRouter();
@@ -142,6 +164,7 @@ function UserProfile() {
                         <span>Profile</span>
                     </Link>
                 </DropdownMenuItem>
+                <ThemeToggle />
                 <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Sign Out</span>

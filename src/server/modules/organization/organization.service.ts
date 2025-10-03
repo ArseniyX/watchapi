@@ -8,6 +8,7 @@ import {
   RemoveMemberInput
 } from './organization.schema'
 import crypto from 'crypto'
+import { emailService } from '../shared/email.service'
 
 export class OrganizationService {
   constructor(private readonly organizationRepository: OrganizationRepository) {}
@@ -84,6 +85,18 @@ export class OrganizationService {
       throw new Error('You do not have permission to invite members to this organization')
     }
 
+    // Get organization and inviter details
+    const organization = await this.organizationRepository.findOrganizationById(data.organizationId)
+    const inviter = await this.organizationRepository.findUserById(data.invitedBy)
+
+    if (!organization) {
+      throw new Error('Organization not found')
+    }
+
+    if (!inviter) {
+      throw new Error('Inviter not found')
+    }
+
     // Check if user already exists
     const existingUser = await this.organizationRepository.findUserByEmail(data.email)
 
@@ -99,20 +112,33 @@ export class OrganizationService {
       }
 
       // Add user directly as they already have an account
-      return this.organizationRepository.addMember({
+      const member = await this.organizationRepository.addMember({
         userId: existingUser.id,
         organizationId: data.organizationId,
         role: data.role,
         status: MemberStatus.INVITED,
         invitedBy: data.invitedBy,
       })
+
+      // Send invitation email
+      const invitationUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/app?org=${data.organizationId}`
+      await emailService.sendInvitationEmail({
+        to: data.email,
+        organizationName: organization.name,
+        inviterName: inviter.name || inviter.email,
+        inviterEmail: inviter.email,
+        role: data.role,
+        invitationUrl,
+      })
+
+      return member
     }
 
     // Create invitation for new user
     const token = crypto.randomBytes(32).toString('hex')
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
 
-    return this.organizationRepository.createInvitation({
+    const invitation = await this.organizationRepository.createInvitation({
       email: data.email,
       organizationId: data.organizationId,
       role: data.role,
@@ -120,6 +146,19 @@ export class OrganizationService {
       token,
       expiresAt,
     })
+
+    // Send invitation email with signup link
+    const invitationUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/signup?invitation=${token}`
+    await emailService.sendInvitationEmail({
+      to: data.email,
+      organizationName: organization.name,
+      inviterName: inviter.name || inviter.email,
+      inviterEmail: inviter.email,
+      role: data.role,
+      invitationUrl,
+    })
+
+    return invitation
   }
 
   async acceptInvitation(token: string, userId: string) {
@@ -185,12 +224,18 @@ export class OrganizationService {
   }
 
   async resendInvitation(invitationId: string) {
-    // In a real app, this would send an email
-    // For MVP, we just update the expiration date
     const invitation = await this.organizationRepository.findInvitationByToken(invitationId)
 
     if (!invitation) {
       throw new Error('Invitation not found')
+    }
+
+    // Get organization and inviter details
+    const organization = await this.organizationRepository.findOrganizationById(invitation.organizationId)
+    const inviter = await this.organizationRepository.findUserById(invitation.invitedBy)
+
+    if (!organization || !inviter) {
+      throw new Error('Organization or inviter not found')
     }
 
     // Extend expiration by 7 days
@@ -200,7 +245,7 @@ export class OrganizationService {
     // Delete old and create new
     await this.organizationRepository.deleteInvitation(invitation.id)
 
-    return this.organizationRepository.createInvitation({
+    const newInvitation = await this.organizationRepository.createInvitation({
       email: invitation.email,
       organizationId: invitation.organizationId,
       role: invitation.role,
@@ -208,6 +253,19 @@ export class OrganizationService {
       token: newToken,
       expiresAt,
     })
+
+    // Send invitation email
+    const invitationUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/signup?invitation=${newToken}`
+    await emailService.sendInvitationEmail({
+      to: invitation.email,
+      organizationName: organization.name,
+      inviterName: inviter.name || inviter.email,
+      inviterEmail: inviter.email,
+      role: invitation.role,
+      invitationUrl,
+    })
+
+    return newInvitation
   }
 
   async checkMemberPermission(userId: string, organizationId: string, requiredRole: OrganizationRole) {

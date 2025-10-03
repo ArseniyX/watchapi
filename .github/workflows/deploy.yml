@@ -133,5 +133,6 @@ jobs:
           --set oauth.google.clientSecret="${{ secrets.GOOGLE_CLIENT_SECRET }}" \
           --set oauth.github.clientId="${{ vars.GH_CLIENT_ID }}" \
           --set oauth.github.clientSecret="${{ secrets.GH_CLIENT_SECRET }}" \
+          --set resend.apiKey="${{ secrets.RESEND_API_KEY }}" \
           --set enableCron="${{ vars.ENABLE_CRON || 'true' }}" \
           --wait --timeout=10m

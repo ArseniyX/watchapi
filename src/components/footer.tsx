@@ -9,6 +9,7 @@ const footerLinks = {
     Company: [
         { name: "Privacy", href: "/privacy" },
         { name: "Terms", href: "/terms" },
+        { name: "Contact", href: "/contact" },
     ],
 };
 

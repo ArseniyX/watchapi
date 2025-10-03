@@ -1,110 +1,143 @@
-import nodemailer from 'nodemailer'
+import nodemailer from "nodemailer";
+import { Resend } from "resend";
 
 export interface EmailConfig {
-  host: string
-  port: number
-  secure: boolean
-  auth: {
-    user: string
-    pass: string
-  }
+    host: string;
+    port: number;
+    secure: boolean;
+    auth: {
+        user: string;
+        pass: string;
+    };
 }
 
 export interface AlertEmailData {
-  to: string
-  endpointName: string
-  endpointUrl: string
-  status: string
-  statusCode?: number
-  errorMessage?: string
-  responseTime?: number
-  timestamp: Date
+    to: string;
+    endpointName: string;
+    endpointUrl: string;
+    status: string;
+    statusCode?: number;
+    errorMessage?: string;
+    responseTime?: number;
+    timestamp: Date;
+}
+
+export interface ContactEmailData {
+    name: string;
+    email: string;
+    subject: string;
+    message: string;
+}
+
+export interface InvitationEmailData {
+    to: string;
+    organizationName: string;
+    inviterName: string;
+    inviterEmail: string;
+    role: string;
+    invitationUrl: string;
 }
 
 export class EmailService {
-  private transporter: nodemailer.Transporter | null = null
+    private transporter: nodemailer.Transporter | null = null;
+    private resend: Resend | null = null;
 
-  constructor() {
-    this.initializeTransporter()
-  }
-
-  async sendWebhookAlert(webhookUrl: string, data: AlertEmailData): Promise<boolean> {
-    try {
-      const payload = {
-        type: 'endpoint_failure',
-        endpoint: {
-          name: data.endpointName,
-          url: data.endpointUrl,
-        },
-        status: data.status,
-        statusCode: data.statusCode,
-        errorMessage: data.errorMessage,
-        responseTime: data.responseTime,
-        timestamp: data.timestamp.toISOString(),
-      }
-
-      const response = await fetch(webhookUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'User-Agent': 'API-Monitor/1.0',
-        },
-        body: JSON.stringify(payload),
-      })
-
-      if (response.ok) {
-        console.log(`Webhook alert sent to ${webhookUrl}`)
-        return true
-      } else {
-        console.error(`Webhook alert failed: ${response.status} ${response.statusText}`)
-        return false
-      }
-    } catch (error) {
-      console.error('Failed to send webhook alert:', error)
-      return false
-    }
-  }
-
-  private initializeTransporter() {
-    // Check if email is configured
-    const emailHost = process.env.EMAIL_HOST
-    const emailPort = process.env.EMAIL_PORT
-    const emailUser = process.env.EMAIL_USER
-    const emailPass = process.env.EMAIL_PASS
-
-    if (!emailHost || !emailUser || !emailPass) {
-      console.warn('Email not configured. Set EMAIL_HOST, EMAIL_USER, EMAIL_PASS env variables to enable alerts.')
-      return
+    constructor() {
+        const resendApiKey = process.env.RESEND_API_KEY;
+        if (resendApiKey) {
+            this.resend = new Resend(resendApiKey);
+        }
+        this.initializeTransporter();
     }
 
-    try {
-      this.transporter = nodemailer.createTransport({
-        host: emailHost,
-        port: parseInt(emailPort || '587'),
-        secure: emailPort === '465',
-        auth: {
-          user: emailUser,
-          pass: emailPass,
-        },
-      })
-      console.log('Email service initialized')
-    } catch (error) {
-      console.error('Failed to initialize email service:', error)
+    async sendWebhookAlert(
+        webhookUrl: string,
+        data: AlertEmailData
+    ): Promise<boolean> {
+        try {
+            const payload = {
+                type: "endpoint_failure",
+                endpoint: {
+                    name: data.endpointName,
+                    url: data.endpointUrl,
+                },
+                status: data.status,
+                statusCode: data.statusCode,
+                errorMessage: data.errorMessage,
+                responseTime: data.responseTime,
+                timestamp: data.timestamp.toISOString(),
+            };
+
+            const response = await fetch(webhookUrl, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "User-Agent": "API-Monitor/1.0",
+                },
+                body: JSON.stringify(payload),
+            });
+
+            if (response.ok) {
+                console.log(`Webhook alert sent to ${webhookUrl}`);
+                return true;
+            } else {
+                console.error(
+                    `Webhook alert failed: ${response.status} ${response.statusText}`
+                );
+                return false;
+            }
+        } catch (error) {
+            console.error("Failed to send webhook alert:", error);
+            return false;
+        }
     }
-  }
 
-  async sendAlertEmail(data: AlertEmailData): Promise<boolean> {
-    if (!this.transporter) {
-      console.log('[Email Alert - Not Sent] Email not configured')
-      console.log(`Alert: ${data.endpointName} (${data.endpointUrl}) is ${data.status}`)
-      if (data.errorMessage) console.log(`Error: ${data.errorMessage}`)
-      return false
+    private initializeTransporter() {
+        // Check if email is configured
+        const emailHost = process.env.EMAIL_HOST;
+        const emailPort = process.env.EMAIL_PORT;
+        const emailUser = process.env.EMAIL_USER;
+        const emailPass = process.env.EMAIL_PASS;
+
+        if (!emailHost || !emailUser || !emailPass) {
+            console.warn(
+                "Email not configured. Set EMAIL_HOST, EMAIL_USER, EMAIL_PASS env variables to enable alerts."
+            );
+            return;
+        }
+
+        try {
+            this.transporter = nodemailer.createTransport({
+                host: emailHost,
+                port: parseInt(emailPort || "587"),
+                secure: emailPort === "465",
+                auth: {
+                    user: emailUser,
+                    pass: emailPass,
+                },
+            });
+            console.log("Email service initialized");
+        } catch (error) {
+            console.error("Failed to initialize email service:", error);
+        }
     }
 
-    try {
-      const subject = `🚨 Alert: ${data.endpointName} - ${data.status.toUpperCase()}`
+    async sendAlertEmail(data: AlertEmailData): Promise<boolean> {
+        if (!this.transporter) {
+            console.log("[Email Alert - Not Sent] Email not configured");
+            console.log(
+                `Alert: ${data.endpointName} (${data.endpointUrl}) is ${data.status}`
+            );
+            if (data.errorMessage) console.log(`Error: ${data.errorMessage}`);
+            return false;
+        }
 
-      const html = `
+        try {
+            const subject = `🚨 Alert: ${
+                data.endpointName
+            } - ${data.status.toUpperCase()}`;
+
+            const html = `
         <!DOCTYPE html>
         <html>
         <head>
@@ -128,15 +161,31 @@ export class EmailService {
               <p>Your API endpoint has failed a monitoring check:</p>
 
               <div class="detail">
-                <div><span class="label">Endpoint:</span> <span class="value">${data.endpointName}</span></div>
-                <div><span class="label">URL:</span> <span class="value">${data.endpointUrl}</span></div>
+                <div><span class="label">Endpoint:</span> <span class="value">${
+                    data.endpointName
+                }</span></div>
+                <div><span class="label">URL:</span> <span class="value">${
+                    data.endpointUrl
+                }</span></div>
               </div>
 
               <div class="detail">
                 <div><span class="label">Status:</span> <span class="value">${data.status.toUpperCase()}</span></div>
-                ${data.statusCode ? `<div><span class="label">Status Code:</span> <span class="value">${data.statusCode}</span></div>` : ''}
-                ${data.errorMessage ? `<div><span class="label">Error:</span> <span class="value">${data.errorMessage}</span></div>` : ''}
-                ${data.responseTime ? `<div><span class="label">Response Time:</span> <span class="value">${data.responseTime}ms</span></div>` : ''}
+                ${
+                    data.statusCode
+                        ? `<div><span class="label">Status Code:</span> <span class="value">${data.statusCode}</span></div>`
+                        : ""
+                }
+                ${
+                    data.errorMessage
+                        ? `<div><span class="label">Error:</span> <span class="value">${data.errorMessage}</span></div>`
+                        : ""
+                }
+                ${
+                    data.responseTime
+                        ? `<div><span class="label">Response Time:</span> <span class="value">${data.responseTime}ms</span></div>`
+                        : ""
+                }
               </div>
 
               <div class="detail">
@@ -144,7 +193,9 @@ export class EmailService {
               </div>
 
               <p style="margin-top: 20px;">
-                <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/app/monitoring"
+                <a href="${
+                    process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+                }/app/monitoring"
                    style="background: #2563eb; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
                   View Monitoring Dashboard
                 </a>
@@ -156,37 +207,175 @@ export class EmailService {
           </div>
         </body>
         </html>
-      `
+      `;
 
-      await this.transporter.sendMail({
-        from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
-        to: data.to,
-        subject,
-        html,
-      })
+            await this.transporter.sendMail({
+                from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+                to: data.to,
+                subject,
+                html,
+            });
 
-      console.log(`Alert email sent to ${data.to} for endpoint: ${data.endpointName}`)
-      return true
-    } catch (error) {
-      console.error('Failed to send alert email:', error)
-      return false
-    }
-  }
-
-  async testConnection(): Promise<boolean> {
-    if (!this.transporter) {
-      return false
+            console.log(
+                `Alert email sent to ${data.to} for endpoint: ${data.endpointName}`
+            );
+            return true;
+        } catch (error) {
+            console.error("Failed to send alert email:", error);
+            return false;
+        }
     }
 
-    try {
-      await this.transporter.verify()
-      console.log('Email connection verified')
-      return true
-    } catch (error) {
-      console.error('Email connection failed:', error)
-      return false
+    async testConnection(): Promise<boolean> {
+        if (!this.transporter) {
+            return false;
+        }
+
+        try {
+            await this.transporter.verify();
+            console.log("Email connection verified");
+            return true;
+        } catch (error) {
+            console.error("Email connection failed:", error);
+            return false;
+        }
     }
-  }
+
+    async sendContactEmail(data: ContactEmailData): Promise<boolean> {
+        if (!this.resend) {
+            console.error(
+                "Resend not configured. Set RESEND_API_KEY env variable."
+            );
+            return false;
+        }
+
+        try {
+            await this.resend.emails.send({
+                from: "Contact Form <support@watchapi.dev>",
+                to: process.env.CONTACT_EMAIL || "aaarse3@gmail.com",
+                replyTo: data.email,
+                subject: `Contact Form: ${data.subject}`,
+                html: `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <style>
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+              .header { background: #2563eb; color: white; padding: 20px; border-radius: 5px 5px 0 0; }
+              .content { background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; }
+              .detail { margin: 10px 0; padding: 10px; background: white; border-left: 3px solid #2563eb; }
+              .label { font-weight: bold; color: #6b7280; }
+              .value { color: #111827; }
+              .message-box { margin-top: 20px; padding: 15px; background: white; border: 1px solid #e5e7eb; border-radius: 5px; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h2 style="margin: 0;">📧 New Contact Form Submission</h2>
+              </div>
+              <div class="content">
+                <div class="detail">
+                  <div><span class="label">Name:</span> <span class="value">${data.name}</span></div>
+                  <div><span class="label">Email:</span> <span class="value">${data.email}</span></div>
+                  <div><span class="label">Subject:</span> <span class="value">${data.subject}</span></div>
+                </div>
+
+                <div class="message-box">
+                  <p style="margin: 0 0 5px 0;"><strong>Message:</strong></p>
+                  <p style="margin: 0; white-space: pre-wrap;">${data.message}</p>
+                </div>
+              </div>
+            </div>
+          </body>
+          </html>
+        `,
+            });
+
+            console.log(`Contact email sent from ${data.email}`);
+            return true;
+        } catch (error) {
+            console.error("Failed to send contact email:", error);
+            return false;
+        }
+    }
+
+    async sendInvitationEmail(data: InvitationEmailData): Promise<boolean> {
+        if (!this.resend) {
+            console.error(
+                "Resend not configured. Set RESEND_API_KEY env variable."
+            );
+            return false;
+        }
+
+        try {
+            await this.resend.emails.send({
+                from: "WatchAPI Team <onboarding@resend.dev>",
+                to: data.to,
+                replyTo: data.inviterEmail,
+                subject: `You've been invited to join ${data.organizationName} on WatchAPI`,
+                html: `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <style>
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+              .header { background: #2563eb; color: white; padding: 30px 20px; border-radius: 5px 5px 0 0; text-align: center; }
+              .content { background: #ffffff; padding: 30px 20px; border: 1px solid #e5e7eb; border-top: none; }
+              .info-box { margin: 20px 0; padding: 15px; background: #f9fafb; border-left: 3px solid #2563eb; border-radius: 3px; }
+              .button { display: inline-block; padding: 12px 30px; background: #2563eb; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; font-weight: 600; }
+              .button:hover { background: #1d4ed8; }
+              .footer { margin-top: 20px; padding-top: 20px; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 12px; text-align: center; }
+              .label { font-weight: bold; color: #6b7280; margin-right: 5px; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1 style="margin: 0; font-size: 24px;">🎉 You're Invited!</h1>
+              </div>
+              <div class="content">
+                <p>Hi there!</p>
+
+                <p><strong>${data.inviterName}</strong> (${data.inviterEmail}) has invited you to join <strong>${data.organizationName}</strong> on WatchAPI.</p>
+
+                <div class="info-box">
+                  <p style="margin: 0;"><span class="label">Organization:</span> ${data.organizationName}</p>
+                  <p style="margin: 10px 0 0 0;"><span class="label">Your Role:</span> ${data.role}</p>
+                </div>
+
+                <p>WatchAPI is a lightweight API monitoring platform that helps teams track endpoint health, performance, and uptime with real-time alerts.</p>
+
+                <div style="text-align: center;">
+                  <a href="${data.invitationUrl}" class="button">Accept Invitation</a>
+                </div>
+
+                <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+                  This invitation will expire in 7 days. If you didn't expect this invitation, you can safely ignore this email.
+                </p>
+
+                <div class="footer">
+                  <p>This is an automated message from WatchAPI.</p>
+                  <p>If you have any questions, reply to this email or contact ${data.inviterEmail}</p>
+                </div>
+              </div>
+            </div>
+          </body>
+          </html>
+        `,
+            });
+
+            console.log(
+                `Invitation email sent to ${data.to} for organization ${data.organizationName}`
+            );
+            return true;
+        } catch (error) {
+            console.error("Failed to send invitation email:", error);
+            return false;
+        }
+    }
 }
 
-export const emailService = new EmailService()
+export const emailService = new EmailService();

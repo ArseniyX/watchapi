@@ -4,10 +4,11 @@ import {
 } from "../../../generated/prisma";
 import { MonitoringRepository } from "./monitoring.repository";
 import { ApiEndpointRepository } from "../api-endpoint/api-endpoint.repository";
-import { emailService } from "../shared/email.service";
 import { SendRequestInput } from "./monitoring.schema";
 import { NotFoundError, ForbiddenError } from "../../errors/custom-errors";
 import { logger, logError, logInfo } from "@/lib/logger";
+import { NotificationChannelService } from "../notification-channel/notification-channel.service";
+import { NotificationChannelRepository } from "../notification-channel/notification-channel.repository";
 
 export interface MonitoringCheckResult {
     status: CheckStatus;
@@ -21,11 +22,16 @@ export class MonitoringService {
     // Track last alert time per endpoint to prevent alert spam
     private lastAlertTime: Map<string, number> = new Map();
     private readonly ALERT_THROTTLE_MS = 60 * 60 * 1000; // 1 hour
+    private notificationChannelService: NotificationChannelService;
 
     constructor(
         private readonly monitoringRepository: MonitoringRepository,
         private readonly apiEndpointRepository: ApiEndpointRepository
-    ) {}
+    ) {
+        this.notificationChannelService = new NotificationChannelService(
+            new NotificationChannelRepository()
+        );
+    }
 
     async sendRequest(input: SendRequestInput): Promise<{
         status: number;
@@ -248,21 +254,8 @@ export class MonitoringService {
             return;
         }
 
-        // Get user email for alert
-        const user = await this.monitoringRepository.findUserById(
-            endpoint.userId
-        );
-        if (!user || !user.email) {
-            logger.warn("No email found for alert", {
-                userId: endpoint.userId,
-                endpointId: endpoint.id
-            });
-            return;
-        }
-
         // Prepare alert data
         const alertData = {
-            to: user.email,
             endpointName: endpoint.name,
             endpointUrl: endpoint.url,
             status: result.status,
@@ -272,25 +265,18 @@ export class MonitoringService {
             timestamp: new Date(),
         };
 
-        // Send email alert
-        await emailService.sendAlertEmail(alertData);
+        // Send notifications via organization's configured channels
+        await this.notificationChannelService.sendNotifications(
+            endpoint.organizationId,
+            alertData
+        );
 
-        logInfo("Alert email sent", {
+        logInfo("Alert sent via notification channels", {
             endpointId: endpoint.id,
             endpointName: endpoint.name,
-            to: user.email,
+            organizationId: endpoint.organizationId,
             status: result.status
         });
-
-        // Send webhook alert if configured
-        const webhookUrl = process.env.ALERT_WEBHOOK_URL;
-        if (webhookUrl) {
-            await emailService.sendWebhookAlert(webhookUrl, alertData);
-            logInfo("Webhook alert sent", {
-                endpointId: endpoint.id,
-                webhookUrl
-            });
-        }
 
         // Mark alert as sent for throttling
         this.lastAlertTime.set(endpoint.id, now);

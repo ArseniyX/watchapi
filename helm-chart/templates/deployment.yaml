@@ -91,6 +91,13 @@ spec:
                   name: {{ include "watchapi.fullname" . }}-secret
                   key: github-client-secret
             {{- end }}
+            {{- if .Values.resend.apiKey }}
+            - name: RESEND_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "watchapi.fullname" . }}-secret
+                  key: resend-api-key
+            {{- end }}
           livenessProbe:
             httpGet:
               path: /api/health

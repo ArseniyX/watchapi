@@ -190,4 +190,11 @@ export class OrganizationRepository {
       select: { id: true, email: true, name: true },
     })
   }
+
+  async findUserById(id: string) {
+    return this.prisma.user.findUnique({
+      where: { id },
+      select: { id: true, email: true, name: true },
+    })
+  }
 }

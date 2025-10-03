@@ -82,9 +82,10 @@ model Organization {
   updatedAt   DateTime @updatedAt
 
   // Relations
-  members      OrganizationMember[]
-  apiEndpoints ApiEndpoint[]
-  collections  Collection[]
+  members            OrganizationMember[]
+  apiEndpoints       ApiEndpoint[]
+  collections        Collection[]
+  notificationChannels NotificationChannel[]
 
   @@map("organizations")
 }
@@ -221,6 +222,22 @@ model AlertNotification {
   alert Alert @relation(fields: [alertId], references: [id], onDelete: Cascade)
 
   @@map("alert_notifications")
+}
+
+// Organization-level notification channels
+model NotificationChannel {
+  id             String           @id @default(cuid())
+  organizationId String
+  name           String // e.g., "Team Email", "Ops Webhook"
+  type           NotificationType
+  config         String // JSON config (email addresses, webhook URL, Slack webhook, etc.)
+  isActive       Boolean          @default(true)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@map("notification_channels")
 }
 
 // Enums

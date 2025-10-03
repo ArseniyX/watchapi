@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
     Card,
@@ -17,8 +18,40 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import { AlertTriangle, CheckCircle, XCircle, Clock } from "lucide-react";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+    DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import {
+    AlertTriangle,
+    CheckCircle,
+    XCircle,
+    Clock,
+    Plus,
+    Mail,
+    Webhook,
+    MessageSquare,
+    Trash2,
+    Edit,
+} from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { NotificationType } from "@/generated/prisma";
+import { toast } from "sonner";
 
 function formatTime(date: Date) {
     const now = new Date();
@@ -47,11 +80,117 @@ const StatusIcon = ({ status }: { status: string }) => {
     }
 };
 
+const NotificationChannelIcon = ({ type }: { type: string }) => {
+    switch (type) {
+        case NotificationType.EMAIL:
+            return <Mail className="h-4 w-4" />;
+        case NotificationType.WEBHOOK:
+            return <Webhook className="h-4 w-4" />;
+        case NotificationType.SLACK:
+        case NotificationType.DISCORD:
+            return <MessageSquare className="h-4 w-4" />;
+        default:
+            return null;
+    }
+};
+
 export default function AlertsPage() {
+    const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
+    const [channelDialogOpen, setChannelDialogOpen] = useState(false);
+    const [channelName, setChannelName] = useState("");
+    const [channelType, setChannelType] = useState<NotificationType>(
+        NotificationType.EMAIL
+    );
+    const [channelConfig, setChannelConfig] = useState("");
+
+    const { data: organizations } = trpc.organization.getMyOrganizations.useQuery();
     const { data: endpoints } = trpc.apiEndpoint.getMyEndpoints.useQuery(undefined, {
         refetchOnWindowFocus: true,
         refetchInterval: 60000,
     });
+
+    const { data: channels, refetch: refetchChannels } =
+        trpc.notificationChannel.getAll.useQuery(
+            { organizationId: selectedOrgId! },
+            { enabled: !!selectedOrgId }
+        );
+
+    const createChannelMutation = trpc.notificationChannel.create.useMutation({
+        onSuccess: () => {
+            toast.success("Notification channel created successfully");
+            refetchChannels();
+            setChannelDialogOpen(false);
+            resetChannelForm();
+        },
+        onError: (error) => {
+            toast.error(error.message);
+        },
+    });
+
+    const deleteChannelMutation = trpc.notificationChannel.delete.useMutation({
+        onSuccess: () => {
+            toast.success("Notification channel deleted");
+            refetchChannels();
+        },
+        onError: (error) => {
+            toast.error(error.message);
+        },
+    });
+
+    // Set initial org if available
+    if (!selectedOrgId && organizations && organizations.length > 0) {
+        setSelectedOrgId(organizations[0].id);
+    }
+
+    const resetChannelForm = () => {
+        setChannelName("");
+        setChannelType(NotificationType.EMAIL);
+        setChannelConfig("");
+    };
+
+    const getConfigPlaceholder = () => {
+        switch (channelType) {
+            case NotificationType.EMAIL:
+                return '{"emails": ["ops@example.com", "team@example.com"]}';
+            case NotificationType.WEBHOOK:
+                return '{"url": "https://your-webhook.com/alerts", "headers": {"Authorization": "Bearer token"}}';
+            case NotificationType.SLACK:
+                return '{"webhookUrl": "https://hooks.slack.com/services/YOUR/WEBHOOK/URL"}';
+            case NotificationType.DISCORD:
+                return '{"webhookUrl": "https://discord.com/api/webhooks/YOUR/WEBHOOK"}';
+            default:
+                return "{}";
+        }
+    };
+
+    const handleCreateChannel = () => {
+        if (!selectedOrgId) return;
+
+        try {
+            JSON.parse(channelConfig);
+        } catch {
+            toast.error("Invalid JSON configuration");
+            return;
+        }
+
+        createChannelMutation.mutate({
+            organizationId: selectedOrgId,
+            name: channelName,
+            type: channelType,
+            config: channelConfig,
+        });
+    };
+
+    const handleDeleteChannel = (id: string) => {
+        if (!selectedOrgId) return;
+        if (!confirm("Are you sure you want to delete this notification channel?"))
+            return;
+
+        deleteChannelMutation.mutate({
+            id,
+            organizationId: selectedOrgId,
+        });
+    };
 
     // Get failed checks from all endpoints using the monitoringChecks relationship
     const failedChecks: any[] = [];
@@ -271,50 +410,202 @@ export default function AlertsPage() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Alert Configuration</CardTitle>
-                    <CardDescription>
-                        Email and webhook alerts are automatically sent when
-                        endpoints fail
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="flex items-start space-x-4 rounded-lg border p-4">
-                        <div className="flex-1">
-                            <h4 className="font-medium">Email Alerts</h4>
-                            <p className="text-sm text-muted-foreground mt-1">
-                                Emails are sent to your account email when an
-                                endpoint fails. Max 1 email per endpoint per
-                                hour to prevent spam.
-                            </p>
-                            <p className="text-xs text-muted-foreground mt-2">
-                                Configure in .env: EMAIL_HOST, EMAIL_USER,
-                                EMAIL_PASS
-                            </p>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <CardTitle>Notification Channels</CardTitle>
+                            <CardDescription>
+                                Configure how your team receives alerts when endpoints
+                                fail
+                            </CardDescription>
                         </div>
-                        <Badge>
-                            {process.env.EMAIL_HOST
-                                ? "Configured"
-                                : "Not Configured"}
-                        </Badge>
-                    </div>
+                        <Dialog
+                            open={channelDialogOpen}
+                            onOpenChange={setChannelDialogOpen}
+                        >
+                            <DialogTrigger asChild>
+                                <Button disabled={!selectedOrgId}>
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    Add Channel
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-2xl">
+                                <DialogHeader>
+                                    <DialogTitle>
+                                        Create Notification Channel
+                                    </DialogTitle>
+                                    <DialogDescription>
+                                        Set up a new channel to receive alerts when API
+                                        endpoints fail
+                                    </DialogDescription>
+                                </DialogHeader>
+                                <div className="space-y-4 py-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="channel-name">Channel Name</Label>
+                                        <Input
+                                            id="channel-name"
+                                            placeholder="e.g., Team Email, Ops Webhook"
+                                            value={channelName}
+                                            onChange={(e) =>
+                                                setChannelName(e.target.value)
+                                            }
+                                        />
+                                    </div>
 
-                    <div className="flex items-start space-x-4 rounded-lg border p-4">
-                        <div className="flex-1">
-                            <h4 className="font-medium">Webhook Alerts</h4>
-                            <p className="text-sm text-muted-foreground mt-1">
-                                POST requests are sent to your webhook URL with
-                                failure details in JSON format.
-                            </p>
-                            <p className="text-xs text-muted-foreground mt-2">
-                                Configure in .env: ALERT_WEBHOOK_URL
+                                    <div className="space-y-2">
+                                        <Label htmlFor="channel-type">Channel Type</Label>
+                                        <Select
+                                            value={channelType}
+                                            onValueChange={(value) =>
+                                                setChannelType(value as NotificationType)
+                                            }
+                                        >
+                                            <SelectTrigger id="channel-type">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value={NotificationType.EMAIL}>
+                                                    <div className="flex items-center">
+                                                        <Mail className="h-4 w-4 mr-2" />
+                                                        Email
+                                                    </div>
+                                                </SelectItem>
+                                                <SelectItem value={NotificationType.WEBHOOK}>
+                                                    <div className="flex items-center">
+                                                        <Webhook className="h-4 w-4 mr-2" />
+                                                        Webhook
+                                                    </div>
+                                                </SelectItem>
+                                                <SelectItem value={NotificationType.SLACK}>
+                                                    <div className="flex items-center">
+                                                        <MessageSquare className="h-4 w-4 mr-2" />
+                                                        Slack
+                                                    </div>
+                                                </SelectItem>
+                                                <SelectItem value={NotificationType.DISCORD}>
+                                                    <div className="flex items-center">
+                                                        <MessageSquare className="h-4 w-4 mr-2" />
+                                                        Discord
+                                                    </div>
+                                                </SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="channel-config">
+                                            Configuration (JSON)
+                                        </Label>
+                                        <Textarea
+                                            id="channel-config"
+                                            placeholder={getConfigPlaceholder()}
+                                            value={channelConfig}
+                                            onChange={(e) =>
+                                                setChannelConfig(e.target.value)
+                                            }
+                                            rows={6}
+                                            className="font-mono text-sm"
+                                        />
+                                        <p className="text-xs text-muted-foreground">
+                                            {channelType === NotificationType.EMAIL &&
+                                                "Provide an array of email addresses"}
+                                            {channelType === NotificationType.WEBHOOK &&
+                                                "Provide webhook URL and optional headers"}
+                                            {channelType === NotificationType.SLACK &&
+                                                "Provide your Slack webhook URL"}
+                                            {channelType === NotificationType.DISCORD &&
+                                                "Provide your Discord webhook URL"}
+                                        </p>
+                                    </div>
+                                </div>
+                                <DialogFooter>
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => setChannelDialogOpen(false)}
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        onClick={handleCreateChannel}
+                                        disabled={
+                                            !channelName ||
+                                            !channelConfig ||
+                                            createChannelMutation.isPending
+                                        }
+                                    >
+                                        {createChannelMutation.isPending
+                                            ? "Creating..."
+                                            : "Create Channel"}
+                                    </Button>
+                                </DialogFooter>
+                            </DialogContent>
+                        </Dialog>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    {!selectedOrgId ? (
+                        <div className="text-center py-8">
+                            <p className="text-muted-foreground">
+                                Select an organization to manage notification channels
                             </p>
                         </div>
-                        <Badge>
-                            {process.env.ALERT_WEBHOOK_URL
-                                ? "Configured"
-                                : "Not Configured"}
-                        </Badge>
-                    </div>
+                    ) : channels && channels.length === 0 ? (
+                        <div className="text-center py-8">
+                            <MessageSquare className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                            <p className="text-muted-foreground mb-2">
+                                No notification channels configured
+                            </p>
+                            <p className="text-sm text-muted-foreground mb-4">
+                                Add a channel to start receiving alerts
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            {channels?.map((channel) => (
+                                <div
+                                    key={channel.id}
+                                    className="flex items-start justify-between rounded-lg border p-4"
+                                >
+                                    <div className="flex items-start space-x-4">
+                                        <div className="mt-1">
+                                            <NotificationChannelIcon
+                                                type={channel.type}
+                                            />
+                                        </div>
+                                        <div>
+                                            <h4 className="font-medium">
+                                                {channel.name}
+                                            </h4>
+                                            <p className="text-sm text-muted-foreground mt-1">
+                                                {channel.type}
+                                            </p>
+                                            <div className="mt-2">
+                                                <Badge
+                                                    variant={
+                                                        channel.isActive
+                                                            ? "default"
+                                                            : "secondary"
+                                                    }
+                                                >
+                                                    {channel.isActive
+                                                        ? "Active"
+                                                        : "Inactive"}
+                                                </Badge>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() =>
+                                            handleDeleteChannel(channel.id)
+                                        }
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </CardContent>
             </Card>
         </div>

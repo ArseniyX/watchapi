@@ -98,3 +98,7 @@ oauth:
   github:
     clientId: ""
     clientSecret: ""
+
+# Email configuration
+resend:
+  apiKey: ""

@@ -1,18 +1,8 @@
-"use client";
-
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Moon, Sun } from "lucide-react";
 import { Logo } from "./logo";
-import { useTheme } from "@/components/providers/theme-provider";
 
 export function Header() {
-    const { theme, setTheme } = useTheme();
-
-    const toggleTheme = () => {
-        setTheme(theme === "dark" ? "light" : "dark");
-    };
-
     return (
         <header className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -36,21 +26,15 @@ export function Header() {
                         >
                             Pricing
                         </Link>
+                        <Link
+                            href="/contact"
+                            className="text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                            Contact
+                        </Link>
                     </nav>
 
                     <div className="flex items-center space-x-4">
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={toggleTheme}
-                            className="h-9 w-9"
-                        >
-                            {theme === "dark" ? (
-                                <Sun className="h-4 w-4" />
-                            ) : (
-                                <Moon className="h-4 w-4" />
-                            )}
-                        </Button>
                         <Link href="/login">
                             <Button
                                 variant="ghost"
