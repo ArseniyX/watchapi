@@ -29,6 +29,15 @@ const mockApiEndpointRepository = {
   findMany: vi.fn(),
 }
 
+const mockNotificationChannelService = {
+  sendNotifications: vi.fn().mockResolvedValue({ total: 0, success: 0, failed: 0 }),
+  createNotificationChannel: vi.fn(),
+  updateNotificationChannel: vi.fn(),
+  deleteNotificationChannel: vi.fn(),
+  getNotificationChannels: vi.fn(),
+  getNotificationChannel: vi.fn(),
+}
+
 // Mock fetch
 global.fetch = vi.fn()
 
@@ -36,7 +45,11 @@ describe('MonitoringService', () => {
   let service: MonitoringService
 
   beforeEach(() => {
-    service = new MonitoringService(mockMonitoringRepository as any, mockApiEndpointRepository as any)
+    service = new MonitoringService(
+      mockMonitoringRepository as any,
+      mockApiEndpointRepository as any,
+      mockNotificationChannelService as any
+    )
     vi.clearAllMocks()
   })
 

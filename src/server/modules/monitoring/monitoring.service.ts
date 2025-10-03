@@ -26,9 +26,10 @@ export class MonitoringService {
 
     constructor(
         private readonly monitoringRepository: MonitoringRepository,
-        private readonly apiEndpointRepository: ApiEndpointRepository
+        private readonly apiEndpointRepository: ApiEndpointRepository,
+        notificationChannelService?: NotificationChannelService
     ) {
-        this.notificationChannelService = new NotificationChannelService(
+        this.notificationChannelService = notificationChannelService || new NotificationChannelService(
             new NotificationChannelRepository()
         );
     }
@@ -100,7 +101,7 @@ export class MonitoringService {
         apiEndpointId: string,
         organizationId?: string
     ): Promise<MonitoringCheckResult> {
-        let endpoint;
+        let endpoint: ApiEndpoint | null;
 
         if (organizationId) {
             // User-initiated check - verify organization access

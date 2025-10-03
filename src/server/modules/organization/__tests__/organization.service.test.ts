@@ -23,6 +23,7 @@ const mockRepository = {
   deleteInvitation: vi.fn(),
   deleteExpiredInvitations: vi.fn(),
   findUserByEmail: vi.fn(),
+  findUserById: vi.fn(),
 }
 
 describe('OrganizationService', () => {
@@ -165,18 +166,23 @@ describe('OrganizationService', () => {
         invitedBy: 'user-1',
       }
 
-      mockRepository.findMember.mockResolvedValue({
+      mockRepository.findMember.mockResolvedValueOnce({
         role: OrganizationRole.OWNER,
         status: MemberStatus.ACTIVE,
+      }).mockResolvedValueOnce(null)
+      mockRepository.findOrganizationById.mockResolvedValue({
+        id: 'org-1',
+        name: 'Test Org',
+      })
+      mockRepository.findUserById.mockResolvedValue({
+        id: 'user-1',
+        name: 'Inviter',
+        email: 'inviter@example.com',
       })
       mockRepository.findUserByEmail.mockResolvedValue({
         id: 'user-2',
         email: 'existing@example.com',
       })
-      mockRepository.findMember.mockResolvedValueOnce({
-        role: OrganizationRole.OWNER,
-        status: MemberStatus.ACTIVE,
-      }).mockResolvedValueOnce(null)
       mockRepository.addMember.mockResolvedValue({
         id: 'member-1',
         userId: 'user-2',
@@ -210,6 +216,15 @@ describe('OrganizationService', () => {
         role: OrganizationRole.ADMIN,
         status: MemberStatus.ACTIVE,
       })
+      mockRepository.findOrganizationById.mockResolvedValue({
+        id: 'org-1',
+        name: 'Test Org',
+      })
+      mockRepository.findUserById.mockResolvedValue({
+        id: 'user-1',
+        name: 'Inviter',
+        email: 'inviter@example.com',
+      })
       mockRepository.findUserByEmail.mockResolvedValue(null)
       mockRepository.createInvitation.mockResolvedValue({
         id: 'invite-1',
@@ -238,6 +253,15 @@ describe('OrganizationService', () => {
       }).mockResolvedValueOnce({
         role: OrganizationRole.MEMBER,
         status: MemberStatus.ACTIVE,
+      })
+      mockRepository.findOrganizationById.mockResolvedValue({
+        id: 'org-1',
+        name: 'Test Org',
+      })
+      mockRepository.findUserById.mockResolvedValue({
+        id: 'user-1',
+        name: 'Inviter',
+        email: 'inviter@example.com',
       })
       mockRepository.findUserByEmail.mockResolvedValue({ id: 'user-2' })
 
