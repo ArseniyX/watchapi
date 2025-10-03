@@ -4,6 +4,7 @@ import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import { Analytics } from "@vercel/analytics/next";
 import { Suspense } from "react";
+import Script from "next/script";
 import { TRPCProvider } from "../components/providers/trpc-provider";
 import { AuthProvider } from "../components/providers/auth-provider";
 import { ThemeProvider } from "../components/providers/theme-provider";
@@ -116,6 +117,23 @@ export default function RootLayout({
                     </AuthProvider>
                 </TRPCProvider>
                 <Analytics />
+                <Script
+                    id="crisp-chat"
+                    strategy="afterInteractive"
+                    dangerouslySetInnerHTML={{
+                        __html: `
+                            window.$crisp=[];
+                            window.CRISP_WEBSITE_ID="f0ba5698-e1de-49cb-bbf9-d4b61a7d71eb";
+                            (function(){
+                                d=document;
+                                s=d.createElement("script");
+                                s.src="https://client.crisp.chat/l.js";
+                                s.async=1;
+                                d.getElementsByTagName("head")[0].appendChild(s);
+                            })();
+                        `,
+                    }}
+                />
             </body>
         </html>
     );
