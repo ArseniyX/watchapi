@@ -5,6 +5,7 @@ import {
     CreateApiEndpointInput,
     UpdateApiEndpointInput,
 } from "./api-endpoint.schema";
+import { BadRequestError, NotFoundError, TooManyRequestsError, ForbiddenError } from "../../errors/custom-errors";
 
 export class ApiEndpointService {
     constructor(
@@ -53,10 +54,10 @@ export class ApiEndpointService {
 
     async getApiEndpoint(id: string, organizationId: string): Promise<ApiEndpointWithRelations | null> {
         if (!id || id.trim() === "") {
-            throw new Error("Endpoint ID is required");
+            throw new BadRequestError("Endpoint ID is required");
         }
         if (!organizationId || organizationId.trim() === "") {
-            throw new Error("Organization ID is required");
+            throw new BadRequestError("Organization ID is required");
         }
 
         return this.apiEndpointRepository.findById(id, organizationId);
@@ -66,7 +67,7 @@ export class ApiEndpointService {
         organizationId: string
     ): Promise<ApiEndpointWithBasicRelations[]> {
         if (!organizationId || organizationId.trim() === "") {
-            throw new Error("Organization ID is required");
+            throw new BadRequestError("Organization ID is required");
         }
         return this.apiEndpointRepository.findByOrganizationId(organizationId);
     }
@@ -80,16 +81,16 @@ export class ApiEndpointService {
     ): Promise<ApiEndpoint> {
         // Validate IDs
         if (!id || id.trim() === "") {
-            throw new Error("Endpoint ID is required");
+            throw new BadRequestError("Endpoint ID is required");
         }
         if (!organizationId || organizationId.trim() === "") {
-            throw new Error("Organization ID is required");
+            throw new BadRequestError("Organization ID is required");
         }
 
         // Verify endpoint exists in organization
         const endpoint = await this.apiEndpointRepository.findById(id, organizationId);
         if (!endpoint) {
-            throw new Error("API endpoint not found or access denied");
+            throw new NotFoundError("API endpoint", id);
         }
 
         const updateData: Record<string, any> = {};
@@ -141,10 +142,10 @@ export class ApiEndpointService {
     async deleteApiEndpoint(organizationId: string, id: string): Promise<void> {
         // Validate IDs
         if (!id || id.trim() === "") {
-            throw new Error("Endpoint ID is required");
+            throw new BadRequestError("Endpoint ID is required");
         }
         if (!organizationId || organizationId.trim() === "") {
-            throw new Error("Organization ID is required");
+            throw new BadRequestError("Organization ID is required");
         }
 
         return this.apiEndpointRepository.delete(id, organizationId);
@@ -159,7 +160,7 @@ export class ApiEndpointService {
         query: string
     ): Promise<ApiEndpointWithBasicRelations[]> {
         if (!organizationId || organizationId.trim() === "") {
-            throw new Error("Organization ID is required");
+            throw new BadRequestError("Organization ID is required");
         }
         if (!query || query.trim() === "") {
             return [];

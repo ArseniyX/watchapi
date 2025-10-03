@@ -7,6 +7,7 @@ import {
     OAuthProfile,
     AuthTokens,
 } from "./auth.schema";
+import { UnauthorizedError, NotFoundError } from "../../errors/custom-errors";
 
 export class AuthService {
     constructor(
@@ -28,7 +29,7 @@ export class AuthService {
     ): Promise<{ user: User; tokens: AuthTokens }> {
         const user = await this.userService.getUserByEmail(input.email);
         if (!user) {
-            throw new Error("Invalid email or password");
+            throw new UnauthorizedError("Invalid email or password");
         }
 
         const isValid = await this.userService.verifyPassword(
@@ -36,7 +37,7 @@ export class AuthService {
             input.password
         );
         if (!isValid) {
-            throw new Error("Invalid email or password");
+            throw new UnauthorizedError("Invalid email or password");
         }
 
         const tokens = this.generateTokens(user);
@@ -63,17 +64,20 @@ export class AuthService {
             };
 
             if (payload.type !== "refresh") {
-                throw new Error("Invalid token type");
+                throw new UnauthorizedError("Invalid token type");
             }
 
             const user = await this.userService.getUserById(payload.userId);
             if (!user) {
-                throw new Error("User not found");
+                throw new NotFoundError("User", payload.userId);
             }
 
             return this.generateTokens(user);
         } catch (error) {
-            throw new Error("Invalid refresh token");
+            if (error instanceof UnauthorizedError || error instanceof NotFoundError) {
+                throw error;
+            }
+            throw new UnauthorizedError("Invalid refresh token");
         }
     }
 

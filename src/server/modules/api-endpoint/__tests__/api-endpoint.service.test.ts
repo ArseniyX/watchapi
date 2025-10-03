@@ -260,7 +260,7 @@ describe("ApiEndpointService", () => {
                 service.updateApiEndpoint("user-1", "FREE", "org-1", "nonexistent", {
                     name: "New Name",
                 })
-            ).rejects.toThrow("API endpoint not found or access denied");
+            ).rejects.toThrow("API endpoint");
         });
 
         it("should throw error if interval is below plan limit", async () => {

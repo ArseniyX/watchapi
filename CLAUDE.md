@@ -21,14 +21,17 @@ pnpm lint             # Run ESLint
 pnpm test             # Run tests in watch mode
 pnpm test:run         # Run tests once
 pnpm test:ui          # Open Vitest UI
+pnpm test:coverage    # Run tests with coverage report
+pnpm type-check       # Run TypeScript type checking without emitting files
 ```
 
 ### Database (Prisma)
 ```bash
-npx prisma generate   # Generate Prisma client (outputs to src/generated/prisma)
-npx prisma migrate dev # Create and apply migrations
-npx prisma studio     # Open database GUI
-npx prisma db push    # Push schema changes without migrations (dev only)
+npx prisma generate        # Generate Prisma client (outputs to src/generated/prisma)
+npx prisma migrate dev     # Create and apply migrations
+npx prisma migrate deploy  # Apply pending migrations (production)
+npx prisma studio          # Open database GUI
+npx prisma db push         # Push schema changes without migrations (dev only)
 ```
 
 ## Architecture
@@ -55,9 +58,10 @@ src/server/
 ```
 
 **Module Pattern**: Each domain module (user, auth, api-endpoint, monitoring, collection, organization) has:
-- **Router**: tRPC procedures (query/mutation) with input validation (Zod schemas)
-- **Service**: Business logic, orchestrates repositories, handles domain rules
-- **Repository**: Direct Prisma queries, data access only (extends BaseRepository)
+- **Schema** (`[domain].schema.ts`): Zod validation schemas and inferred TypeScript types
+- **Router** (`[domain].router.ts`): tRPC procedures (query/mutation) with input validation using Zod schemas
+- **Service** (`[domain].service.ts`): Business logic, orchestrates repositories, handles domain rules, throws custom errors
+- **Repository** (`[domain].repository.ts`): Direct Prisma queries, data access only (extends BaseRepository)
 
 **Key Modules**:
 - `auth`: JWT-based authentication, bcrypt password hashing, OAuth support (GitHub, Google)
@@ -124,6 +128,33 @@ src/components/
 
 **Context**: JWT payload decoded in `createTRPCContext`, user object attached to context for protected routes.
 
+### Error Handling
+
+**Custom Error Classes** (`src/server/errors/custom-errors.ts`):
+- `BadRequestError` (400) - Invalid input that passes Zod but fails business rules
+- `UnauthorizedError` (401) - Authentication failures (invalid credentials, missing token)
+- `ForbiddenError` (403) - Authorization failures (insufficient permissions)
+- `NotFoundError` (404) - Resource doesn't exist (takes resource name and optional ID)
+- `ConflictError` (409) - Resource conflicts (duplicate email, etc.)
+- `TooManyRequestsError` (429) - Rate limiting and plan limit violations
+- `InternalServerError` (500) - Unexpected errors
+
+**Usage Pattern**:
+```typescript
+// In services - throw custom errors
+import { NotFoundError, ConflictError } from "../../errors/custom-errors";
+
+if (!user) {
+    throw new NotFoundError("User", userId);  // "User with identifier 'xyz' not found"
+}
+
+if (existingUser) {
+    throw new ConflictError("User with this email already exists");
+}
+```
+
+**Error Conversion**: All custom errors automatically map to appropriate tRPC error codes via `toTRPCError()` method.
+
 ### Monitoring System
 
 **Scheduler** (`scheduler.ts`):
@@ -154,9 +185,47 @@ Key variables (see `.env.example`):
 - OAuth: `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`
 - `DEFAULT_CHECK_INTERVAL`, `MAX_TIMEOUT`: Monitoring defaults
 
-### Testing
+### Testing Strategy
 
 - **Framework**: Vitest with happy-dom environment
 - **Location**: Tests colocated in `__tests__` directories within modules
 - **Pattern**: Service layer tests (business logic), not full integration tests
 - **Setup**: `vitest.setup.mjs` for global test configuration
+- **Mocking**: Repository layer mocked in service tests using `vi.fn()`
+- **Test Structure**: Each service test file mocks dependencies and tests business logic in isolation
+
+### Schema-First Development Pattern
+
+All modules follow a schema-first approach using Zod:
+
+1. **Define schemas** in `[domain].schema.ts` with validation rules
+2. **Infer types** from schemas using `z.infer<typeof schema>`
+3. **Use in routers** for input validation (validation happens at API boundary)
+4. **Import types in services** - services assume valid input, focus on business logic
+5. **Wrap Prisma enums** with `z.nativeEnum()` as single source of truth
+
+Example:
+```typescript
+// schema.ts
+export const createUserSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(6),
+});
+export type CreateUserInput = z.infer<typeof createUserSchema>;
+
+// router.ts - validation happens here
+.input(createUserSchema)
+
+// service.ts - receives validated input
+async createUser(input: CreateUserInput) {
+  // No validation needed, already done by Zod
+}
+```
+
+### Code Organization Principles
+
+- **Validation**: Router level (Zod schemas) for input validation
+- **Business Logic**: Service layer for domain rules (e.g., plan limits, access control)
+- **Data Access**: Repository layer for Prisma queries only
+- **Error Handling**: Services throw custom errors, automatically converted to tRPC errors
+- **Type Safety**: End-to-end via tRPC (backend types flow to frontend automatically)

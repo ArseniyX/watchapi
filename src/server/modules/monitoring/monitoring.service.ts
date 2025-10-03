@@ -6,6 +6,8 @@ import { MonitoringRepository } from "./monitoring.repository";
 import { ApiEndpointRepository } from "../api-endpoint/api-endpoint.repository";
 import { emailService } from "../shared/email.service";
 import { SendRequestInput } from "./monitoring.schema";
+import { NotFoundError, ForbiddenError } from "../../errors/custom-errors";
+import { logger, logError, logInfo } from "@/lib/logger";
 
 export interface MonitoringCheckResult {
     status: CheckStatus;
@@ -71,6 +73,12 @@ export class MonitoringService {
             const errorMessage =
                 error instanceof Error ? error.message : "Unknown error";
 
+            logError("Request failed", error, {
+                url: input.url,
+                method: input.method,
+                responseTime
+            });
+
             return {
                 status: 0,
                 statusText: "Error",
@@ -95,15 +103,21 @@ export class MonitoringService {
                 organizationId
             );
             if (!endpoint) {
-                throw new Error("API endpoint not found or access denied");
+                throw new ForbiddenError("API endpoint not found or access denied");
             }
         } else {
             // System-initiated check (scheduler) - no org filtering
             endpoint = await this.apiEndpointRepository.findByIdInternal(apiEndpointId);
             if (!endpoint) {
-                throw new Error("API endpoint not found");
+                throw new NotFoundError("API endpoint", apiEndpointId);
             }
         }
+
+        logInfo("Starting API endpoint check", {
+            endpointId: apiEndpointId,
+            url: endpoint.url,
+            method: endpoint.method
+        });
 
         const startTime = Date.now();
 
@@ -144,6 +158,11 @@ export class MonitoringService {
 
             if (response.status !== endpoint.expectedStatus) {
                 result.errorMessage = `Expected status ${endpoint.expectedStatus}, got ${response.status}`;
+                logger.warn("API check status mismatch", {
+                    endpointId: apiEndpointId,
+                    expected: endpoint.expectedStatus,
+                    actual: response.status
+                });
             }
 
             // Save the check result
@@ -155,6 +174,13 @@ export class MonitoringService {
                 statusCode: result.statusCode || null,
                 errorMessage: result.errorMessage || null,
                 responseSize: result.responseSize || null,
+            });
+
+            logInfo("API endpoint check completed", {
+                endpointId: apiEndpointId,
+                status: result.status,
+                responseTime: result.responseTime,
+                statusCode: result.statusCode
             });
 
             // Send alert if check failed
@@ -179,6 +205,13 @@ export class MonitoringService {
                         : responseTime,
                 errorMessage,
             };
+
+            logError("API endpoint check failed", error, {
+                endpointId: apiEndpointId,
+                url: endpoint.url,
+                status: result.status,
+                responseTime: result.responseTime
+            });
 
             // Save the error result
             await this.monitoringRepository.createMonitoringCheck({
@@ -207,11 +240,11 @@ export class MonitoringService {
 
         // Check if we should throttle (skip alert if sent within last hour)
         if (lastAlert && now - lastAlert < this.ALERT_THROTTLE_MS) {
-            console.log(
-                `Alert throttled for endpoint ${
-                    endpoint.name
-                } (last alert: ${Math.floor((now - lastAlert) / 60000)}m ago)`
-            );
+            logger.debug("Alert throttled", {
+                endpointId: endpoint.id,
+                endpointName: endpoint.name,
+                lastAlertMinutesAgo: Math.floor((now - lastAlert) / 60000)
+            });
             return;
         }
 
@@ -220,7 +253,10 @@ export class MonitoringService {
             endpoint.userId
         );
         if (!user || !user.email) {
-            console.log(`No email found for user ${endpoint.userId}`);
+            logger.warn("No email found for alert", {
+                userId: endpoint.userId,
+                endpointId: endpoint.id
+            });
             return;
         }
 
@@ -239,10 +275,21 @@ export class MonitoringService {
         // Send email alert
         await emailService.sendAlertEmail(alertData);
 
+        logInfo("Alert email sent", {
+            endpointId: endpoint.id,
+            endpointName: endpoint.name,
+            to: user.email,
+            status: result.status
+        });
+
         // Send webhook alert if configured
         const webhookUrl = process.env.ALERT_WEBHOOK_URL;
         if (webhookUrl) {
             await emailService.sendWebhookAlert(webhookUrl, alertData);
+            logInfo("Webhook alert sent", {
+                endpointId: endpoint.id,
+                webhookUrl
+            });
         }
 
         // Mark alert as sent for throttling
@@ -257,7 +304,7 @@ export class MonitoringService {
         // Verify organization access
         const endpoint = await this.apiEndpointRepository.findById(apiEndpointId, organizationId);
         if (!endpoint) {
-            throw new Error("API endpoint not found or access denied");
+            throw new ForbiddenError("API endpoint not found or access denied");
         }
 
         return this.monitoringRepository.findChecksByApiEndpointId(
@@ -273,7 +320,7 @@ export class MonitoringService {
         // Verify organization access
         const endpoint = await this.apiEndpointRepository.findById(apiEndpointId, organizationId);
         if (!endpoint) {
-            throw new Error("API endpoint not found or access denied");
+            throw new ForbiddenError("API endpoint not found or access denied");
         }
 
         const to = new Date();
@@ -290,7 +337,7 @@ export class MonitoringService {
         // Verify organization access
         const endpoint = await this.apiEndpointRepository.findById(apiEndpointId, organizationId);
         if (!endpoint) {
-            throw new Error("API endpoint not found or access denied");
+            throw new ForbiddenError("API endpoint not found or access denied");
         }
 
         const to = new Date();
@@ -307,7 +354,7 @@ export class MonitoringService {
         // Verify organization access
         const endpoint = await this.apiEndpointRepository.findById(apiEndpointId, organizationId);
         if (!endpoint) {
-            throw new Error("API endpoint not found or access denied");
+            throw new ForbiddenError("API endpoint not found or access denied");
         }
 
         const to = new Date();
@@ -323,16 +370,25 @@ export class MonitoringService {
     async runActiveChecks(): Promise<void> {
         const activeEndpoints = await this.apiEndpointRepository.findActive();
 
+        logInfo("Running active checks", {
+            totalEndpoints: activeEndpoints.length
+        });
+
         for (const endpoint of activeEndpoints) {
             try {
                 await this.checkApiEndpoint(endpoint.id);
             } catch (error) {
-                console.error(
-                    `Failed to check endpoint ${endpoint.id}:`,
-                    error
-                );
+                logError(`Failed to check endpoint ${endpoint.id}`, error, {
+                    endpointId: endpoint.id,
+                    endpointName: endpoint.name,
+                    url: endpoint.url
+                });
             }
         }
+
+        logInfo("Completed active checks", {
+            totalEndpoints: activeEndpoints.length
+        });
     }
 
     // Analytics methods

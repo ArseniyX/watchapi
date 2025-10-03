@@ -3,6 +3,7 @@ import { type CreateNextContextOptions } from '@trpc/server/adapters/next'
 import jwt from 'jsonwebtoken'
 import { prisma } from './database'
 import { PlanType } from '@/generated/prisma'
+import { logger, logError } from '@/lib/logger'
 
 export interface Context {
   user?: {
@@ -89,6 +90,10 @@ export const createTRPCContext = async (opts: CreateNextContextOptions): Promise
       organizationId,
     }
   } catch (error) {
+    logError('JWT verification failed', error, {
+      hasAuthHeader: !!authHeader,
+      tokenPrefix: authHeader?.substring(0, 20)
+    })
     return {}
   }
 }
@@ -99,6 +104,7 @@ export const router = t.router
 export const publicProcedure = t.procedure
 export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
   if (!ctx.user) {
+    logger.warn('Unauthorized access attempt')
     throw new TRPCError({ code: 'UNAUTHORIZED' })
   }
 
@@ -116,6 +122,10 @@ export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
 
 export const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user.role !== 'ADMIN' && ctx.user.role !== 'SUPER_ADMIN') {
+    logger.warn('Forbidden access attempt', {
+      userId: ctx.user.id,
+      role: ctx.user.role
+    })
     throw new TRPCError({ code: 'FORBIDDEN' })
   }
   return next({ ctx })

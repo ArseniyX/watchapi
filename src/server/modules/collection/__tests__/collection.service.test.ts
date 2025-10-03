@@ -311,7 +311,7 @@ describe("CollectionService", () => {
 
             await expect(
                 service.updateCollection("nonexistent", { name: "New Name" })
-            ).rejects.toThrow("Collection not found");
+            ).rejects.toThrow("Collection");
 
             expect(mockRepository.update).not.toHaveBeenCalled();
         });
@@ -346,7 +346,7 @@ describe("CollectionService", () => {
 
             await expect(
                 service.deleteCollection("nonexistent")
-            ).rejects.toThrow("Collection not found");
+            ).rejects.toThrow("Collection");
 
             expect(mockRepository.delete).not.toHaveBeenCalled();
         });

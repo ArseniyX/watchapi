@@ -183,7 +183,7 @@ describe('AuthService', () => {
 
       await expect(
         service.refreshToken('valid-refresh-token')
-      ).rejects.toThrow('Invalid')
+      ).rejects.toThrow('User')
     })
 
     it('should throw error for expired token', async () => {

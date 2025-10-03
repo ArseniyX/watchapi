@@ -4,6 +4,7 @@ import {
     CreateCollectionInput,
     UpdateCollectionInput,
 } from "./collection.schema";
+import { BadRequestError, NotFoundError } from "../../errors/custom-errors";
 
 export interface CollectionWithStats extends Collection {
     apiEndpoints: ApiEndpoint[];
@@ -17,7 +18,7 @@ export class CollectionService {
     async createCollection(input: CreateCollectionInput): Promise<Collection> {
         // Validate organizationId is provided
         if (!input.organizationId) {
-            throw new Error("Organization ID is required");
+            throw new BadRequestError("Organization ID is required");
         }
 
         return this.collectionRepository.create({
@@ -29,7 +30,7 @@ export class CollectionService {
 
     async getCollection(id: string): Promise<Collection | null> {
         if (!id || id.trim() === "") {
-            throw new Error("Collection ID is required");
+            throw new BadRequestError("Collection ID is required");
         }
 
         return this.collectionRepository.findById(id);
@@ -61,13 +62,13 @@ export class CollectionService {
         input: UpdateCollectionInput
     ): Promise<Collection> {
         if (!id || id.trim() === "") {
-            throw new Error("Collection ID is required");
+            throw new BadRequestError("Collection ID is required");
         }
 
         // Verify collection exists
         const existing = await this.collectionRepository.findById(id);
         if (!existing) {
-            throw new Error("Collection not found");
+            throw new NotFoundError("Collection", id);
         }
 
         const updateData: any = {};
@@ -84,13 +85,13 @@ export class CollectionService {
 
     async deleteCollection(id: string): Promise<void> {
         if (!id || id.trim() === "") {
-            throw new Error("Collection ID is required");
+            throw new BadRequestError("Collection ID is required");
         }
 
         // Verify collection exists
         const existing = await this.collectionRepository.findById(id);
         if (!existing) {
-            throw new Error("Collection not found");
+            throw new NotFoundError("Collection", id);
         }
 
         return this.collectionRepository.delete(id);

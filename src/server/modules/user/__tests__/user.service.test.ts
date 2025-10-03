@@ -346,7 +346,7 @@ describe('UserService', () => {
 
       await expect(
         service.updateUser('nonexistent', { name: 'New Name' })
-      ).rejects.toThrow('User not found')
+      ).rejects.toThrow('User')
     })
 
     it('should update password with hashing', async () => {

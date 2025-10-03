@@ -220,7 +220,7 @@ describe('MonitoringService', () => {
       mockApiEndpointRepository.findByIdInternal.mockResolvedValue(null)
 
       await expect(service.checkApiEndpoint('nonexistent')).rejects.toThrow(
-        'API endpoint not found'
+        'API endpoint'
       )
     })
   })

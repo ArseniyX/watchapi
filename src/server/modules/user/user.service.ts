@@ -7,6 +7,7 @@ import {
     CreateOAuthUserInput,
     UpdateUserInput,
 } from "./user.schema";
+import { ConflictError, NotFoundError, BadRequestError } from "../../errors/custom-errors";
 
 export class UserService {
     constructor(
@@ -18,7 +19,7 @@ export class UserService {
         // Check if user already exists
         const existingUser = await this.userRepository.findByEmail(input.email);
         if (existingUser) {
-            throw new Error("User with this email already exists");
+            throw new ConflictError("User with this email already exists");
         }
 
         const hashedPassword = await bcrypt.hash(input.password, 12);
@@ -78,12 +79,12 @@ export class UserService {
     async updateUser(id: string, input: UpdateUserInput): Promise<User> {
         // Validate user exists
         if (!id || id.trim() === "") {
-            throw new Error("User ID is required");
+            throw new BadRequestError("User ID is required");
         }
 
         const existingUser = await this.userRepository.findById(id);
         if (!existingUser) {
-            throw new Error("User not found");
+            throw new NotFoundError("User", id);
         }
 
         const updateData: {
@@ -100,7 +101,7 @@ export class UserService {
 
         if (input.password) {
             if (input.password.length < 6) {
-                throw new Error("Password must be at least 6 characters");
+                throw new BadRequestError("Password must be at least 6 characters");
             }
             updateData.password = await bcrypt.hash(input.password, 12);
         }
@@ -122,7 +123,7 @@ export class UserService {
 
     async verifyPassword(user: User, password: string): Promise<boolean> {
         if (!user.password) {
-            throw new Error("User does not have a password (OAuth account)");
+            throw new BadRequestError("User does not have a password (OAuth account)");
         }
         return bcrypt.compare(password, user.password);
     }
