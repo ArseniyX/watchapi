@@ -1,21 +1,19 @@
-import { z } from "zod";
 import { router, publicProcedure } from "../../trpc";
-import { AuthService, RegisterInput } from "./auth.service";
+import { AuthService } from "./auth.service";
+import {
+    registerSchema,
+    loginSchema,
+    refreshTokenSchema,
+    verifyTokenSchema,
+    oauthCallbackSchema,
+} from "./auth.schema";
 
 export const createAuthRouter = (authService: AuthService) =>
     router({
         register: publicProcedure
-            .input(
-                z.object({
-                    email: z.string().email(),
-                    name: z.string().optional(),
-                    password: z.string().min(6),
-                })
-            )
+            .input(registerSchema)
             .mutation(async ({ input }) => {
-                const result = await authService.register(
-                    input as RegisterInput
-                );
+                const result = await authService.register(input);
                 return {
                     user: {
                         id: result.user.id,
@@ -28,12 +26,7 @@ export const createAuthRouter = (authService: AuthService) =>
             }),
 
         login: publicProcedure
-            .input(
-                z.object({
-                    email: z.string().email(),
-                    password: z.string(),
-                })
-            )
+            .input(loginSchema)
             .mutation(async ({ input }) => {
                 const result = await authService.login(input);
                 return {
@@ -48,21 +41,13 @@ export const createAuthRouter = (authService: AuthService) =>
             }),
 
         refreshToken: publicProcedure
-            .input(
-                z.object({
-                    refreshToken: z.string(),
-                })
-            )
+            .input(refreshTokenSchema)
             .mutation(async ({ input }) => {
                 return authService.refreshToken(input.refreshToken);
             }),
 
         verifyToken: publicProcedure
-            .input(
-                z.object({
-                    token: z.string(),
-                })
-            )
+            .input(verifyTokenSchema)
             .query(async ({ input }) => {
                 const user = await authService.verifyToken(input.token);
                 if (!user) {
@@ -77,17 +62,7 @@ export const createAuthRouter = (authService: AuthService) =>
             }),
 
         oauthCallback: publicProcedure
-            .input(
-                z.object({
-                    provider: z.enum(["google", "github"]),
-                    profile: z.object({
-                        id: z.string(),
-                        email: z.string().email(),
-                        name: z.string().optional(),
-                        avatar: z.string().optional(),
-                    }),
-                })
-            )
+            .input(oauthCallbackSchema)
             .mutation(async ({ input }) => {
                 const result = await authService.authenticateWithOAuth({
                     ...input.profile,

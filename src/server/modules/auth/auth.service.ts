@@ -1,30 +1,12 @@
 import jwt from "jsonwebtoken";
 import { UserService } from "../user/user.service";
 import { User } from "../../../generated/prisma";
-
-export interface LoginInput {
-    email: string;
-    password: string;
-}
-
-export interface RegisterInput {
-    email: string;
-    name?: string;
-    password: string;
-}
-
-export interface OAuthProfile {
-    id: string;
-    email: string;
-    name?: string;
-    avatar?: string;
-    provider: "google" | "github";
-}
-
-export interface AuthTokens {
-    accessToken: string;
-    refreshToken: string;
-}
+import {
+    LoginInput,
+    RegisterInput,
+    OAuthProfile,
+    AuthTokens,
+} from "./auth.schema";
 
 export class AuthService {
     constructor(

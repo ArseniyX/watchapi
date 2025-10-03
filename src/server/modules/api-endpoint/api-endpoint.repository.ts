@@ -1,18 +1,42 @@
 import { ApiEndpoint, Prisma } from "@/generated/prisma";
 import { BaseRepository } from "../shared/base.repository";
 
+// Type for endpoint with all relations loaded
+export type ApiEndpointWithRelations = Prisma.ApiEndpointGetPayload<{
+    include: {
+        user: true;
+        organization: true;
+        collection: true;
+        monitoringChecks: {
+            orderBy: { checkedAt: "desc" };
+            take: 10;
+        };
+        alerts: true;
+    };
+}>;
+
+export type ApiEndpointWithBasicRelations = Prisma.ApiEndpointGetPayload<{
+    include: {
+        collection: true;
+        monitoringChecks: {
+            orderBy: { checkedAt: "desc" };
+            take: 5;
+        };
+    };
+}>;
+
 export interface IApiEndpointRepository {
-    findById(id: string): Promise<ApiEndpoint | null>;
-    findByUserId(userId: string): Promise<ApiEndpoint[]>;
-    findByOrganizationId(organizationId: string): Promise<ApiEndpoint[]>;
+    findById(id: string, organizationId: string): Promise<ApiEndpointWithRelations | null>;
+    findByOrganizationId(organizationId: string): Promise<ApiEndpointWithBasicRelations[]>;
     create(
         data: Omit<ApiEndpoint, "id" | "createdAt" | "updatedAt">
     ): Promise<ApiEndpoint>;
     update(
         id: string,
+        organizationId: string,
         data: Partial<Omit<ApiEndpoint, "id" | "createdAt" | "updatedAt">>
     ): Promise<ApiEndpoint>;
-    delete(id: string): Promise<void>;
+    delete(id: string, organizationId: string): Promise<void>;
     findActive(): Promise<ApiEndpoint[]>;
     findMany(options?: {
         skip?: number;
@@ -21,14 +45,47 @@ export interface IApiEndpointRepository {
         orderBy?: Prisma.ApiEndpointOrderByWithRelationInput;
         include?: Prisma.ApiEndpointInclude;
     }): Promise<ApiEndpoint[]>;
-    search(query: string, userId: string): Promise<ApiEndpoint[]>;
+    search(query: string, organizationId: string): Promise<ApiEndpointWithBasicRelations[]>;
+    // Internal method for scheduler - no org filtering
+    findByIdInternal(id: string): Promise<ApiEndpointWithRelations | null>;
 }
 
 export class ApiEndpointRepository
     extends BaseRepository
     implements IApiEndpointRepository
 {
-    async findById(id: string): Promise<ApiEndpoint | null> {
+    /**
+     * Find endpoint by ID within an organization.
+     * Returns null if endpoint doesn't exist or doesn't belong to the organization.
+     */
+    async findById(
+        id: string,
+        organizationId: string
+    ): Promise<ApiEndpointWithRelations | null> {
+        return this.prisma.apiEndpoint.findFirst({
+            where: {
+                id,
+                organizationId,
+            },
+            include: {
+                user: true,
+                organization: true,
+                collection: true,
+                monitoringChecks: {
+                    orderBy: { checkedAt: "desc" },
+                    take: 10,
+                },
+                alerts: true,
+            },
+        }) as Promise<ApiEndpointWithRelations | null>;
+    }
+
+    /**
+     * INTERNAL: Find endpoint by ID without organization filtering.
+     * Only use for scheduler/system operations.
+     * @internal
+     */
+    async findByIdInternal(id: string): Promise<ApiEndpointWithRelations | null> {
         return this.prisma.apiEndpoint.findUnique({
             where: { id },
             include: {
@@ -41,28 +98,13 @@ export class ApiEndpointRepository
                 },
                 alerts: true,
             },
-        });
+        }) as Promise<ApiEndpointWithRelations | null>;
     }
 
-    async findByUserId(userId: string) {
-        return this.prisma.apiEndpoint.findMany({
-            where: { userId },
-            include: {
-                collection: true,
-                monitoringChecks: {
-                    orderBy: { checkedAt: "desc" },
-                    take: 5,
-                },
-            },
-            orderBy: { createdAt: "desc" },
-        });
-    }
-
-    async findByOrganizationId(organizationId: string): Promise<ApiEndpoint[]> {
+    async findByOrganizationId(organizationId: string): Promise<ApiEndpointWithBasicRelations[]> {
         return this.prisma.apiEndpoint.findMany({
             where: { organizationId },
             include: {
-                user: true,
                 collection: true,
                 monitoringChecks: {
                     orderBy: { checkedAt: "desc" },
@@ -70,7 +112,7 @@ export class ApiEndpointRepository
                 },
             },
             orderBy: { createdAt: "desc" },
-        });
+        }) as Promise<ApiEndpointWithBasicRelations[]>;
     }
 
     async create(
@@ -87,8 +129,15 @@ export class ApiEndpointRepository
 
     async update(
         id: string,
+        organizationId: string,
         data: Partial<Omit<ApiEndpoint, "id" | "createdAt" | "updatedAt">>
     ): Promise<ApiEndpoint> {
+        // First verify endpoint belongs to organization
+        const endpoint = await this.findById(id, organizationId);
+        if (!endpoint) {
+            throw new Error("API endpoint not found or access denied");
+        }
+
         return this.prisma.apiEndpoint.update({
             where: { id },
             data,
@@ -99,7 +148,13 @@ export class ApiEndpointRepository
         });
     }
 
-    async delete(id: string): Promise<void> {
+    async delete(id: string, organizationId: string): Promise<void> {
+        // First verify endpoint belongs to organization
+        const endpoint = await this.findById(id, organizationId);
+        if (!endpoint) {
+            throw new Error("API endpoint not found or access denied");
+        }
+
         await this.prisma.apiEndpoint.delete({
             where: { id },
         });
@@ -127,10 +182,13 @@ export class ApiEndpointRepository
         return this.prisma.apiEndpoint.findMany(options);
     }
 
-    async search(query: string, userId: string): Promise<ApiEndpoint[]> {
+    async search(
+        query: string,
+        organizationId: string
+    ): Promise<ApiEndpointWithBasicRelations[]> {
         return this.prisma.apiEndpoint.findMany({
             where: {
-                userId,
+                organizationId,
                 OR: [
                     { name: { contains: query } },
                     { url: { contains: query } },
@@ -144,6 +202,6 @@ export class ApiEndpointRepository
                 },
             },
             orderBy: { createdAt: "desc" },
-        });
+        }) as Promise<ApiEndpointWithBasicRelations[]>;
     }
 }

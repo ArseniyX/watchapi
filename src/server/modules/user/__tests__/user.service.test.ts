@@ -13,6 +13,21 @@ const mockUserRepository = {
   findMany: vi.fn(),
 }
 
+// Mock OrganizationRepository
+const mockOrganizationRepository = {
+  createOrganization: vi.fn(),
+  findById: vi.fn(),
+  findBySlug: vi.fn(),
+  findMany: vi.fn(),
+  update: vi.fn(),
+  delete: vi.fn(),
+  addMember: vi.fn(),
+  removeMember: vi.fn(),
+  updateMember: vi.fn(),
+  findMembersByOrganization: vi.fn(),
+  findOrganizationsByUser: vi.fn(),
+}
+
 // Mock bcrypt
 vi.mock('bcryptjs', () => ({
   default: {
@@ -25,7 +40,7 @@ describe('UserService', () => {
   let service: UserService
 
   beforeEach(() => {
-    service = new UserService(mockUserRepository as any)
+    service = new UserService(mockUserRepository as any, mockOrganizationRepository as any)
     vi.clearAllMocks()
   })
 
@@ -45,8 +60,16 @@ describe('UserService', () => {
         role: 'USER',
       }
 
+      const mockOrganization = {
+        id: 'org-1',
+        name: "Test User's Organization",
+        slug: 'test-users-organization',
+      }
+
       mockUserRepository.findByEmail.mockResolvedValue(null)
       mockUserRepository.create.mockResolvedValue(mockUser)
+      mockOrganizationRepository.createOrganization.mockResolvedValue(mockOrganization)
+      mockOrganizationRepository.addMember.mockResolvedValue(undefined)
 
       const result = await service.createUser(input)
 
@@ -60,35 +83,10 @@ describe('UserService', () => {
         provider: null,
         providerId: null,
         role: 'USER',
+        plan: 'FREE',
+        planExpiresAt: null,
       })
       expect(result).toEqual(mockUser)
-    })
-
-    it('should throw error if email is empty', async () => {
-      await expect(
-        service.createUser({
-          email: '',
-          password: 'password123',
-        })
-      ).rejects.toThrow('Email is required')
-    })
-
-    it('should throw error if password is empty', async () => {
-      await expect(
-        service.createUser({
-          email: 'test@example.com',
-          password: '',
-        })
-      ).rejects.toThrow('Password is required')
-    })
-
-    it('should throw error if password is too short', async () => {
-      await expect(
-        service.createUser({
-          email: 'test@example.com',
-          password: '12345',
-        })
-      ).rejects.toThrow('Password must be at least 6 characters')
     })
 
     it('should throw error if user already exists', async () => {
@@ -115,7 +113,9 @@ describe('UserService', () => {
       }
 
       mockUserRepository.findByEmail.mockResolvedValue(null)
-      mockUserRepository.create.mockResolvedValue({})
+      mockUserRepository.create.mockResolvedValue({ id: 'user-1', email: 'test@example.com' })
+      mockOrganizationRepository.createOrganization.mockResolvedValue({ id: 'org-1' })
+      mockOrganizationRepository.addMember.mockResolvedValue(undefined)
 
       await service.createUser(input)
 
@@ -127,6 +127,8 @@ describe('UserService', () => {
         provider: null,
         providerId: null,
         role: 'USER',
+        plan: 'FREE',
+        planExpiresAt: null,
       })
     })
   })
@@ -228,6 +230,8 @@ describe('UserService', () => {
       }
 
       mockUserRepository.create.mockResolvedValue(mockUser)
+      mockOrganizationRepository.createOrganization.mockResolvedValue({ id: 'org-1' })
+      mockOrganizationRepository.addMember.mockResolvedValue(undefined)
 
       const result = await service.createOAuthUser(input)
 
@@ -239,38 +243,10 @@ describe('UserService', () => {
         providerId: input.providerId,
         avatar: input.avatar,
         role: 'USER',
+        plan: 'FREE',
+        planExpiresAt: null,
       })
       expect(result).toEqual(mockUser)
-    })
-
-    it('should throw error if email is empty', async () => {
-      await expect(
-        service.createOAuthUser({
-          email: '',
-          provider: 'google',
-          providerId: 'google-123',
-        })
-      ).rejects.toThrow('Email is required')
-    })
-
-    it('should throw error if provider is empty', async () => {
-      await expect(
-        service.createOAuthUser({
-          email: 'test@example.com',
-          provider: '',
-          providerId: 'google-123',
-        })
-      ).rejects.toThrow('Provider is required')
-    })
-
-    it('should throw error if providerId is empty', async () => {
-      await expect(
-        service.createOAuthUser({
-          email: 'test@example.com',
-          provider: 'google',
-          providerId: '',
-        })
-      ).rejects.toThrow('Provider ID is required')
     })
 
     it('should trim all input fields', async () => {
@@ -282,7 +258,9 @@ describe('UserService', () => {
         avatar: '  https://example.com/avatar.jpg  ',
       }
 
-      mockUserRepository.create.mockResolvedValue({})
+      mockUserRepository.create.mockResolvedValue({ id: 'user-1' })
+      mockOrganizationRepository.createOrganization.mockResolvedValue({ id: 'org-1' })
+      mockOrganizationRepository.addMember.mockResolvedValue(undefined)
 
       await service.createOAuthUser(input)
 
@@ -294,6 +272,8 @@ describe('UserService', () => {
         providerId: 'google-123',
         avatar: 'https://example.com/avatar.jpg',
         role: 'USER',
+        plan: 'FREE',
+        planExpiresAt: null,
       })
     })
 
@@ -304,7 +284,9 @@ describe('UserService', () => {
         providerId: 'github-456',
       }
 
-      mockUserRepository.create.mockResolvedValue({})
+      mockUserRepository.create.mockResolvedValue({ id: 'user-1' })
+      mockOrganizationRepository.createOrganization.mockResolvedValue({ id: 'org-1' })
+      mockOrganizationRepository.addMember.mockResolvedValue(undefined)
 
       await service.createOAuthUser(input)
 
@@ -316,6 +298,8 @@ describe('UserService', () => {
         providerId: input.providerId,
         avatar: null,
         role: 'USER',
+        plan: 'FREE',
+        planExpiresAt: null,
       })
     })
   })

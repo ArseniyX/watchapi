@@ -1,18 +1,18 @@
 import { z } from 'zod'
 import { router, protectedProcedure } from '../../trpc'
 import { OrganizationService } from './organization.service'
-import { OrganizationRole } from '../../../generated/prisma'
+import { OrganizationRole } from '@/generated/prisma'
+import {
+  createOrganizationSchema,
+  updateOrganizationSchema,
+  updateMemberRoleSchema,
+  removeMemberSchema,
+} from './organization.schema'
 
 export const createOrganizationRouter = (organizationService: OrganizationService) =>
   router({
     create: protectedProcedure
-      .input(
-        z.object({
-          name: z.string(),
-          slug: z.string(),
-          description: z.string().optional(),
-        })
-      )
+      .input(createOrganizationSchema)
       .mutation(async ({ input, ctx }) => {
         return organizationService.createOrganization(ctx.user.id, input)
       }),
@@ -32,9 +32,7 @@ export const createOrganizationRouter = (organizationService: OrganizationServic
       .input(
         z.object({
           id: z.string(),
-          name: z.string().optional(),
-          description: z.string().optional(),
-        })
+        }).merge(updateOrganizationSchema)
       )
       .mutation(async ({ input, ctx }) => {
         const { id, ...data } = input
@@ -75,24 +73,13 @@ export const createOrganizationRouter = (organizationService: OrganizationServic
       }),
 
     updateMemberRole: protectedProcedure
-      .input(
-        z.object({
-          userId: z.string(),
-          organizationId: z.string(),
-          role: z.nativeEnum(OrganizationRole),
-        })
-      )
+      .input(updateMemberRoleSchema)
       .mutation(async ({ input, ctx }) => {
         return organizationService.updateMemberRole(ctx.user.id, input.userId, input.organizationId, input.role)
       }),
 
     removeMember: protectedProcedure
-      .input(
-        z.object({
-          userId: z.string(),
-          organizationId: z.string(),
-        })
-      )
+      .input(removeMemberSchema)
       .mutation(async ({ input, ctx }) => {
         return organizationService.removeMember(ctx.user.id, input.userId, input.organizationId)
       }),

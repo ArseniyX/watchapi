@@ -1,30 +1,10 @@
-import { ApiEndpoint, HttpMethod, PlanType } from "../../../generated/prisma";
-import { ApiEndpointRepository } from "./api-endpoint.repository";
+import { ApiEndpoint, PlanType } from "../../../generated/prisma";
+import { ApiEndpointRepository, ApiEndpointWithRelations, ApiEndpointWithBasicRelations } from "./api-endpoint.repository";
 import { getPlanLimits, isUnlimited } from "../../config/plan-limits";
-
-export interface CreateApiEndpointInput {
-    name: string;
-    url: string;
-    method: HttpMethod;
-    headers?: Record<string, string>;
-    body?: string;
-    expectedStatus: number;
-    timeout: number;
-    interval: number;
-    collectionId?: string;
-}
-
-export interface UpdateApiEndpointInput {
-    name?: string;
-    url?: string;
-    method?: HttpMethod;
-    headers?: Record<string, string>;
-    body?: string;
-    expectedStatus?: number;
-    timeout?: number;
-    interval?: number;
-    isActive?: boolean;
-}
+import {
+    CreateApiEndpointInput,
+    UpdateApiEndpointInput,
+} from "./api-endpoint.schema";
 
 export class ApiEndpointService {
     constructor(
@@ -34,22 +14,14 @@ export class ApiEndpointService {
     async createApiEndpoint(
         userId: string,
         userPlan: PlanType,
-        input: CreateApiEndpointInput,
-        organizationId?: string | null
+        organizationId: string,
+        input: CreateApiEndpointInput
     ): Promise<ApiEndpoint> {
-        // Validate input
-        if (!input.name || input.name.trim() === "") {
-            throw new Error("Endpoint name is required");
-        }
-        if (!input.url || input.url.trim() === "") {
-            throw new Error("URL is required");
-        }
-
         // Check plan limits
         const limits = getPlanLimits(userPlan);
 
-        // Check max endpoints limit
-        const currentEndpoints = await this.apiEndpointRepository.findByUserId(userId);
+        // Check max endpoints limit (per organization)
+        const currentEndpoints = await this.apiEndpointRepository.findByOrganizationId(organizationId);
         if (!isUnlimited(limits.maxEndpoints) && currentEndpoints.length >= limits.maxEndpoints) {
             throw new Error(
                 `Plan limit reached. ${userPlan} plan allows maximum ${limits.maxEndpoints} endpoints. Upgrade your plan to add more.`
@@ -63,14 +35,6 @@ export class ApiEndpointService {
             );
         }
 
-        // Validate timeout and interval
-        if (input.timeout <= 0) {
-            throw new Error("Timeout must be greater than 0");
-        }
-        if (input.interval <= 0) {
-            throw new Error("Interval must be greater than 0");
-        }
-
         return this.apiEndpointRepository.create({
             name: input.name.trim(),
             url: input.url.trim(),
@@ -81,29 +45,26 @@ export class ApiEndpointService {
             timeout: input.timeout,
             interval: input.interval,
             userId,
-            organizationId: organizationId || null,
+            organizationId,
             collectionId: input.collectionId || null,
             isActive: true,
         });
     }
 
-    async getApiEndpoint(id: string): Promise<ApiEndpoint | null> {
+    async getApiEndpoint(id: string, organizationId: string): Promise<ApiEndpointWithRelations | null> {
         if (!id || id.trim() === "") {
             throw new Error("Endpoint ID is required");
         }
-        return this.apiEndpointRepository.findById(id);
-    }
-
-    async getUserApiEndpoints(userId: string) {
-        if (!userId || userId.trim() === "") {
-            throw new Error("User ID is required");
+        if (!organizationId || organizationId.trim() === "") {
+            throw new Error("Organization ID is required");
         }
-        return this.apiEndpointRepository.findByUserId(userId);
+
+        return this.apiEndpointRepository.findById(id, organizationId);
     }
 
     async getOrganizationApiEndpoints(
         organizationId: string
-    ): Promise<ApiEndpoint[]> {
+    ): Promise<ApiEndpointWithBasicRelations[]> {
         if (!organizationId || organizationId.trim() === "") {
             throw new Error("Organization ID is required");
         }
@@ -113,6 +74,7 @@ export class ApiEndpointService {
     async updateApiEndpoint(
         userId: string,
         userPlan: PlanType,
+        organizationId: string,
         id: string,
         input: UpdateApiEndpointInput
     ): Promise<ApiEndpoint> {
@@ -120,35 +82,24 @@ export class ApiEndpointService {
         if (!id || id.trim() === "") {
             throw new Error("Endpoint ID is required");
         }
-        if (!userId || userId.trim() === "") {
-            throw new Error("User ID is required");
+        if (!organizationId || organizationId.trim() === "") {
+            throw new Error("Organization ID is required");
         }
 
-        // Verify endpoint exists and user owns it
-        const endpoint = await this.apiEndpointRepository.findById(id);
+        // Verify endpoint exists in organization
+        const endpoint = await this.apiEndpointRepository.findById(id, organizationId);
         if (!endpoint) {
-            throw new Error("API endpoint not found");
-        }
-        if (endpoint.userId !== userId) {
-            throw new Error(
-                "You do not have permission to update this endpoint"
-            );
+            throw new Error("API endpoint not found or access denied");
         }
 
         const updateData: Record<string, any> = {};
         const limits = getPlanLimits(userPlan);
 
         if (input.name !== undefined) {
-            if (input.name.trim() === "") {
-                throw new Error("Endpoint name cannot be empty");
-            }
             updateData.name = input.name.trim();
         }
 
         if (input.url !== undefined) {
-            if (input.url.trim() === "") {
-                throw new Error("URL cannot be empty");
-            }
             updateData.url = input.url.trim();
         }
 
@@ -167,16 +118,10 @@ export class ApiEndpointService {
         }
 
         if (input.timeout !== undefined) {
-            if (input.timeout <= 0) {
-                throw new Error("Timeout must be greater than 0");
-            }
             updateData.timeout = input.timeout;
         }
 
         if (input.interval !== undefined) {
-            if (input.interval <= 0) {
-                throw new Error("Interval must be greater than 0");
-            }
             // Check minimum check interval for plan
             if (input.interval < limits.minCheckInterval) {
                 throw new Error(
@@ -190,30 +135,19 @@ export class ApiEndpointService {
             updateData.isActive = input.isActive;
         }
 
-        return this.apiEndpointRepository.update(id, updateData);
+        return this.apiEndpointRepository.update(id, organizationId, updateData);
     }
 
-    async deleteApiEndpoint(userId: string, id: string): Promise<void> {
+    async deleteApiEndpoint(organizationId: string, id: string): Promise<void> {
         // Validate IDs
         if (!id || id.trim() === "") {
             throw new Error("Endpoint ID is required");
         }
-        if (!userId || userId.trim() === "") {
-            throw new Error("User ID is required");
+        if (!organizationId || organizationId.trim() === "") {
+            throw new Error("Organization ID is required");
         }
 
-        // Verify endpoint exists and user owns it
-        const endpoint = await this.apiEndpointRepository.findById(id);
-        if (!endpoint) {
-            throw new Error("API endpoint not found");
-        }
-        if (endpoint.userId !== userId) {
-            throw new Error(
-                "You do not have permission to delete this endpoint"
-            );
-        }
-
-        return this.apiEndpointRepository.delete(id);
+        return this.apiEndpointRepository.delete(id, organizationId);
     }
 
     async getActiveEndpoints(): Promise<ApiEndpoint[]> {
@@ -221,15 +155,15 @@ export class ApiEndpointService {
     }
 
     async searchEndpoints(
-        userId: string,
+        organizationId: string,
         query: string
-    ): Promise<ApiEndpoint[]> {
-        if (!userId || userId.trim() === "") {
-            throw new Error("User ID is required");
+    ): Promise<ApiEndpointWithBasicRelations[]> {
+        if (!organizationId || organizationId.trim() === "") {
+            throw new Error("Organization ID is required");
         }
         if (!query || query.trim() === "") {
             return [];
         }
-        return this.apiEndpointRepository.search(query.trim(), userId);
+        return this.apiEndpointRepository.search(query.trim(), organizationId);
     }
 }

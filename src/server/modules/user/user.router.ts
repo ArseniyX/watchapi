@@ -1,6 +1,10 @@
-import { z } from 'zod'
-import { router, publicProcedure, protectedProcedure } from '../../trpc'
+import { router, protectedProcedure } from '../../trpc'
 import { UserService } from './user.service'
+import {
+  updateProfileSchema,
+  changePasswordSchema,
+  getUsersSchema,
+} from './user.schema'
 
 export const createUserRouter = (userService: UserService) =>
   router({
@@ -9,22 +13,13 @@ export const createUserRouter = (userService: UserService) =>
     }),
 
     updateProfile: protectedProcedure
-      .input(
-        z.object({
-          name: z.string().optional(),
-        })
-      )
+      .input(updateProfileSchema)
       .mutation(async ({ input, ctx }) => {
         return userService.updateUser(ctx.user.id, input)
       }),
 
     changePassword: protectedProcedure
-      .input(
-        z.object({
-          currentPassword: z.string(),
-          newPassword: z.string().min(6),
-        })
-      )
+      .input(changePasswordSchema)
       .mutation(async ({ input, ctx }) => {
         const user = await userService.getUserById(ctx.user.id)
         if (!user) {
@@ -42,12 +37,7 @@ export const createUserRouter = (userService: UserService) =>
       }),
 
     getUsers: protectedProcedure
-      .input(
-        z.object({
-          skip: z.number().default(0),
-          take: z.number().default(10),
-        })
-      )
+      .input(getUsersSchema)
       .query(async ({ input }) => {
         return userService.getUsers(input)
       }),

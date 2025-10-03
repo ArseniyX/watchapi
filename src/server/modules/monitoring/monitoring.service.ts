@@ -1,11 +1,11 @@
 import {
     ApiEndpoint,
-    HttpMethod,
     CheckStatus,
 } from "../../../generated/prisma";
 import { MonitoringRepository } from "./monitoring.repository";
 import { ApiEndpointRepository } from "../api-endpoint/api-endpoint.repository";
 import { emailService } from "../shared/email.service";
+import { SendRequestInput } from "./monitoring.schema";
 
 export interface MonitoringCheckResult {
     status: CheckStatus;
@@ -25,12 +25,7 @@ export class MonitoringService {
         private readonly apiEndpointRepository: ApiEndpointRepository
     ) {}
 
-    async sendRequest(input: {
-        url: string;
-        method: HttpMethod;
-        headers?: Record<string, string>;
-        body?: string;
-    }): Promise<{
+    async sendRequest(input: SendRequestInput): Promise<{
         status: number;
         statusText: string;
         headers: Record<string, string>;
@@ -38,16 +33,6 @@ export class MonitoringService {
         responseTime: number;
         responseSize: number;
     }> {
-        // Validate URL
-        if (!input.url || input.url.trim() === "") {
-            throw new Error("URL is required");
-        }
-
-        try {
-            new URL(input.url);
-        } catch {
-            throw new Error("Invalid URL format");
-        }
 
         const startTime = Date.now();
 
@@ -98,13 +83,26 @@ export class MonitoringService {
     }
 
     async checkApiEndpoint(
-        apiEndpointId: string
+        apiEndpointId: string,
+        organizationId?: string
     ): Promise<MonitoringCheckResult> {
-        const endpoint = await this.apiEndpointRepository.findById(
-            apiEndpointId
-        );
-        if (!endpoint) {
-            throw new Error("API endpoint not found");
+        let endpoint;
+
+        if (organizationId) {
+            // User-initiated check - verify organization access
+            endpoint = await this.apiEndpointRepository.findById(
+                apiEndpointId,
+                organizationId
+            );
+            if (!endpoint) {
+                throw new Error("API endpoint not found or access denied");
+            }
+        } else {
+            // System-initiated check (scheduler) - no org filtering
+            endpoint = await this.apiEndpointRepository.findByIdInternal(apiEndpointId);
+            if (!endpoint) {
+                throw new Error("API endpoint not found");
+            }
         }
 
         const startTime = Date.now();
@@ -253,8 +251,15 @@ export class MonitoringService {
 
     async getMonitoringHistory(
         apiEndpointId: string,
+        organizationId: string,
         options: { skip?: number; take?: number } = {}
     ) {
+        // Verify organization access
+        const endpoint = await this.apiEndpointRepository.findById(apiEndpointId, organizationId);
+        if (!endpoint) {
+            throw new Error("API endpoint not found or access denied");
+        }
+
         return this.monitoringRepository.findChecksByApiEndpointId(
             apiEndpointId,
             {
@@ -264,7 +269,13 @@ export class MonitoringService {
         );
     }
 
-    async getUptimeStats(apiEndpointId: string, days: number = 30) {
+    async getUptimeStats(apiEndpointId: string, organizationId: string, days: number = 30) {
+        // Verify organization access
+        const endpoint = await this.apiEndpointRepository.findById(apiEndpointId, organizationId);
+        if (!endpoint) {
+            throw new Error("API endpoint not found or access denied");
+        }
+
         const to = new Date();
         const from = new Date(to.getTime() - days * 24 * 60 * 60 * 1000);
 
@@ -275,7 +286,13 @@ export class MonitoringService {
         );
     }
 
-    async getAverageResponseTime(apiEndpointId: string, days: number = 30) {
+    async getAverageResponseTime(apiEndpointId: string, organizationId: string, days: number = 30) {
+        // Verify organization access
+        const endpoint = await this.apiEndpointRepository.findById(apiEndpointId, organizationId);
+        if (!endpoint) {
+            throw new Error("API endpoint not found or access denied");
+        }
+
         const to = new Date();
         const from = new Date(to.getTime() - days * 24 * 60 * 60 * 1000);
 
@@ -286,7 +303,13 @@ export class MonitoringService {
         );
     }
 
-    async getResponseTimeHistory(apiEndpointId: string, days: number = 7) {
+    async getResponseTimeHistory(apiEndpointId: string, organizationId: string, days: number = 7) {
+        // Verify organization access
+        const endpoint = await this.apiEndpointRepository.findById(apiEndpointId, organizationId);
+        if (!endpoint) {
+            throw new Error("API endpoint not found or access denied");
+        }
+
         const to = new Date();
         const from = new Date(to.getTime() - days * 24 * 60 * 60 * 1000);
 

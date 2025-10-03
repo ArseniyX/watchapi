@@ -1,42 +1,50 @@
-import { z } from "zod";
 import { router, protectedProcedure } from "../../trpc";
 import { ApiEndpointService } from "./api-endpoint.service";
-import { HttpMethod } from "../../../generated/prisma";
+import {
+    createApiEndpointSchema,
+    updateApiEndpointSchema,
+    getApiEndpointSchema,
+    deleteApiEndpointSchema,
+    getOrganizationEndpointsSchema,
+    searchEndpointsSchema,
+} from "./api-endpoint.schema";
 
 export const createApiEndpointRouter = (
     apiEndpointService: ApiEndpointService
 ) =>
     router({
         create: protectedProcedure
-            .input(
-                z.object({
-                    name: z.string(),
-                    url: z.string(),
-                    method: z.nativeEnum(HttpMethod).default(HttpMethod.GET),
-                    headers: z.record(z.string(), z.string()).optional(),
-                    body: z.string().optional(),
-                    expectedStatus: z.number().default(200),
-                    timeout: z.number().default(30000),
-                    interval: z.number().default(300000), // 5 minutes
-                    collectionId: z.string().optional(),
-                })
-            )
+            .input(createApiEndpointSchema)
             .mutation(async ({ input, ctx }) => {
-                return apiEndpointService.createApiEndpoint(ctx.user.id, ctx.user.plan, input);
+                if (!ctx.organizationId) {
+                    throw new Error("No organization context");
+                }
+                return apiEndpointService.createApiEndpoint(
+                    ctx.user.id,
+                    ctx.user.plan,
+                    ctx.organizationId,
+                    input
+                );
             }),
 
         get: protectedProcedure
-            .input(z.object({ id: z.string() }))
-            .query(async ({ input }) => {
-                return apiEndpointService.getApiEndpoint(input.id);
+            .input(getApiEndpointSchema)
+            .query(async ({ input, ctx }) => {
+                if (!ctx.organizationId) {
+                    throw new Error("No organization context");
+                }
+                return apiEndpointService.getApiEndpoint(input.id, ctx.organizationId);
             }),
 
         getMyEndpoints: protectedProcedure.query(async ({ ctx }) => {
-            return apiEndpointService.getUserApiEndpoints(ctx.user.id);
+            if (!ctx.organizationId) {
+                throw new Error("No organization context");
+            }
+            return apiEndpointService.getOrganizationApiEndpoints(ctx.organizationId);
         }),
 
         getOrganizationEndpoints: protectedProcedure
-            .input(z.object({ organizationId: z.string() }))
+            .input(getOrganizationEndpointsSchema)
             .query(async ({ input }) => {
                 return apiEndpointService.getOrganizationApiEndpoints(
                     input.organizationId
@@ -44,44 +52,41 @@ export const createApiEndpointRouter = (
             }),
 
         update: protectedProcedure
-            .input(
-                z.object({
-                    id: z.string(),
-                    name: z.string().optional(),
-                    url: z.string().optional(),
-                    method: z.nativeEnum(HttpMethod).optional(),
-                    headers: z.record(z.string(), z.string()).optional(),
-                    body: z.string().optional(),
-                    expectedStatus: z.number().optional(),
-                    timeout: z.number().optional(),
-                    interval: z.number().optional(),
-                    isActive: z.boolean().optional(),
-                })
-            )
+            .input(getApiEndpointSchema.merge(updateApiEndpointSchema))
             .mutation(async ({ input, ctx }) => {
+                if (!ctx.organizationId) {
+                    throw new Error("No organization context");
+                }
                 const { id, ...updateData } = input;
                 return apiEndpointService.updateApiEndpoint(
                     ctx.user.id,
                     ctx.user.plan,
+                    ctx.organizationId,
                     id,
                     updateData
                 );
             }),
 
         delete: protectedProcedure
-            .input(z.object({ id: z.string() }))
+            .input(deleteApiEndpointSchema)
             .mutation(async ({ input, ctx }) => {
+                if (!ctx.organizationId) {
+                    throw new Error("No organization context");
+                }
                 return apiEndpointService.deleteApiEndpoint(
-                    ctx.user.id,
+                    ctx.organizationId,
                     input.id
                 );
             }),
 
         search: protectedProcedure
-            .input(z.object({ query: z.string() }))
+            .input(searchEndpointsSchema)
             .query(async ({ input, ctx }) => {
+                if (!ctx.organizationId) {
+                    throw new Error("No organization context");
+                }
                 return apiEndpointService.searchEndpoints(
-                    ctx.user.id,
+                    ctx.organizationId,
                     input.query
                 );
             }),

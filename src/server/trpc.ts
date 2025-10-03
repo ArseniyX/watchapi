@@ -11,6 +11,7 @@ export interface Context {
     role: string
     plan: PlanType
   }
+  organizationId?: string
 }
 
 export const createTRPCContext = async (opts: CreateNextContextOptions): Promise<Context> => {
@@ -41,6 +42,43 @@ export const createTRPCContext = async (opts: CreateNextContextOptions): Promise
       return {}
     }
 
+    // Get organization from header or use user's personal organization
+    const orgHeader = req.headers['x-organization-id'] as string | undefined
+    let organizationId = orgHeader
+
+    if (!organizationId) {
+      // Get user's personal organization (or first organization they're a member of)
+      const membership = await prisma.organizationMember.findFirst({
+        where: { userId: user.id, status: 'ACTIVE' },
+        select: { organizationId: true },
+        orderBy: { joinedAt: 'asc' } // Use earliest joined (personal org)
+      })
+
+      organizationId = membership?.organizationId
+    }
+
+    // Verify user has access to the organization
+    if (organizationId) {
+      const hasAccess = await prisma.organizationMember.findUnique({
+        where: {
+          userId_organizationId: {
+            userId: user.id,
+            organizationId: organizationId
+          }
+        }
+      })
+
+      if (!hasAccess) {
+        // User doesn't have access to requested org, fall back to personal
+        const membership = await prisma.organizationMember.findFirst({
+          where: { userId: user.id, status: 'ACTIVE' },
+          select: { organizationId: true },
+          orderBy: { joinedAt: 'asc' }
+        })
+        organizationId = membership?.organizationId
+      }
+    }
+
     return {
       user: {
         id: user.id,
@@ -48,6 +86,7 @@ export const createTRPCContext = async (opts: CreateNextContextOptions): Promise
         role: user.role,
         plan: user.plan,
       },
+      organizationId,
     }
   } catch (error) {
     return {}
@@ -70,6 +109,7 @@ export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
   return next({
     ctx: {
       user: ctx.user,
+      organizationId: ctx.organizationId,
     },
   })
 })

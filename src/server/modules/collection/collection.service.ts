@@ -1,16 +1,9 @@
 import { Collection, ApiEndpoint } from "../../../generated/prisma";
 import { CollectionRepository } from "./collection.repository";
-
-export interface CreateCollectionInput {
-    name: string;
-    description?: string;
-    organizationId?: string;
-}
-
-export interface UpdateCollectionInput {
-    name?: string;
-    description?: string;
-}
+import {
+    CreateCollectionInput,
+    UpdateCollectionInput,
+} from "./collection.schema";
 
 export interface CollectionWithStats extends Collection {
     apiEndpoints: ApiEndpoint[];
@@ -22,15 +15,15 @@ export class CollectionService {
     constructor(private readonly collectionRepository: CollectionRepository) {}
 
     async createCollection(input: CreateCollectionInput): Promise<Collection> {
-        // Validate name is not empty
-        if (!input.name || input.name.trim() === "") {
-            throw new Error("Collection name is required");
+        // Validate organizationId is provided
+        if (!input.organizationId) {
+            throw new Error("Organization ID is required");
         }
 
         return this.collectionRepository.create({
             name: input.name.trim(),
             description: input.description?.trim() || null,
-            organizationId: input.organizationId || null,
+            organizationId: input.organizationId,
         });
     }
 
@@ -80,9 +73,6 @@ export class CollectionService {
         const updateData: any = {};
 
         if (input.name !== undefined) {
-            if (!input.name || input.name.trim() === "") {
-                throw new Error("Collection name cannot be empty");
-            }
             updateData.name = input.name.trim();
         }
         if (input.description !== undefined) {

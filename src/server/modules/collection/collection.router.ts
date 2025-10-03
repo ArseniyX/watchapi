@@ -1,51 +1,50 @@
-import { z } from "zod";
 import { router, protectedProcedure } from "../../trpc";
 import { CollectionService } from "./collection.service";
+import {
+    createCollectionSchema,
+    updateCollectionSchema,
+    getCollectionSchema,
+    deleteCollectionSchema,
+    duplicateCollectionSchema,
+    searchCollectionsSchema,
+} from "./collection.schema";
 
 export const createCollectionRouter = (collectionService: CollectionService) =>
     router({
         createCollection: protectedProcedure
-            .input(
-                z.object({
-                    name: z.string().min(1, "Collection name is required"),
-                    description: z.string().optional(),
-                    organizationId: z.string().optional(),
-                })
-            )
-            .mutation(async ({ input }) => {
-                return collectionService.createCollection(input);
+            .input(createCollectionSchema)
+            .mutation(async ({ input, ctx }) => {
+                if (!ctx.organizationId) {
+                    throw new Error("No organization context");
+                }
+                return collectionService.createCollection({
+                    ...input,
+                    organizationId: input.organizationId || ctx.organizationId,
+                });
             }),
 
         getCollection: protectedProcedure
-            .input(z.object({ id: z.string() }))
+            .input(getCollectionSchema)
             .query(async ({ input }) => {
                 return collectionService.getCollection(input.id);
             }),
 
         getMyCollections: protectedProcedure.query(async ({ ctx }) => {
-            // For now, get all collections regardless of user
-            // In a multi-tenant setup, you would filter by organization
-            return collectionService.getCollections();
+            if (!ctx.organizationId) {
+                throw new Error("No organization context");
+            }
+            return collectionService.getCollections(ctx.organizationId);
         }),
 
         updateCollection: protectedProcedure
-            .input(
-                z.object({
-                    id: z.string(),
-                    name: z
-                        .string()
-                        .min(1, "Collection name is required")
-                        .optional(),
-                    description: z.string().optional(),
-                })
-            )
+            .input(getCollectionSchema.merge(updateCollectionSchema))
             .mutation(async ({ input }) => {
                 const { id, ...updateData } = input;
                 return collectionService.updateCollection(id, updateData);
             }),
 
         deleteCollection: protectedProcedure
-            .input(z.object({ id: z.string() }))
+            .input(deleteCollectionSchema)
             .mutation(async ({ input }) => {
                 return collectionService.deleteCollection(input.id);
             }),
@@ -55,7 +54,7 @@ export const createCollectionRouter = (collectionService: CollectionService) =>
         }),
 
         duplicateCollection: protectedProcedure
-            .input(z.object({ id: z.string() }))
+            .input(duplicateCollectionSchema)
             .mutation(async ({ input }) => {
                 const originalCollection =
                     await collectionService.getCollection(input.id);
@@ -72,7 +71,7 @@ export const createCollectionRouter = (collectionService: CollectionService) =>
             }),
 
         searchCollections: protectedProcedure
-            .input(z.object({ query: z.string() }))
+            .input(searchCollectionsSchema)
             .query(async ({ input }) => {
                 return collectionService.searchCollections(input.query);
             }),

@@ -1,44 +1,21 @@
 import bcrypt from "bcryptjs";
 import { UserRepository } from "./user.repository";
-import { User } from "../../../generated/prisma";
-
-export interface CreateUserInput {
-    email: string;
-    name?: string;
-    password: string;
-}
-
-export interface UpdateUserInput {
-    name?: string;
-    password?: string;
-    provider?: string;
-    providerId?: string;
-    avatar?: string;
-}
-
-export interface CreateOAuthUserInput {
-    email: string;
-    name?: string;
-    provider: string;
-    providerId: string;
-    avatar?: string;
-}
+import { User } from "@/generated/prisma";
+import { OrganizationRepository } from "../organization/organization.repository";
+import {
+    CreateUserInput,
+    CreateOAuthUserInput,
+    UpdateUserInput,
+} from "./user.schema";
 
 export class UserService {
-    constructor(private readonly userRepository: UserRepository) {}
+    constructor(
+        private readonly userRepository: UserRepository,
+        private readonly organizationRepository: OrganizationRepository
+    ) {}
 
     async createUser(input: CreateUserInput): Promise<User> {
-        // Validate input
-        if (!input.email || input.email.trim() === "") {
-            throw new Error("Email is required");
-        }
-        if (!input.password || input.password.trim() === "") {
-            throw new Error("Password is required");
-        }
-        if (input.password.length < 6) {
-            throw new Error("Password must be at least 6 characters");
-        }
-
+        // Check if user already exists
         const existingUser = await this.userRepository.findByEmail(input.email);
         if (existingUser) {
             throw new Error("User with this email already exists");
@@ -46,7 +23,7 @@ export class UserService {
 
         const hashedPassword = await bcrypt.hash(input.password, 12);
 
-        return this.userRepository.create({
+        const user = await this.userRepository.create({
             email: input.email.trim(),
             name: input.name?.trim() || null,
             password: hashedPassword,
@@ -54,7 +31,14 @@ export class UserService {
             provider: null,
             providerId: null,
             role: "USER",
+            plan: "FREE",
+            planExpiresAt: null,
         });
+
+        // Create personal organization for new user
+        await this.createPersonalOrganization(user);
+
+        return user;
     }
 
     async getUserById(id: string): Promise<User | null> {
@@ -73,18 +57,7 @@ export class UserService {
     }
 
     async createOAuthUser(input: CreateOAuthUserInput): Promise<User> {
-        // Validate input
-        if (!input.email || input.email.trim() === "") {
-            throw new Error("Email is required");
-        }
-        if (!input.provider || input.provider.trim() === "") {
-            throw new Error("Provider is required");
-        }
-        if (!input.providerId || input.providerId.trim() === "") {
-            throw new Error("Provider ID is required");
-        }
-
-        return this.userRepository.create({
+        const user = await this.userRepository.create({
             email: input.email.trim(),
             name: input.name?.trim() || null,
             password: null, // OAuth users don't have passwords
@@ -92,7 +65,14 @@ export class UserService {
             providerId: input.providerId.trim(),
             avatar: input.avatar?.trim() || null,
             role: "USER",
+            plan: "FREE",
+            planExpiresAt: null,
         });
+
+        // Create personal organization for new OAuth user
+        await this.createPersonalOrganization(user);
+
+        return user;
     }
 
     async updateUser(id: string, input: UpdateUserInput): Promise<User> {
@@ -151,5 +131,27 @@ export class UserService {
         options: { skip?: number; take?: number } = {}
     ): Promise<User[]> {
         return this.userRepository.findMany(options);
+    }
+
+    /**
+     * Create a personal organization for a new user
+     * @private
+     */
+    private async createPersonalOrganization(user: User): Promise<void> {
+        const orgName = user.name ? `${user.name}'s Workspace` : `${user.email}'s Workspace`;
+        const orgSlug = `personal-${user.id}`;
+
+        const organization = await this.organizationRepository.createOrganization({
+            name: orgName,
+            slug: orgSlug,
+            description: "Personal workspace",
+        });
+
+        await this.organizationRepository.addMember({
+            userId: user.id,
+            organizationId: organization.id,
+            role: "OWNER",
+            status: "ACTIVE",
+        });
     }
 }

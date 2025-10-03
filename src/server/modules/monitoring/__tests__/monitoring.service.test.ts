@@ -19,6 +19,7 @@ const mockMonitoringRepository = {
 
 const mockApiEndpointRepository = {
   findById: vi.fn(),
+  findByIdInternal: vi.fn(),
   findByUserId: vi.fn(),
   findByOrganizationId: vi.fn(),
   create: vi.fn(),
@@ -72,24 +73,6 @@ describe('MonitoringService', () => {
       expect(result.responseTime).toBeGreaterThanOrEqual(0)
     })
 
-    it('should throw error if URL is empty', async () => {
-      await expect(
-        service.sendRequest({
-          url: '',
-          method: HttpMethod.GET,
-        })
-      ).rejects.toThrow('URL is required')
-    })
-
-    it('should throw error if URL format is invalid', async () => {
-      await expect(
-        service.sendRequest({
-          url: 'invalid-url',
-          method: HttpMethod.GET,
-        })
-      ).rejects.toThrow('Invalid URL format')
-    })
-
     it('should handle network errors', async () => {
       ;(global.fetch as any).mockRejectedValue(new Error('Network error'))
 
@@ -123,7 +106,7 @@ describe('MonitoringService', () => {
         headers: new Map(),
       }
 
-      mockApiEndpointRepository.findById.mockResolvedValue(mockEndpoint)
+      mockApiEndpointRepository.findByIdInternal.mockResolvedValue(mockEndpoint)
       ;(global.fetch as any).mockResolvedValue(mockResponse)
       mockMonitoringRepository.createMonitoringCheck.mockResolvedValue({})
       mockMonitoringRepository.findUserById.mockResolvedValue({ email: null })
@@ -161,7 +144,7 @@ describe('MonitoringService', () => {
         headers: new Map(),
       }
 
-      mockApiEndpointRepository.findById.mockResolvedValue(mockEndpoint)
+      mockApiEndpointRepository.findByIdInternal.mockResolvedValue(mockEndpoint)
       ;(global.fetch as any).mockResolvedValue(mockResponse)
       mockMonitoringRepository.createMonitoringCheck.mockResolvedValue({})
       mockMonitoringRepository.findUserById.mockResolvedValue({
@@ -191,7 +174,7 @@ describe('MonitoringService', () => {
         timeout: 100,
       }
 
-      mockApiEndpointRepository.findById.mockResolvedValue(mockEndpoint)
+      mockApiEndpointRepository.findByIdInternal.mockResolvedValue(mockEndpoint)
       const error = new Error('Timeout')
       error.name = 'AbortError'
       ;(global.fetch as any).mockRejectedValue(error)
@@ -219,7 +202,7 @@ describe('MonitoringService', () => {
         timeout: 5000,
       }
 
-      mockApiEndpointRepository.findById.mockResolvedValue(mockEndpoint)
+      mockApiEndpointRepository.findByIdInternal.mockResolvedValue(mockEndpoint)
       ;(global.fetch as any).mockRejectedValue(new Error('Network failure'))
       mockMonitoringRepository.createMonitoringCheck.mockResolvedValue({})
       mockMonitoringRepository.findUserById.mockResolvedValue({
@@ -234,7 +217,7 @@ describe('MonitoringService', () => {
     })
 
     it('should throw error if endpoint not found', async () => {
-      mockApiEndpointRepository.findById.mockResolvedValue(null)
+      mockApiEndpointRepository.findByIdInternal.mockResolvedValue(null)
 
       await expect(service.checkApiEndpoint('nonexistent')).rejects.toThrow(
         'API endpoint not found'
@@ -249,9 +232,11 @@ describe('MonitoringService', () => {
         { id: 'check-2', status: CheckStatus.FAILURE },
       ]
 
+      const mockEndpoint = { id: 'endpoint-1', organizationId: 'org-1' }
+      mockApiEndpointRepository.findById.mockResolvedValue(mockEndpoint)
       mockMonitoringRepository.findChecksByApiEndpointId.mockResolvedValue(mockHistory)
 
-      const result = await service.getMonitoringHistory('endpoint-1', { skip: 0, take: 10 })
+      const result = await service.getMonitoringHistory('endpoint-1', 'org-1', { skip: 0, take: 10 })
 
       expect(mockMonitoringRepository.findChecksByApiEndpointId).toHaveBeenCalledWith(
         'endpoint-1',
@@ -269,9 +254,11 @@ describe('MonitoringService', () => {
         uptimePercentage: 95,
       }
 
+      const mockEndpoint = { id: 'endpoint-1', organizationId: 'org-1' }
+      mockApiEndpointRepository.findById.mockResolvedValue(mockEndpoint)
       mockMonitoringRepository.getUptimeStats.mockResolvedValue(mockStats)
 
-      const result = await service.getUptimeStats('endpoint-1', 7)
+      const result = await service.getUptimeStats('endpoint-1', 'org-1', 7)
 
       expect(mockMonitoringRepository.getUptimeStats).toHaveBeenCalledWith(
         'endpoint-1',
@@ -373,7 +360,7 @@ describe('MonitoringService', () => {
       ]
 
       mockApiEndpointRepository.findActive.mockResolvedValue(mockEndpoints)
-      mockApiEndpointRepository.findById.mockResolvedValue({
+      mockApiEndpointRepository.findByIdInternal.mockResolvedValue({
         id: 'endpoint-1',
         userId: 'user-1',
         url: 'https://api.example.com',
@@ -383,6 +370,7 @@ describe('MonitoringService', () => {
         expectedStatus: 200,
         timeout: 5000,
       })
+      mockMonitoringRepository.findUserById.mockResolvedValue({ email: null })
       ;(global.fetch as any).mockResolvedValue({
         status: 200,
         text: vi.fn().mockResolvedValue('OK'),
@@ -392,7 +380,7 @@ describe('MonitoringService', () => {
       await service.runActiveChecks()
 
       expect(mockApiEndpointRepository.findActive).toHaveBeenCalled()
-      expect(mockApiEndpointRepository.findById).toHaveBeenCalledTimes(2)
+      expect(mockApiEndpointRepository.findByIdInternal).toHaveBeenCalledTimes(2)
     })
 
     it('should continue checking other endpoints if one fails', async () => {
@@ -402,7 +390,7 @@ describe('MonitoringService', () => {
       ]
 
       mockApiEndpointRepository.findActive.mockResolvedValue(mockEndpoints)
-      mockApiEndpointRepository.findById
+      mockApiEndpointRepository.findByIdInternal
         .mockRejectedValueOnce(new Error('Endpoint 1 error'))
         .mockResolvedValueOnce({
           id: 'endpoint-2',
@@ -414,6 +402,7 @@ describe('MonitoringService', () => {
           expectedStatus: 200,
           timeout: 5000,
         })
+      mockMonitoringRepository.findUserById.mockResolvedValue({ email: null })
       ;(global.fetch as any).mockResolvedValue({
         status: 200,
         text: vi.fn().mockResolvedValue('OK'),
@@ -422,7 +411,7 @@ describe('MonitoringService', () => {
 
       await service.runActiveChecks()
 
-      expect(mockApiEndpointRepository.findById).toHaveBeenCalledTimes(2)
+      expect(mockApiEndpointRepository.findByIdInternal).toHaveBeenCalledTimes(2)
     })
   })
 })

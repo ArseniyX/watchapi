@@ -9,12 +9,12 @@ import { ApiEndpointModule } from './modules/api-endpoint'
 import './scheduler' // Initialize monitoring scheduler
 
 // Initialize modules
-const userModule = new UserModule(prisma)
+const organizationModule = new OrganizationModule(prisma)
+const userModule = new UserModule(prisma, organizationModule.repository)
 const authModule = new AuthModule(userModule.service, process.env.JWT_SECRET!)
 const apiEndpointModule = new ApiEndpointModule(prisma)
 const monitoringModule = new MonitoringModule(prisma)
 const collectionModule = new CollectionModule(prisma)
-const organizationModule = new OrganizationModule(prisma)
 
 // Create main app router
 export const appRouter = router({

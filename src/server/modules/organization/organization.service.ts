@@ -1,19 +1,33 @@
 import { OrganizationRole, MemberStatus } from '../../../generated/prisma'
 import { OrganizationRepository } from './organization.repository'
+import {
+  CreateOrganizationInput,
+  UpdateOrganizationInput,
+  AddMemberInput,
+  UpdateMemberRoleInput,
+  RemoveMemberInput
+} from './organization.schema'
 import crypto from 'crypto'
 
 export class OrganizationService {
   constructor(private readonly organizationRepository: OrganizationRepository) {}
 
-  async createOrganization(userId: string, data: { name: string; slug: string; description?: string }) {
+  async createOrganization(userId: string, data: CreateOrganizationInput) {
+    // Generate slug from name if not provided
+    const slug = data.slug || this.generateSlug(data.name)
+
     // Check if slug already exists
-    const existing = await this.organizationRepository.findOrganizationBySlug(data.slug)
+    const existing = await this.organizationRepository.findOrganizationBySlug(slug)
     if (existing) {
       throw new Error('An organization with this slug already exists')
     }
 
     // Create organization
-    const organization = await this.organizationRepository.createOrganization(data)
+    const organization = await this.organizationRepository.createOrganization({
+      name: data.name,
+      slug,
+      description: data.description,
+    })
 
     // Add creator as owner
     await this.organizationRepository.addMember({
@@ -34,7 +48,7 @@ export class OrganizationService {
     return this.organizationRepository.findUserOrganizations(userId)
   }
 
-  async updateOrganization(userId: string, id: string, data: { name?: string; description?: string }) {
+  async updateOrganization(userId: string, id: string, data: UpdateOrganizationInput) {
     // Check if user is owner or admin
     const hasPermission = await this.checkMemberPermission(userId, id, OrganizationRole.ADMIN)
     if (!hasPermission) {
@@ -219,5 +233,15 @@ export class OrganizationService {
     }
 
     return false
+  }
+
+  private generateSlug(name: string): string {
+    return name
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, '') // Remove special characters
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
+      .replace(/^-|-$/g, '') // Remove leading/trailing hyphens
   }
 }

@@ -4,7 +4,7 @@ import { BaseRepository } from "../shared/base.repository";
 export interface CreateCollectionData {
     name: string;
     description?: string | null;
-    organizationId?: string | null;
+    organizationId: string;
 }
 
 export interface UpdateCollectionData {

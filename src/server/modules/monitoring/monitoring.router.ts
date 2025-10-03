@@ -1,40 +1,44 @@
-import { z } from "zod";
 import { router, protectedProcedure } from "../../trpc";
 import { MonitoringService } from "./monitoring.service";
-import { HttpMethod } from "../../../generated/prisma";
+import {
+    checkEndpointSchema,
+    sendRequestSchema,
+    getHistorySchema,
+    getUptimeStatsSchema,
+    getAverageResponseTimeSchema,
+    getResponseTimeHistorySchema,
+    getAnalyticsSchema,
+    getTopEndpointsSchema,
+    getResponseTimeChartSchema,
+    getUptimeChartSchema,
+} from "./monitoring.schema";
 
 export const createMonitoringRouter = (monitoringService: MonitoringService) =>
     router({
         checkEndpoint: protectedProcedure
-            .input(z.object({ id: z.string() }))
-            .mutation(async ({ input }) => {
-                return monitoringService.checkApiEndpoint(input.id);
+            .input(checkEndpointSchema)
+            .mutation(async ({ input, ctx }) => {
+                if (!ctx.organizationId) {
+                    throw new Error("No organization context");
+                }
+                return monitoringService.checkApiEndpoint(input.id, ctx.organizationId);
             }),
 
         sendRequest: protectedProcedure
-            .input(
-                z.object({
-                    url: z.string(),
-                    method: z.nativeEnum(HttpMethod),
-                    headers: z.record(z.string(), z.string()).optional(),
-                    body: z.string().optional(),
-                })
-            )
+            .input(sendRequestSchema)
             .mutation(async ({ input }) => {
                 return monitoringService.sendRequest(input);
             }),
 
         getHistory: protectedProcedure
-            .input(
-                z.object({
-                    endpointId: z.string(),
-                    skip: z.number().default(0),
-                    take: z.number().default(50),
-                })
-            )
-            .query(async ({ input }) => {
+            .input(getHistorySchema)
+            .query(async ({ input, ctx }) => {
+                if (!ctx.organizationId) {
+                    throw new Error("No organization context");
+                }
                 return monitoringService.getMonitoringHistory(
                     input.endpointId,
+                    ctx.organizationId,
                     {
                         skip: input.skip,
                         take: input.take,
@@ -43,65 +47,53 @@ export const createMonitoringRouter = (monitoringService: MonitoringService) =>
             }),
 
         getUptimeStats: protectedProcedure
-            .input(
-                z.object({
-                    endpointId: z.string(),
-                    days: z.number().default(30),
-                })
-            )
-            .query(async ({ input }) => {
+            .input(getUptimeStatsSchema)
+            .query(async ({ input, ctx }) => {
+                if (!ctx.organizationId) {
+                    throw new Error("No organization context");
+                }
                 return monitoringService.getUptimeStats(
                     input.endpointId,
+                    ctx.organizationId,
                     input.days
                 );
             }),
 
         getAverageResponseTime: protectedProcedure
-            .input(
-                z.object({
-                    endpointId: z.string(),
-                    days: z.number().default(30),
-                })
-            )
-            .query(async ({ input }) => {
+            .input(getAverageResponseTimeSchema)
+            .query(async ({ input, ctx }) => {
+                if (!ctx.organizationId) {
+                    throw new Error("No organization context");
+                }
                 return monitoringService.getAverageResponseTime(
                     input.endpointId,
+                    ctx.organizationId,
                     input.days
                 );
             }),
 
         getResponseTimeHistory: protectedProcedure
-            .input(
-                z.object({
-                    endpointId: z.string(),
-                    days: z.number().default(7),
-                })
-            )
-            .query(async ({ input }) => {
+            .input(getResponseTimeHistorySchema)
+            .query(async ({ input, ctx }) => {
+                if (!ctx.organizationId) {
+                    throw new Error("No organization context");
+                }
                 return monitoringService.getResponseTimeHistory(
                     input.endpointId,
+                    ctx.organizationId,
                     input.days
                 );
             }),
 
         // Analytics endpoints
         getAnalytics: protectedProcedure
-            .input(
-                z.object({
-                    days: z.number().default(7),
-                })
-            )
+            .input(getAnalyticsSchema)
             .query(async ({ input, ctx }) => {
                 return monitoringService.getAnalytics(ctx.user.id, input.days);
             }),
 
         getTopEndpoints: protectedProcedure
-            .input(
-                z.object({
-                    days: z.number().default(7),
-                    limit: z.number().default(5),
-                })
-            )
+            .input(getTopEndpointsSchema)
             .query(async ({ input, ctx }) => {
                 return monitoringService.getTopEndpoints(
                     ctx.user.id,
@@ -111,11 +103,7 @@ export const createMonitoringRouter = (monitoringService: MonitoringService) =>
             }),
 
         getResponseTimeChart: protectedProcedure
-            .input(
-                z.object({
-                    days: z.number().default(7),
-                })
-            )
+            .input(getResponseTimeChartSchema)
             .query(async ({ input, ctx }) => {
                 return monitoringService.getResponseTimeChart(
                     ctx.user.id,
@@ -124,11 +112,7 @@ export const createMonitoringRouter = (monitoringService: MonitoringService) =>
             }),
 
         getUptimeChart: protectedProcedure
-            .input(
-                z.object({
-                    days: z.number().default(7),
-                })
-            )
+            .input(getUptimeChartSchema)
             .query(async ({ input, ctx }) => {
                 return monitoringService.getUptimeChart(
                     ctx.user.id,

@@ -31,7 +31,7 @@ describe("ApiEndpointService", () => {
                 method: HttpMethod.GET,
                 expectedStatus: 200,
                 timeout: 5000,
-                interval: 60000,
+                interval: 300000,
             };
 
             const mockEndpoint = {
@@ -41,9 +41,11 @@ describe("ApiEndpointService", () => {
                 isActive: true,
             };
 
+            mockApiEndpointRepository.findByOrganizationId.mockResolvedValue([]);
+            mockApiEndpointRepository.findByOrganizationId.mockResolvedValue([]);
             mockApiEndpointRepository.create.mockResolvedValue(mockEndpoint);
 
-            const result = await service.createApiEndpoint("user-1", input);
+            const result = await service.createApiEndpoint("user-1", "FREE", "org-1", input);
 
             expect(mockApiEndpointRepository.create).toHaveBeenCalledWith({
                 name: input.name,
@@ -55,63 +57,25 @@ describe("ApiEndpointService", () => {
                 timeout: input.timeout,
                 interval: input.interval,
                 userId: "user-1",
-                organizationId: null,
+                organizationId: "org-1",
                 collectionId: null,
                 isActive: true,
             });
             expect(result).toEqual(mockEndpoint);
         });
 
-        it("should throw error if name is empty", async () => {
+        it("should throw error if interval is below plan limit", async () => {
+            mockApiEndpointRepository.findByOrganizationId.mockResolvedValue([]);
             await expect(
-                service.createApiEndpoint("user-1", {
-                    name: "",
-                    url: "https://api.example.com",
-                    method: HttpMethod.GET,
-                    expectedStatus: 200,
-                    timeout: 5000,
-                    interval: 60000,
-                })
-            ).rejects.toThrow("Endpoint name is required");
-        });
-
-        it("should throw error if URL is empty", async () => {
-            await expect(
-                service.createApiEndpoint("user-1", {
-                    name: "Test",
-                    url: "",
-                    method: HttpMethod.GET,
-                    expectedStatus: 200,
-                    timeout: 5000,
-                    interval: 60000,
-                })
-            ).rejects.toThrow("URL is required");
-        });
-
-        it("should throw error if timeout is invalid", async () => {
-            await expect(
-                service.createApiEndpoint("user-1", {
-                    name: "Test",
-                    url: "https://api.example.com",
-                    method: HttpMethod.GET,
-                    expectedStatus: 200,
-                    timeout: 0,
-                    interval: 60000,
-                })
-            ).rejects.toThrow("Timeout must be greater than 0");
-        });
-
-        it("should throw error if interval is invalid", async () => {
-            await expect(
-                service.createApiEndpoint("user-1", {
+                service.createApiEndpoint("user-1", "FREE", "org-1", {
                     name: "Test",
                     url: "https://api.example.com",
                     method: HttpMethod.GET,
                     expectedStatus: 200,
                     timeout: 5000,
-                    interval: -1,
+                    interval: 60000, // 1 minute, less than FREE plan minimum of 5 minutes
                 })
-            ).rejects.toThrow("Interval must be greater than 0");
+            ).rejects.toThrow("Check interval cannot be less than 300 seconds");
         });
 
         it("should create endpoint with headers and body", async () => {
@@ -123,12 +87,13 @@ describe("ApiEndpointService", () => {
                 body: '{"test": "data"}',
                 expectedStatus: 201,
                 timeout: 5000,
-                interval: 60000,
+                interval: 300000,
             };
 
+            mockApiEndpointRepository.findByOrganizationId.mockResolvedValue([]);
             mockApiEndpointRepository.create.mockResolvedValue({});
 
-            await service.createApiEndpoint("user-1", input);
+            await service.createApiEndpoint("user-1", "FREE", "org-1", input);
 
             expect(mockApiEndpointRepository.create).toHaveBeenCalledWith({
                 name: input.name,
@@ -140,7 +105,7 @@ describe("ApiEndpointService", () => {
                 timeout: input.timeout,
                 interval: input.interval,
                 userId: "user-1",
-                organizationId: null,
+                organizationId: "org-1",
                 collectionId: null,
                 isActive: true,
             });
@@ -153,12 +118,13 @@ describe("ApiEndpointService", () => {
                 method: HttpMethod.GET,
                 expectedStatus: 200,
                 timeout: 5000,
-                interval: 60000,
+                interval: 300000,
             };
 
+            mockApiEndpointRepository.findByOrganizationId.mockResolvedValue([]);
             mockApiEndpointRepository.create.mockResolvedValue({});
 
-            await service.createApiEndpoint("user-1", input);
+            await service.createApiEndpoint("user-1", "FREE", "org-1", input);
 
             expect(mockApiEndpointRepository.create).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -179,16 +145,17 @@ describe("ApiEndpointService", () => {
 
             mockApiEndpointRepository.findById.mockResolvedValue(mockEndpoint);
 
-            const result = await service.getApiEndpoint("endpoint-1");
+            const result = await service.getApiEndpoint("endpoint-1", "org-1");
 
             expect(mockApiEndpointRepository.findById).toHaveBeenCalledWith(
-                "endpoint-1"
+                "endpoint-1",
+                "org-1"
             );
             expect(result).toEqual(mockEndpoint);
         });
 
         it("should throw error if endpoint ID is empty", async () => {
-            await expect(service.getApiEndpoint("")).rejects.toThrow(
+            await expect(service.getApiEndpoint("", "org-1")).rejects.toThrow(
                 "Endpoint ID is required"
             );
         });
@@ -196,35 +163,9 @@ describe("ApiEndpointService", () => {
         it("should return null if endpoint not found", async () => {
             mockApiEndpointRepository.findById.mockResolvedValue(null);
 
-            const result = await service.getApiEndpoint("nonexistent");
+            const result = await service.getApiEndpoint("nonexistent", "org-1");
 
             expect(result).toBeNull();
-        });
-    });
-
-    describe("getUserApiEndpoints", () => {
-        it("should return user endpoints", async () => {
-            const mockEndpoints = [
-                { id: "endpoint-1", userId: "user-1" },
-                { id: "endpoint-2", userId: "user-1" },
-            ];
-
-            mockApiEndpointRepository.findByUserId.mockResolvedValue(
-                mockEndpoints
-            );
-
-            const result = await service.getUserApiEndpoints("user-1");
-
-            expect(mockApiEndpointRepository.findByUserId).toHaveBeenCalledWith(
-                "user-1"
-            );
-            expect(result).toEqual(mockEndpoints);
-        });
-
-        it("should throw error if user ID is empty", async () => {
-            await expect(service.getUserApiEndpoints("")).rejects.toThrow(
-                "User ID is required"
-            );
         });
     });
 
@@ -277,15 +218,19 @@ describe("ApiEndpointService", () => {
 
             const result = await service.updateApiEndpoint(
                 "user-1",
+                "FREE",
+                "org-1",
                 "endpoint-1",
                 updateData
             );
 
             expect(mockApiEndpointRepository.findById).toHaveBeenCalledWith(
-                "endpoint-1"
+                "endpoint-1",
+                "org-1"
             );
             expect(mockApiEndpointRepository.update).toHaveBeenCalledWith(
                 "endpoint-1",
+                "org-1",
                 {
                     name: updateData.name,
                     url: updateData.url,
@@ -296,48 +241,29 @@ describe("ApiEndpointService", () => {
 
         it("should throw error if endpoint ID is empty", async () => {
             await expect(
-                service.updateApiEndpoint("user-1", "", { name: "New Name" })
+                service.updateApiEndpoint("user-1", "FREE", "org-1", "", { name: "New Name" })
             ).rejects.toThrow("Endpoint ID is required");
         });
 
-        it("should throw error if user ID is empty", async () => {
+        it("should throw error if organizationId is empty", async () => {
             await expect(
-                service.updateApiEndpoint("", "endpoint-1", {
+                service.updateApiEndpoint("user-1", "FREE", "", "endpoint-1", {
                     name: "New Name",
                 })
-            ).rejects.toThrow("User ID is required");
+            ).rejects.toThrow("Organization ID is required");
         });
 
         it("should throw error if endpoint not found", async () => {
             mockApiEndpointRepository.findById.mockResolvedValue(null);
 
             await expect(
-                service.updateApiEndpoint("user-1", "nonexistent", {
+                service.updateApiEndpoint("user-1", "FREE", "org-1", "nonexistent", {
                     name: "New Name",
                 })
-            ).rejects.toThrow("API endpoint not found");
+            ).rejects.toThrow("API endpoint not found or access denied");
         });
 
-        it("should throw error if user does not own endpoint", async () => {
-            const existingEndpoint = {
-                id: "endpoint-1",
-                userId: "user-2",
-            };
-
-            mockApiEndpointRepository.findById.mockResolvedValue(
-                existingEndpoint
-            );
-
-            await expect(
-                service.updateApiEndpoint("user-1", "endpoint-1", {
-                    name: "New Name",
-                })
-            ).rejects.toThrow(
-                "You do not have permission to update this endpoint"
-            );
-        });
-
-        it("should throw error if name is empty string", async () => {
+        it("should throw error if interval is below plan limit", async () => {
             const existingEndpoint = {
                 id: "endpoint-1",
                 userId: "user-1",
@@ -348,44 +274,10 @@ describe("ApiEndpointService", () => {
             );
 
             await expect(
-                service.updateApiEndpoint("user-1", "endpoint-1", {
-                    name: "  ",
+                service.updateApiEndpoint("user-1", "FREE", "org-1", "endpoint-1", {
+                    interval: 60000, // 1 minute, less than FREE plan minimum
                 })
-            ).rejects.toThrow("Endpoint name cannot be empty");
-        });
-
-        it("should throw error if timeout is invalid", async () => {
-            const existingEndpoint = {
-                id: "endpoint-1",
-                userId: "user-1",
-            };
-
-            mockApiEndpointRepository.findById.mockResolvedValue(
-                existingEndpoint
-            );
-
-            await expect(
-                service.updateApiEndpoint("user-1", "endpoint-1", {
-                    timeout: 0,
-                })
-            ).rejects.toThrow("Timeout must be greater than 0");
-        });
-
-        it("should throw error if interval is invalid", async () => {
-            const existingEndpoint = {
-                id: "endpoint-1",
-                userId: "user-1",
-            };
-
-            mockApiEndpointRepository.findById.mockResolvedValue(
-                existingEndpoint
-            );
-
-            await expect(
-                service.updateApiEndpoint("user-1", "endpoint-1", {
-                    interval: -5,
-                })
-            ).rejects.toThrow("Interval must be greater than 0");
+            ).rejects.toThrow("Check interval cannot be less than 300 seconds");
         });
 
         it("should update with partial data", async () => {
@@ -402,12 +294,13 @@ describe("ApiEndpointService", () => {
                 existingEndpoint
             );
 
-            await service.updateApiEndpoint("user-1", "endpoint-1", {
+            await service.updateApiEndpoint("user-1", "FREE", "org-1", "endpoint-1", {
                 isActive: false,
             });
 
             expect(mockApiEndpointRepository.update).toHaveBeenCalledWith(
                 "endpoint-1",
+                "org-1",
                 {
                     isActive: false,
                 }
@@ -427,12 +320,13 @@ describe("ApiEndpointService", () => {
                 existingEndpoint
             );
 
-            await service.updateApiEndpoint("user-1", "endpoint-1", {
+            await service.updateApiEndpoint("user-1", "FREE", "org-1", "endpoint-1", {
                 headers: { Authorization: "Bearer new-token" },
             });
 
             expect(mockApiEndpointRepository.update).toHaveBeenCalledWith(
                 "endpoint-1",
+                "org-1",
                 {
                     headers: JSON.stringify({
                         Authorization: "Bearer new-token",
@@ -444,61 +338,26 @@ describe("ApiEndpointService", () => {
 
     describe("deleteApiEndpoint", () => {
         it("should delete endpoint successfully", async () => {
-            const existingEndpoint = {
-                id: "endpoint-1",
-                userId: "user-1",
-            };
-
-            mockApiEndpointRepository.findById.mockResolvedValue(
-                existingEndpoint
-            );
             mockApiEndpointRepository.delete.mockResolvedValue(undefined);
 
-            await service.deleteApiEndpoint("user-1", "endpoint-1");
+            await service.deleteApiEndpoint("org-1", "endpoint-1");
 
-            expect(mockApiEndpointRepository.findById).toHaveBeenCalledWith(
-                "endpoint-1"
-            );
             expect(mockApiEndpointRepository.delete).toHaveBeenCalledWith(
-                "endpoint-1"
+                "endpoint-1",
+                "org-1"
             );
         });
 
         it("should throw error if endpoint ID is empty", async () => {
             await expect(
-                service.deleteApiEndpoint("user-1", "")
+                service.deleteApiEndpoint("org-1", "")
             ).rejects.toThrow("Endpoint ID is required");
         });
 
-        it("should throw error if user ID is empty", async () => {
+        it("should throw error if organizationId is empty", async () => {
             await expect(
                 service.deleteApiEndpoint("", "endpoint-1")
-            ).rejects.toThrow("User ID is required");
-        });
-
-        it("should throw error if endpoint not found", async () => {
-            mockApiEndpointRepository.findById.mockResolvedValue(null);
-
-            await expect(
-                service.deleteApiEndpoint("user-1", "nonexistent")
-            ).rejects.toThrow("API endpoint not found");
-        });
-
-        it("should throw error if user does not own endpoint", async () => {
-            const existingEndpoint = {
-                id: "endpoint-1",
-                userId: "user-2",
-            };
-
-            mockApiEndpointRepository.findById.mockResolvedValue(
-                existingEndpoint
-            );
-
-            await expect(
-                service.deleteApiEndpoint("user-1", "endpoint-1")
-            ).rejects.toThrow(
-                "You do not have permission to delete this endpoint"
-            );
+            ).rejects.toThrow("Organization ID is required");
         });
     });
 

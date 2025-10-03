@@ -49,16 +49,17 @@ describe("CollectionService", () => {
             expect(result).toEqual(mockCollection);
         });
 
-        it("should create collection without optional fields", async () => {
+        it("should create collection with required organizationId", async () => {
             const input = {
                 name: "Simple Collection",
+                organizationId: "org-1",
             };
 
             const mockCollection = {
                 id: "collection-1",
                 name: "Simple Collection",
                 description: null,
-                organizationId: null,
+                organizationId: "org-1",
                 apiEndpoints: [],
                 createdAt: new Date(),
                 updatedAt: new Date(),
@@ -71,7 +72,7 @@ describe("CollectionService", () => {
             expect(mockRepository.create).toHaveBeenCalledWith({
                 name: "Simple Collection",
                 description: null,
-                organizationId: null,
+                organizationId: "org-1",
             });
             expect(result).toEqual(mockCollection);
         });
@@ -80,6 +81,7 @@ describe("CollectionService", () => {
             const input = {
                 name: "  Test Collection  ",
                 description: "  Test description  ",
+                organizationId: "org-1",
             };
 
             mockRepository.create.mockResolvedValue({ id: "collection-1" });
@@ -89,22 +91,14 @@ describe("CollectionService", () => {
             expect(mockRepository.create).toHaveBeenCalledWith({
                 name: "Test Collection",
                 description: "Test description",
-                organizationId: null,
+                organizationId: "org-1",
             });
         });
 
-        it("should throw error if name is empty", async () => {
+        it("should throw error if organizationId is missing", async () => {
             await expect(
-                service.createCollection({ name: "" })
-            ).rejects.toThrow("Collection name is required");
-
-            expect(mockRepository.create).not.toHaveBeenCalled();
-        });
-
-        it("should throw error if name is only whitespace", async () => {
-            await expect(
-                service.createCollection({ name: "   " })
-            ).rejects.toThrow("Collection name is required");
+                service.createCollection({ name: "Test", organizationId: "" })
+            ).rejects.toThrow("Organization ID is required");
 
             expect(mockRepository.create).not.toHaveBeenCalled();
         });
@@ -328,26 +322,6 @@ describe("CollectionService", () => {
             ).rejects.toThrow("Collection ID is required");
 
             expect(mockRepository.findById).not.toHaveBeenCalled();
-        });
-
-        it("should throw error if name is empty string", async () => {
-            mockRepository.findById.mockResolvedValue({ id: "collection-1" });
-
-            await expect(
-                service.updateCollection("collection-1", { name: "" })
-            ).rejects.toThrow("Collection name cannot be empty");
-
-            expect(mockRepository.update).not.toHaveBeenCalled();
-        });
-
-        it("should throw error if name is only whitespace", async () => {
-            mockRepository.findById.mockResolvedValue({ id: "collection-1" });
-
-            await expect(
-                service.updateCollection("collection-1", { name: "   " })
-            ).rejects.toThrow("Collection name cannot be empty");
-
-            expect(mockRepository.update).not.toHaveBeenCalled();
         });
     });
 

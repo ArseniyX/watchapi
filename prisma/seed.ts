@@ -22,6 +22,38 @@ async function main() {
 
     console.log("✅ Created demo user:", user.email);
 
+    // Get or create personal organization for demo user
+    let organization = await prisma.organization.findFirst({
+        where: {
+            members: {
+                some: {
+                    userId: user.id
+                }
+            }
+        }
+    });
+
+    if (!organization) {
+        organization = await prisma.organization.create({
+            data: {
+                name: `${user.name}'s Workspace`,
+                slug: `demo-workspace`,
+                description: "Demo user's personal workspace"
+            }
+        });
+
+        await prisma.organizationMember.create({
+            data: {
+                userId: user.id,
+                organizationId: organization.id,
+                role: "OWNER",
+                status: "ACTIVE"
+            }
+        });
+
+        console.log("✅ Created personal organization:", organization.name);
+    }
+
     // Create demo collections
     const collections = [
         {
@@ -52,6 +84,7 @@ async function main() {
                     .toLowerCase()
                     .replace(/\s+/g, "-")}`,
                 ...collectionData,
+                organizationId: organization.id,
             },
         });
 
@@ -359,6 +392,7 @@ async function main() {
                     .replace(/\s+/g, "-")}`,
                 ...endpointData,
                 userId: user.id,
+                organizationId: organization.id,
                 isActive: true,
             },
         });
