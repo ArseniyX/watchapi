@@ -163,7 +163,7 @@ export default function MonitoringPage() {
               </TableHeader>
               <TableBody>
                 {filteredEndpoints.map((endpoint) => (
-                  <EndpointRow key={endpoint.id} endpoint={endpoint} />
+                  <EndpointRow key={`${endpoint.id}-${endpoint.name}-${endpoint.method}-${endpoint.url}`} endpoint={endpoint} />
                 ))}
               </TableBody>
             </Table>
@@ -177,10 +177,11 @@ export default function MonitoringPage() {
 function EndpointRow({ endpoint }: { endpoint: any }) {
   const { data: history } = trpc.monitoring.getHistory.useQuery(
     { endpointId: endpoint.id, take: 1 },
-    { refetchInterval: 30000 }
+    { refetchInterval: 30000, refetchOnWindowFocus: true }
   )
   const { data: uptimeStats } = trpc.monitoring.getUptimeStats.useQuery(
-    { endpointId: endpoint.id, days: 30 }
+    { endpointId: endpoint.id, days: 30 },
+    { refetchOnWindowFocus: true }
   )
 
   const lastCheck = history?.[0]

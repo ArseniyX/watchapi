@@ -48,7 +48,10 @@ const StatusIcon = ({ status }: { status: string }) => {
 };
 
 export default function AlertsPage() {
-    const { data: endpoints } = trpc.apiEndpoint.getMyEndpoints.useQuery();
+    const { data: endpoints } = trpc.apiEndpoint.getMyEndpoints.useQuery(undefined, {
+        refetchOnWindowFocus: true,
+        refetchInterval: 60000,
+    });
 
     // Get failed checks from all endpoints using the monitoringChecks relationship
     const failedChecks: any[] = [];

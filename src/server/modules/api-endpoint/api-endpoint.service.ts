@@ -1,5 +1,6 @@
-import { ApiEndpoint, HttpMethod } from "../../../generated/prisma";
+import { ApiEndpoint, HttpMethod, PlanType } from "../../../generated/prisma";
 import { ApiEndpointRepository } from "./api-endpoint.repository";
+import { getPlanLimits, isUnlimited } from "../../config/plan-limits";
 
 export interface CreateApiEndpointInput {
     name: string;
@@ -32,6 +33,7 @@ export class ApiEndpointService {
 
     async createApiEndpoint(
         userId: string,
+        userPlan: PlanType,
         input: CreateApiEndpointInput,
         organizationId?: string | null
     ): Promise<ApiEndpoint> {
@@ -41,6 +43,24 @@ export class ApiEndpointService {
         }
         if (!input.url || input.url.trim() === "") {
             throw new Error("URL is required");
+        }
+
+        // Check plan limits
+        const limits = getPlanLimits(userPlan);
+
+        // Check max endpoints limit
+        const currentEndpoints = await this.apiEndpointRepository.findByUserId(userId);
+        if (!isUnlimited(limits.maxEndpoints) && currentEndpoints.length >= limits.maxEndpoints) {
+            throw new Error(
+                `Plan limit reached. ${userPlan} plan allows maximum ${limits.maxEndpoints} endpoints. Upgrade your plan to add more.`
+            );
+        }
+
+        // Check minimum check interval
+        if (input.interval < limits.minCheckInterval) {
+            throw new Error(
+                `Check interval cannot be less than ${limits.minCheckInterval / 1000} seconds for ${userPlan} plan. Upgrade to reduce check interval.`
+            );
         }
 
         // Validate timeout and interval
@@ -92,6 +112,7 @@ export class ApiEndpointService {
 
     async updateApiEndpoint(
         userId: string,
+        userPlan: PlanType,
         id: string,
         input: UpdateApiEndpointInput
     ): Promise<ApiEndpoint> {
@@ -115,6 +136,7 @@ export class ApiEndpointService {
         }
 
         const updateData: Record<string, any> = {};
+        const limits = getPlanLimits(userPlan);
 
         if (input.name !== undefined) {
             if (input.name.trim() === "") {
@@ -154,6 +176,12 @@ export class ApiEndpointService {
         if (input.interval !== undefined) {
             if (input.interval <= 0) {
                 throw new Error("Interval must be greater than 0");
+            }
+            // Check minimum check interval for plan
+            if (input.interval < limits.minCheckInterval) {
+                throw new Error(
+                    `Check interval cannot be less than ${limits.minCheckInterval / 1000} seconds for ${userPlan} plan. Upgrade to reduce check interval.`
+                );
             }
             updateData.interval = input.interval;
         }

@@ -192,3 +192,15 @@ Advanced (Post-MVP)
 3. Smart alerting (reduce false positives - even basic heuristics)
 4. Template library (REST, GraphQL, webhook patterns)
 5. Team collaboration (shared debugging, comments on failures)
+
+6. Health check endpoint - Dockerfile references /api/health but it doesn't exist:
+   // src/app/api/health/route.ts - MISSING
+7. Rate limiting - No protection against API abuse
+8. Logging system - Only console.log, need structured logging (winston/pino)
+9. CORS configuration - Not configured for production
+10. ENABLE_CRON env var - Missing from .env.production (scheduler won't start)
+11. Input validation - Need to verify all tRPC inputs have Zod schemas
+12. Security headers - No helmet.js or security middleware
+13. Email service config - nodemailer env vars missing from .env.production
+14. Monitoring alerting - Alert throttling exists but limited (only email/webhook)
+15. Database indexes - Need to verify performance indexes on MonitoringCheck table

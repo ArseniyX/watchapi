@@ -10,22 +10,24 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
 }
 
 // User management
 model User {
-  id          String    @id @default(cuid())
-  email       String    @unique
-  name        String?
-  password    String?   // Optional for OAuth users
-  avatar      String?   // Profile picture URL
-  provider    String?   // 'local', 'google', 'github'
-  providerId  String?   // OAuth provider user ID
-  role        UserRole  @default(USER)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  password      String? // Optional for OAuth users
+  avatar        String? // Profile picture URL
+  provider      String? // 'local', 'google', 'github'
+  providerId    String? // OAuth provider user ID
+  role          UserRole  @default(USER)
+  plan          PlanType  @default(FREE)
+  planExpiresAt DateTime? // For paid plans
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   // Relations
   accounts         Account[]
@@ -34,6 +36,7 @@ model User {
   apiEndpoints     ApiEndpoint[]
   monitoringChecks MonitoringCheck[]
   alerts           Alert[]
+  subscription     Subscription?
 
   @@unique([provider, providerId])
   @@map("users")
@@ -103,14 +106,14 @@ model OrganizationMember {
 }
 
 model OrganizationInvitation {
-  id             String   @id @default(cuid())
+  id             String           @id @default(cuid())
   email          String
   organizationId String
   role           OrganizationRole @default(MEMBER)
   invitedBy      String
-  token          String   @unique
+  token          String           @unique
   expiresAt      DateTime
-  createdAt      DateTime @default(now())
+  createdAt      DateTime         @default(now())
 
   @@map("organization_invitations")
 }
@@ -131,27 +134,27 @@ model Collection {
 }
 
 model ApiEndpoint {
-  id             String      @id @default(cuid())
+  id             String     @id @default(cuid())
   name           String
   url            String
-  method         HttpMethod  @default(GET)
-  headers        String?     // JSON string
+  method         HttpMethod @default(GET)
+  headers        String? // JSON string
   body           String?
-  expectedStatus Int         @default(200)
-  timeout        Int         @default(30000)
-  interval       Int         @default(300000) // 5 minutes
-  isActive       Boolean     @default(true)
+  expectedStatus Int        @default(200)
+  timeout        Int        @default(30000)
+  interval       Int        @default(300000) // 5 minutes
+  isActive       Boolean    @default(true)
   userId         String
   organizationId String?
   collectionId   String?
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
 
-  user            User                @relation(fields: [userId], references: [id])
-  organization    Organization?       @relation(fields: [organizationId], references: [id])
-  collection      Collection?         @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  user             User              @relation(fields: [userId], references: [id])
+  organization     Organization?     @relation(fields: [organizationId], references: [id])
+  collection       Collection?       @relation(fields: [collectionId], references: [id], onDelete: Cascade)
   monitoringChecks MonitoringCheck[]
-  alerts          Alert[]
+  alerts           Alert[]
 
   @@map("api_endpoints")
 }
@@ -161,10 +164,10 @@ model MonitoringCheck {
   apiEndpointId String
   userId        String
   status        CheckStatus
-  responseTime  Int?        // in milliseconds
+  responseTime  Int? // in milliseconds
   statusCode    Int?
   errorMessage  String?
-  responseSize  Int?        // in bytes
+  responseSize  Int? // in bytes
   checkedAt     DateTime    @default(now())
 
   apiEndpoint ApiEndpoint @relation(fields: [apiEndpointId], references: [id], onDelete: Cascade)
@@ -176,30 +179,30 @@ model MonitoringCheck {
 
 // Alerting system
 model Alert {
-  id            String      @id @default(cuid())
+  id            String         @id @default(cuid())
   name          String
   description   String?
   apiEndpointId String
   userId        String
   condition     AlertCondition
   threshold     Float
-  isActive      Boolean     @default(true)
+  isActive      Boolean        @default(true)
   lastTriggered DateTime?
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 
-  apiEndpoint      ApiEndpoint        @relation(fields: [apiEndpointId], references: [id], onDelete: Cascade)
-  user             User               @relation(fields: [userId], references: [id])
-  alertTriggers    AlertTrigger[]
-  notifications    AlertNotification[]
+  apiEndpoint   ApiEndpoint         @relation(fields: [apiEndpointId], references: [id], onDelete: Cascade)
+  user          User                @relation(fields: [userId], references: [id])
+  alertTriggers AlertTrigger[]
+  notifications AlertNotification[]
 
   @@map("alerts")
 }
 
 model AlertTrigger {
-  id        String   @id @default(cuid())
-  alertId   String
-  value     Float
+  id          String   @id @default(cuid())
+  alertId     String
+  value       Float
   triggeredAt DateTime @default(now())
 
   alert Alert @relation(fields: [alertId], references: [id], onDelete: Cascade)
@@ -208,12 +211,12 @@ model AlertTrigger {
 }
 
 model AlertNotification {
-  id        String             @id @default(cuid())
+  id        String           @id @default(cuid())
   alertId   String
   type      NotificationType
-  recipient String             // email, webhook URL, etc.
-  isActive  Boolean            @default(true)
-  createdAt DateTime           @default(now())
+  recipient String // email, webhook URL, etc.
+  isActive  Boolean          @default(true)
+  createdAt DateTime         @default(now())
 
   alert Alert @relation(fields: [alertId], references: [id], onDelete: Cascade)
 
@@ -269,4 +272,37 @@ enum NotificationType {
   WEBHOOK
   SLACK
   DISCORD
+}
+
+enum PlanType {
+  FREE
+  STARTER
+  PRO
+  ENTERPRISE
+}
+
+// Subscription management
+model Subscription {
+  id                   String             @id @default(cuid())
+  userId               String             @unique
+  plan                 PlanType           @default(FREE)
+  status               SubscriptionStatus @default(ACTIVE)
+  currentPeriodStart   DateTime           @default(now())
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean            @default(false)
+  stripeCustomerId     String?            @unique
+  stripeSubscriptionId String?            @unique
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELED
+  EXPIRED
+  TRIAL
 }

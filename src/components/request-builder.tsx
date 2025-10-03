@@ -397,6 +397,7 @@ export function RequestBuilder() {
     const updateEndpointMutation = trpc.apiEndpoint.update.useMutation({
         onSuccess: async () => {
             await utils.collection.getMyCollections.invalidate();
+            await utils.apiEndpoint.getMyEndpoints.invalidate();
         },
     });
 

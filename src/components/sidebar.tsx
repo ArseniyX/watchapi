@@ -131,6 +131,7 @@ function CollectionTree({
     const createEndpointMutation = trpc.apiEndpoint.create.useMutation({
         onSuccess: () => {
             utils.collection.getMyCollections.invalidate();
+            utils.apiEndpoint.getMyEndpoints.invalidate();
         },
     });
 
@@ -138,6 +139,7 @@ function CollectionTree({
         trpc.collection.deleteCollection.useMutation({
             onSuccess: () => {
                 utils.collection.getMyCollections.invalidate();
+                utils.apiEndpoint.getMyEndpoints.invalidate();
                 toast.success("Collection deleted successfully");
                 setDeleteDialog({
                     open: false,
@@ -154,6 +156,7 @@ function CollectionTree({
     const deleteEndpointMutation = trpc.apiEndpoint.delete.useMutation({
         onSuccess: () => {
             utils.collection.getMyCollections.invalidate();
+            utils.apiEndpoint.getMyEndpoints.invalidate();
             toast.success("Endpoint deleted successfully");
             setDeleteDialog({
                 open: false,

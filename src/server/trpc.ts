@@ -2,12 +2,14 @@ import { TRPCError, initTRPC } from '@trpc/server'
 import { type CreateNextContextOptions } from '@trpc/server/adapters/next'
 import jwt from 'jsonwebtoken'
 import { prisma } from './database'
+import { PlanType } from '@/generated/prisma'
 
 export interface Context {
   user?: {
     id: string
     email: string
     role: string
+    plan: PlanType
   }
 }
 
@@ -32,7 +34,7 @@ export const createTRPCContext = async (opts: CreateNextContextOptions): Promise
     // Verify user exists
     const user = await prisma.user.findUnique({
       where: { id: payload.userId },
-      select: { id: true, email: true, role: true }
+      select: { id: true, email: true, role: true, plan: true }
     })
 
     if (!user) {
@@ -44,6 +46,7 @@ export const createTRPCContext = async (opts: CreateNextContextOptions): Promise
         id: user.id,
         email: user.email,
         role: user.role,
+        plan: user.plan,
       },
     }
   } catch (error) {
@@ -55,10 +58,15 @@ const t = initTRPC.context<Context>().create()
 
 export const router = t.router
 export const publicProcedure = t.procedure
-export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
+export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
   if (!ctx.user) {
     throw new TRPCError({ code: 'UNAUTHORIZED' })
   }
+
+  // Apply rate limiting
+  const { checkRateLimit } = await import('./middleware/rate-limit')
+  await checkRateLimit(ctx.user.id, ctx.user.plan)
+
   return next({
     ctx: {
       user: ctx.user,

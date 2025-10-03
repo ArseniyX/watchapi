@@ -22,7 +22,7 @@ export const createApiEndpointRouter = (
                 })
             )
             .mutation(async ({ input, ctx }) => {
-                return apiEndpointService.createApiEndpoint(ctx.user.id, input);
+                return apiEndpointService.createApiEndpoint(ctx.user.id, ctx.user.plan, input);
             }),
 
         get: protectedProcedure
@@ -62,6 +62,7 @@ export const createApiEndpointRouter = (
                 const { id, ...updateData } = input;
                 return apiEndpointService.updateApiEndpoint(
                     ctx.user.id,
+                    ctx.user.plan,
                     id,
                     updateData
                 );
