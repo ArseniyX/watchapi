@@ -95,8 +95,10 @@ jobs:
           ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:latest
           ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:${{ github.sha }}
         labels: ${{ steps.meta.outputs.labels }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+        cache-from: |
+          type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:buildcache
+          type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:latest
+        cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:buildcache,mode=max
         build-args: |
           DATABASE_URL=${{ secrets.DATABASE_URL }}
           NEXT_PUBLIC_DOMAIN=${{ vars.NEXT_PUBLIC_DOMAIN }}
