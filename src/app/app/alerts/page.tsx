@@ -299,9 +299,9 @@ export default function AlertsPage() {
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
+            <div className="overflow-x-auto max-h-[300px] overflow-y-auto">
               <Table>
-                <TableHeader>
+                <TableHeader className="sticky top-0 bg-card z-10">
                   <TableRow>
                     <TableHead className="whitespace-nowrap">Status</TableHead>
                     <TableHead className="min-w-[200px]">Endpoint</TableHead>

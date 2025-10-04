@@ -184,8 +184,16 @@ export class MonitoringService {
       return result;
     } catch (error) {
       const responseTime = Date.now() - startTime;
-      const errorMessage =
-        error instanceof Error ? error.message : "Unknown error";
+
+      // Extract detailed error message, including cause if available
+      let errorMessage = "Unknown error";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+        // Include the underlying cause if present (e.g., ENOTFOUND, ECONNREFUSED)
+        if (error.cause instanceof Error) {
+          errorMessage += ` (${error.cause.message})`;
+        }
+      }
 
       const result: MonitoringCheckResult = {
         status:

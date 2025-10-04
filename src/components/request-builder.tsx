@@ -407,13 +407,10 @@ export function RequestBuilder() {
       // Convert headers array to record format
       const headersRecord = headers
         .filter((h: KeyValuePair) => h.enabled && h.key)
-        .reduce(
-          (acc: Record<string, string>, h: KeyValuePair) => {
-            acc[h.key] = h.value;
-            return acc;
-          },
-          {} as Record<string, string>,
-        );
+        .reduce((acc: Record<string, string>, h: KeyValuePair) => {
+          acc[h.key] = h.value;
+          return acc;
+        }, {} as Record<string, string>);
 
       // Save to API
       const updateData: any = {
@@ -492,13 +489,10 @@ export function RequestBuilder() {
           method: method as any,
           headers: headers
             .filter((h: KeyValuePair) => h.enabled && h.key)
-            .reduce(
-              (acc: Record<string, string>, h: KeyValuePair) => {
-                acc[h.key] = h.value;
-                return acc;
-              },
-              {} as Record<string, string>,
-            ),
+            .reduce((acc: Record<string, string>, h: KeyValuePair) => {
+              acc[h.key] = h.value;
+              return acc;
+            }, {} as Record<string, string>),
         };
 
         // Only include body if it has content
@@ -558,6 +552,7 @@ export function RequestBuilder() {
         <RequestTabs />
         <div className="flex flex-1 items-center justify-center">
           <Image
+            priority
             src="/logo.png"
             alt="WatchAPI logo"
             width={400}

@@ -132,6 +132,7 @@ export default function RootLayout({
       </head>
       <body
         className={`font-sans ${GeistSans.variable} ${GeistMono.variable} antialiased`}
+        suppressHydrationWarning
       >
         <TRPCProvider>
           <AuthProvider>
