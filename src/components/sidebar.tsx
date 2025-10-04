@@ -313,6 +313,7 @@ function CollectionTree({
                     }}
                     className="p-0.5 hover:bg-primary/20 rounded group/add"
                     title="Add endpoint"
+                    data-testid="add-endpoint-button"
                   >
                     <Plus className="h-3 w-3 text-muted-foreground group-hover/add:text-primary transition-colors" />
                   </button>
@@ -480,6 +481,7 @@ export function Sidebar({}: SidebarProps) {
               variant="ghost"
               className="h-8 w-8"
               onClick={handleAddCollection}
+              data-testid="create-collection-button"
             >
               <Plus className="h-4 w-4" />
             </Button>

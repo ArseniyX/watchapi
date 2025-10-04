@@ -191,7 +191,7 @@ export default function TeamPage() {
                 value={role}
                 onValueChange={(v) => setRole(v as OrganizationRole)}
               >
-                <SelectTrigger>
+                <SelectTrigger className="border-border">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -343,7 +343,11 @@ export default function TeamPage() {
                               >
                                 {updateRole.isPending
                                   ? "Updating..."
-                                  : `Change to ${member.role === "ADMIN" ? "Member" : "Admin"}`}
+                                  : `Change to ${
+                                      member.role === "ADMIN"
+                                        ? "Member"
+                                        : "Admin"
+                                    }`}
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                             </>
@@ -355,7 +359,9 @@ export default function TeamPage() {
                               onClick={() => {
                                 if (
                                   confirm(
-                                    `Are you sure you want to remove ${member.user.name || member.user.email} from this organization?`,
+                                    `Are you sure you want to remove ${
+                                      member.user.name || member.user.email
+                                    } from this organization?`,
                                   )
                                 ) {
                                   removeMember.mutate({

@@ -101,6 +101,7 @@ export class MonitoringRepository {
         checkedAt: true,
       },
       orderBy: { checkedAt: "asc" },
+      take: 5000, // Limit to 5000 data points for chart
     });
   }
 
@@ -225,6 +226,7 @@ export class MonitoringRepository {
         checkedAt: true,
       },
       orderBy: { checkedAt: "asc" },
+      take: 5000, // Limit to 5000 data points for chart
     });
   }
 
@@ -239,6 +241,7 @@ export class MonitoringRepository {
         checkedAt: true,
       },
       orderBy: { checkedAt: "asc" },
+      take: 5000, // Limit to 5000 data points for chart
     });
   }
 

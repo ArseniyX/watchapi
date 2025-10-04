@@ -106,10 +106,10 @@ export default function AnalyticsPage() {
               <SelectItem value="90">Last 90 days</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline">
+          {/* <Button variant="outline">
             <Download className="mr-2 h-4 w-4" />
             Export
-          </Button>
+          </Button> */}
         </div>
       </div>
 
@@ -126,7 +126,9 @@ export default function AnalyticsPage() {
               <div className="text-2xl font-bold">{metric.value}</div>
               <div className="flex items-center space-x-2 text-xs">
                 <span
-                  className={`flex items-center ${metric.trend === "up" ? "text-green-600" : "text-red-600"}`}
+                  className={`flex items-center ${
+                    metric.trend === "up" ? "text-green-600" : "text-red-600"
+                  }`}
                 >
                   {metric.trend === "up" ? (
                     <TrendingUp className="mr-1 h-3 w-3" />

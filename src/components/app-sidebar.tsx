@@ -10,7 +10,7 @@ import { SidebarUserProfile } from "./sidebar-user-profile";
 
 export function AppSidebar() {
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible="icon" data-testid="app-sidebar">
       <SidebarHeader className="border-b border-sidebar-border">
         <Link href="/app">
           <Logo />

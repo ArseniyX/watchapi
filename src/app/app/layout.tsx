@@ -8,8 +8,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <AuthGuard>
       <SidebarProvider defaultOpen={false}>
         <AppSidebar />
-        <SidebarInset>
-          <div className="flex flex-1 flex-col gap-4 px-4 pt-0">{children}</div>
+        <SidebarInset className="flex flex-col h-screen">
+          <div className="flex flex-1 flex-col gap-4 px-4 pt-0 overflow-hidden">
+            {children}
+          </div>
         </SidebarInset>
       </SidebarProvider>
     </AuthGuard>
