@@ -29,15 +29,17 @@ const mockApiEndpointRepository = {
   findMany: vi.fn(),
 };
 
-const mockNotificationChannelService = {
-  sendNotifications: vi
-    .fn()
-    .mockResolvedValue({ total: 0, success: 0, failed: 0 }),
-  createNotificationChannel: vi.fn(),
-  updateNotificationChannel: vi.fn(),
-  deleteNotificationChannel: vi.fn(),
-  getNotificationChannels: vi.fn(),
-  getNotificationChannel: vi.fn(),
+const mockAlertService = {
+  evaluateAlerts: vi.fn().mockResolvedValue(undefined),
+  createAlert: vi.fn(),
+  getAlert: vi.fn(),
+  getAlertsByEndpoint: vi.fn(),
+  getAlertsByOrganization: vi.fn(),
+  updateAlert: vi.fn(),
+  deleteAlert: vi.fn(),
+  createAlertNotification: vi.fn(),
+  deleteAlertNotification: vi.fn(),
+  getAlertTriggers: vi.fn(),
 };
 
 // Mock fetch
@@ -50,7 +52,7 @@ describe("MonitoringService", () => {
     service = new MonitoringService(
       mockMonitoringRepository as any,
       mockApiEndpointRepository as any,
-      mockNotificationChannelService as any,
+      mockAlertService as any,
     );
     vi.clearAllMocks();
   });

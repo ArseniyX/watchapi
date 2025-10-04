@@ -4,7 +4,7 @@ import { ApiEndpointRepository } from "../api-endpoint/api-endpoint.repository";
 import { SendRequestInput } from "./monitoring.schema";
 import { NotFoundError, ForbiddenError } from "../../errors/custom-errors";
 import { logger, logError, logInfo } from "@/lib/logger";
-import { NotificationChannelService } from "../notification-channel/notification-channel.service";
+import { AlertService } from "../alert/alert.service";
 
 export interface MonitoringCheckResult {
   status: CheckStatus;
@@ -15,18 +15,11 @@ export interface MonitoringCheckResult {
 }
 
 export class MonitoringService {
-  // Track last alert time per endpoint to prevent alert spam
-  private lastAlertTime: Map<string, number> = new Map();
-  private readonly ALERT_THROTTLE_MS = 60 * 60 * 1000; // 1 hour
-  private notificationChannelService: NotificationChannelService;
-
   constructor(
     private readonly monitoringRepository: MonitoringRepository,
     private readonly apiEndpointRepository: ApiEndpointRepository,
-    notificationChannelService: NotificationChannelService,
-  ) {
-    this.notificationChannelService = notificationChannelService;
-  }
+    private readonly alertService: AlertService,
+  ) {}
 
   async sendRequest(input: SendRequestInput): Promise<{
     status: number;
@@ -179,10 +172,14 @@ export class MonitoringService {
         statusCode: result.statusCode,
       });
 
-      // Send alert if check failed
-      if (result.status !== CheckStatus.SUCCESS) {
-        await this.sendAlert(endpoint, result);
-      }
+      // Evaluate alerts for this check
+      await this.alertService.evaluateAlerts({
+        apiEndpointId,
+        status: result.status,
+        responseTime: result.responseTime,
+        statusCode: result.statusCode,
+        errorMessage: result.errorMessage,
+      });
 
       return result;
     } catch (error) {
@@ -220,56 +217,17 @@ export class MonitoringService {
         responseSize: null,
       });
 
-      // Send alert for errors/timeouts
-      await this.sendAlert(endpoint, result);
+      // Evaluate alerts for errors/timeouts
+      await this.alertService.evaluateAlerts({
+        apiEndpointId,
+        status: result.status,
+        responseTime: result.responseTime,
+        statusCode: result.statusCode,
+        errorMessage: result.errorMessage,
+      });
 
       return result;
     }
-  }
-
-  private async sendAlert(
-    endpoint: ApiEndpoint,
-    result: MonitoringCheckResult,
-  ): Promise<void> {
-    const now = Date.now();
-    const lastAlert = this.lastAlertTime.get(endpoint.id);
-
-    // Check if we should throttle (skip alert if sent within last hour)
-    if (lastAlert && now - lastAlert < this.ALERT_THROTTLE_MS) {
-      logger.debug("Alert throttled", {
-        endpointId: endpoint.id,
-        endpointName: endpoint.name,
-        lastAlertMinutesAgo: Math.floor((now - lastAlert) / 60000),
-      });
-      return;
-    }
-
-    // Prepare alert data
-    const alertData = {
-      endpointName: endpoint.name,
-      endpointUrl: endpoint.url,
-      status: result.status,
-      statusCode: result.statusCode,
-      errorMessage: result.errorMessage,
-      responseTime: result.responseTime,
-      timestamp: new Date(),
-    };
-
-    // Send notifications via organization's configured channels
-    await this.notificationChannelService.sendNotifications(
-      endpoint.organizationId,
-      alertData,
-    );
-
-    logInfo("Alert sent via notification channels", {
-      endpointId: endpoint.id,
-      endpointName: endpoint.name,
-      organizationId: endpoint.organizationId,
-      status: result.status,
-    });
-
-    // Mark alert as sent for throttling
-    this.lastAlertTime.set(endpoint.id, now);
   }
 
   async getMonitoringHistory(

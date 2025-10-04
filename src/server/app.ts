@@ -8,6 +8,7 @@ import { OrganizationModule } from "./modules/organization";
 import { ApiEndpointModule } from "./modules/api-endpoint";
 import { contactRouter } from "./modules/contact";
 import { notificationChannelRouter } from "./modules/notification-channel";
+import { alertRouter, alertService } from "./modules/alert";
 import "./scheduler"; // Initialize monitoring scheduler
 
 // Initialize modules
@@ -15,7 +16,7 @@ const organizationModule = new OrganizationModule(prisma);
 const userModule = new UserModule(prisma, organizationModule.repository);
 const authModule = new AuthModule(userModule.service, process.env.JWT_SECRET!);
 const apiEndpointModule = new ApiEndpointModule(prisma);
-const monitoringModule = new MonitoringModule(prisma);
+const monitoringModule = new MonitoringModule(prisma, alertService);
 const collectionModule = new CollectionModule(prisma);
 
 // Create main app router
@@ -28,6 +29,7 @@ export const appRouter = router({
   organization: organizationModule.router,
   contact: contactRouter,
   notificationChannel: notificationChannelRouter,
+  alert: alertRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -3,7 +3,7 @@ import {
   MonitoringCheck,
   CheckStatus,
   Prisma,
-} from "../../../generated/prisma";
+} from "@/generated/prisma";
 
 export class MonitoringRepository {
   constructor(private readonly prisma: PrismaClient) {}
