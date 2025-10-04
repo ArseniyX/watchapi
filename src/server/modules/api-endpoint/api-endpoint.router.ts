@@ -21,7 +21,7 @@ export const createApiEndpointRouter = (
         }
         return apiEndpointService.createApiEndpoint(
           ctx.user.id,
-          ctx.user.plan,
+          ctx.organizationPlan,
           ctx.organizationId,
           input,
         );
@@ -60,7 +60,7 @@ export const createApiEndpointRouter = (
         const { id, ...updateData } = input;
         return apiEndpointService.updateApiEndpoint(
           ctx.user.id,
-          ctx.user.plan,
+          ctx.organizationPlan,
           ctx.organizationId,
           id,
           updateData,

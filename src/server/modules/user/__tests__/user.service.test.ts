@@ -88,8 +88,6 @@ describe("UserService", () => {
         provider: null,
         providerId: null,
         role: "USER",
-        plan: "FREE",
-        planExpiresAt: null,
       });
       expect(result).toEqual(mockUser);
     });
@@ -137,8 +135,6 @@ describe("UserService", () => {
         provider: null,
         providerId: null,
         role: "USER",
-        plan: "FREE",
-        planExpiresAt: null,
       });
     });
   });
@@ -260,8 +256,6 @@ describe("UserService", () => {
         providerId: input.providerId,
         avatar: input.avatar,
         role: "USER",
-        plan: "FREE",
-        planExpiresAt: null,
       });
       expect(result).toEqual(mockUser);
     });
@@ -291,8 +285,6 @@ describe("UserService", () => {
         providerId: "google-123",
         avatar: "https://example.com/avatar.jpg",
         role: "USER",
-        plan: "FREE",
-        planExpiresAt: null,
       });
     });
 
@@ -319,8 +311,6 @@ describe("UserService", () => {
         providerId: input.providerId,
         avatar: null,
         role: "USER",
-        plan: "FREE",
-        planExpiresAt: null,
       });
     });
   });

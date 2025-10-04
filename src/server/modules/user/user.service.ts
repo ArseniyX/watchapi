@@ -36,8 +36,6 @@ export class UserService {
       provider: null,
       providerId: null,
       role: "USER",
-      plan: "FREE",
-      planExpiresAt: null,
     });
 
     // Create personal organization for new user
@@ -70,8 +68,6 @@ export class UserService {
       providerId: input.providerId.trim(),
       avatar: input.avatar?.trim() || null,
       role: "USER",
-      plan: "FREE",
-      planExpiresAt: null,
     });
 
     // Create personal organization for new OAuth user

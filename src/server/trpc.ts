@@ -10,9 +10,9 @@ export interface Context {
     id: string;
     email: string;
     role: string;
-    plan: PlanType;
   };
   organizationId?: string;
+  organizationPlan?: PlanType;
 }
 
 export const createTRPCContext = async (
@@ -38,7 +38,7 @@ export const createTRPCContext = async (
     // Verify user exists
     const user = await prisma.user.findUnique({
       where: { id: payload.userId },
-      select: { id: true, email: true, role: true, plan: true },
+      select: { id: true, email: true, role: true },
     });
 
     if (!user) {
@@ -60,7 +60,8 @@ export const createTRPCContext = async (
       organizationId = membership?.organizationId;
     }
 
-    // Verify user has access to the organization
+    // Verify user has access to the organization and get org plan
+    let organizationPlan: PlanType | undefined;
     if (organizationId) {
       const hasAccess = await prisma.organizationMember.findUnique({
         where: {
@@ -80,6 +81,15 @@ export const createTRPCContext = async (
         });
         organizationId = membership?.organizationId;
       }
+
+      // Fetch organization plan
+      if (organizationId) {
+        const org = await prisma.organization.findUnique({
+          where: { id: organizationId },
+          select: { plan: true },
+        });
+        organizationPlan = org?.plan;
+      }
     }
 
     return {
@@ -87,9 +97,9 @@ export const createTRPCContext = async (
         id: user.id,
         email: user.email,
         role: user.role,
-        plan: user.plan,
       },
       organizationId,
+      organizationPlan,
     };
   } catch (error) {
     logError("JWT verification failed", error, {
@@ -110,14 +120,15 @@ export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
     throw new TRPCError({ code: "UNAUTHORIZED" });
   }
 
-  // Apply rate limiting
+  // Apply rate limiting (per-user, based on org plan)
   const { checkRateLimit } = await import("./middleware/rate-limit");
-  await checkRateLimit(ctx.user.id, ctx.user.plan);
+  await checkRateLimit(ctx.user.id, ctx.organizationPlan || PlanType.FREE);
 
   return next({
     ctx: {
       user: ctx.user,
       organizationId: ctx.organizationId,
+      organizationPlan: ctx.organizationPlan,
     },
   });
 });

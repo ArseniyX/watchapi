@@ -16,18 +16,16 @@ datasource db {
 
 // User management
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  name          String?
-  password      String? // Optional for OAuth users
-  avatar        String? // Profile picture URL
-  provider      String? // 'local', 'google', 'github'
-  providerId    String? // OAuth provider user ID
-  role          UserRole  @default(USER)
-  plan          PlanType  @default(FREE)
-  planExpiresAt DateTime? // For paid plans
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id         String   @id @default(cuid())
+  email      String   @unique
+  name       String?
+  password   String? // Optional for OAuth users
+  avatar     String? // Profile picture URL
+  provider   String? // 'local', 'google', 'github'
+  providerId String? // OAuth provider user ID
+  role       UserRole @default(USER)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   // Relations
   accounts         Account[]
@@ -36,7 +34,6 @@ model User {
   apiEndpoints     ApiEndpoint[]
   monitoringChecks MonitoringCheck[]
   alerts           Alert[]
-  subscription     Subscription?
 
   @@unique([provider, providerId])
   @@map("users")
@@ -74,18 +71,21 @@ model Session {
 
 // Organization management
 model Organization {
-  id          String   @id @default(cuid())
-  name        String
-  slug        String   @unique
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String    @id @default(cuid())
+  name          String
+  slug          String    @unique
+  description   String?
+  plan          PlanType  @default(FREE)
+  planExpiresAt DateTime? // For paid plans
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   // Relations
-  members            OrganizationMember[]
-  apiEndpoints       ApiEndpoint[]
-  collections        Collection[]
+  members              OrganizationMember[]
+  apiEndpoints         ApiEndpoint[]
+  collections          Collection[]
   notificationChannels NotificationChannel[]
+  subscription         Subscription?
 
   @@map("organizations")
 }
@@ -298,10 +298,10 @@ enum PlanType {
   ENTERPRISE
 }
 
-// Subscription management
+// Subscription management (organization-level)
 model Subscription {
   id                   String             @id @default(cuid())
-  userId               String             @unique
+  organizationId       String             @unique
   plan                 PlanType           @default(FREE)
   status               SubscriptionStatus @default(ACTIVE)
   currentPeriodStart   DateTime           @default(now())
@@ -312,7 +312,7 @@ model Subscription {
   createdAt            DateTime           @default(now())
   updatedAt            DateTime           @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@map("subscriptions")
 }

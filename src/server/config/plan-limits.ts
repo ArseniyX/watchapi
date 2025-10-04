@@ -22,8 +22,8 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     maxTeamMembers: 1,
     retentionDays: 7,
     rateLimit: {
-      requestsPerMinute: 10,
-      requestsPerHour: 100,
+      requestsPerMinute: 60, // Increased from 10 - allows normal dashboard usage
+      requestsPerHour: 1000, // Increased from 100 - ~17 req/min average
     },
   },
   [PlanType.STARTER]: {
@@ -34,8 +34,8 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     maxTeamMembers: 3,
     retentionDays: 30,
     rateLimit: {
-      requestsPerMinute: 30,
-      requestsPerHour: 500,
+      requestsPerMinute: 120, // 2x FREE - supports heavier usage
+      requestsPerHour: 3000, // ~50 req/min average
     },
   },
   [PlanType.PRO]: {
@@ -46,8 +46,8 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     maxTeamMembers: 10,
     retentionDays: 90,
     rateLimit: {
-      requestsPerMinute: 100,
-      requestsPerHour: 2000,
+      requestsPerMinute: 300, // 5x FREE - heavy API usage
+      requestsPerHour: 10000, // ~167 req/min average
     },
   },
   [PlanType.ENTERPRISE]: {
