@@ -11,6 +11,7 @@ import {
     getTopEndpointsSchema,
     getResponseTimeChartSchema,
     getUptimeChartSchema,
+    getRecentFailuresSchema,
 } from "./monitoring.schema";
 
 export const createMonitoringRouter = (monitoringService: MonitoringService) =>
@@ -117,6 +118,15 @@ export const createMonitoringRouter = (monitoringService: MonitoringService) =>
                 return monitoringService.getUptimeChart(
                     ctx.user.id,
                     input.days
+                );
+            }),
+
+        getRecentFailures: protectedProcedure
+            .input(getRecentFailuresSchema)
+            .query(async ({ input }) => {
+                return monitoringService.getRecentFailures(
+                    input.organizationId,
+                    input.limit
                 );
             }),
     });

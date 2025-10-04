@@ -39,25 +39,10 @@ export const logger = winston.createLogger({
   ],
 });
 
-// Add file transports in production
-if (process.env.NODE_ENV === "production") {
-  logger.add(
-    new winston.transports.File({
-      filename: "logs/error.log",
-      level: "error",
-      maxsize: 5242880, // 5MB
-      maxFiles: 5,
-    })
-  );
-
-  logger.add(
-    new winston.transports.File({
-      filename: "logs/combined.log",
-      maxsize: 5242880, // 5MB
-      maxFiles: 5,
-    })
-  );
-}
+// Note: File transports removed for production compatibility.
+// In containerized/serverless environments, console output is captured by logging systems.
+// If you need file logging, ensure the deployment environment has write permissions
+// or configure a writable directory like /tmp/logs
 
 // Helper functions for structured logging
 export const logError = (message: string, error: unknown, metadata?: Record<string, unknown>) => {

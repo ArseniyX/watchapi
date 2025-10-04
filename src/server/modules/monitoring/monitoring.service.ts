@@ -8,7 +8,6 @@ import { SendRequestInput } from "./monitoring.schema";
 import { NotFoundError, ForbiddenError } from "../../errors/custom-errors";
 import { logger, logError, logInfo } from "@/lib/logger";
 import { NotificationChannelService } from "../notification-channel/notification-channel.service";
-import { NotificationChannelRepository } from "../notification-channel/notification-channel.repository";
 
 export interface MonitoringCheckResult {
     status: CheckStatus;
@@ -27,11 +26,9 @@ export class MonitoringService {
     constructor(
         private readonly monitoringRepository: MonitoringRepository,
         private readonly apiEndpointRepository: ApiEndpointRepository,
-        notificationChannelService?: NotificationChannelService
+        notificationChannelService: NotificationChannelService
     ) {
-        this.notificationChannelService = notificationChannelService || new NotificationChannelService(
-            new NotificationChannelRepository()
-        );
+        this.notificationChannelService = notificationChannelService;
     }
 
     async sendRequest(input: SendRequestInput): Promise<{
@@ -452,5 +449,12 @@ export class MonitoringService {
         const from = new Date(to.getTime() - days * 24 * 60 * 60 * 1000);
 
         return this.monitoringRepository.getUptimeHistory(userId, from, to);
+    }
+
+    async getRecentFailures(organizationId: string, limit: number = 50) {
+        return this.monitoringRepository.findRecentFailuresByOrganization(
+            organizationId,
+            limit
+        );
     }
 }

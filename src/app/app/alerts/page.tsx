@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { CodeEditor } from "@/components/code-editor";
 import {
     Select,
     SelectContent,
@@ -115,6 +115,11 @@ export default function AlertsPage() {
             { enabled: !!selectedOrgId }
         );
 
+    const { data: recentFailures } = trpc.monitoring.getRecentFailures.useQuery(
+        { organizationId: selectedOrgId!, limit: 50 },
+        { enabled: !!selectedOrgId, refetchInterval: 60000 }
+    );
+
     const createChannelMutation = trpc.notificationChannel.create.useMutation({
         onSuccess: () => {
             toast.success("Notification channel created successfully");
@@ -192,27 +197,17 @@ export default function AlertsPage() {
         });
     };
 
-    // Get failed checks from all endpoints using the monitoringChecks relationship
-    const failedChecks: any[] = [];
-
-    endpoints?.forEach((endpoint) => {
-        // Use the monitoringChecks that are already loaded with the endpoint
-        endpoint.monitoringChecks?.forEach((check) => {
-            if (check.status !== "SUCCESS") {
-                failedChecks.push({
-                    ...check,
-                    endpointName: endpoint.name,
-                    endpointUrl: endpoint.url,
-                });
-            }
-        });
-    });
-
-    // Sort by most recent
-    failedChecks.sort(
-        (a, b) =>
-            new Date(b.checkedAt).getTime() - new Date(a.checkedAt).getTime()
-    );
+    // Use the dedicated failed checks query or fall back to endpoint checks
+    const failedChecks = recentFailures?.map((check) => ({
+        id: check.id,
+        status: check.status,
+        statusCode: check.statusCode,
+        errorMessage: check.errorMessage,
+        responseTime: check.responseTime,
+        checkedAt: check.checkedAt,
+        endpointName: check.apiEndpoint.name,
+        endpointUrl: check.apiEndpoint.url,
+    })) || [];
 
     // Calculate stats
     const totalEndpoints = endpoints?.length || 0;
@@ -495,15 +490,12 @@ export default function AlertsPage() {
                                         <Label htmlFor="channel-config">
                                             Configuration (JSON)
                                         </Label>
-                                        <Textarea
-                                            id="channel-config"
-                                            placeholder={getConfigPlaceholder()}
+                                        <CodeEditor
                                             value={channelConfig}
-                                            onChange={(e) =>
-                                                setChannelConfig(e.target.value)
-                                            }
-                                            rows={6}
-                                            className="font-mono text-sm"
+                                            onChange={setChannelConfig}
+                                            language="json"
+                                            placeholder={getConfigPlaceholder()}
+                                            height="150px"
                                         />
                                         <p className="text-xs text-muted-foreground">
                                             {channelType === NotificationType.EMAIL &&

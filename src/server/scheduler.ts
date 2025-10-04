@@ -54,9 +54,24 @@ class MonitoringScheduler {
     }
 }
 
-export const scheduler = new MonitoringScheduler();
+// Singleton pattern to prevent multiple scheduler instances in dev mode
+const SCHEDULER_KEY = Symbol.for("app.scheduler");
+const globalSymbols = Object.getOwnPropertySymbols(global);
+const hasScheduler = globalSymbols.indexOf(SCHEDULER_KEY) > -1;
+
+let scheduler: MonitoringScheduler;
+
+if (!hasScheduler) {
+    scheduler = new MonitoringScheduler();
+    (global as any)[SCHEDULER_KEY] = scheduler;
+} else {
+    scheduler = (global as any)[SCHEDULER_KEY];
+}
+
+export { scheduler };
 
 // Auto-start scheduler in production
-if (process.env.ENABLE_CRON === "true") {
+if (process.env.ENABLE_CRON === "true" && !hasScheduler) {
+    console.log("Starting monitoring scheduler...");
     scheduler.start();
 }

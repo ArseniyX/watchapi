@@ -8,6 +8,8 @@ interface CodeEditorProps {
     onChange?: (value: string) => void;
     language?: string;
     readOnly?: boolean;
+    placeholder?: string;
+    height?: string;
 }
 
 export function CodeEditor({
@@ -15,6 +17,8 @@ export function CodeEditor({
     onChange,
     language = "json",
     readOnly = false,
+    placeholder = "",
+    height = "200px",
 }: CodeEditorProps) {
     const [theme, setTheme] = useState<"vs-dark" | "light">("vs-dark");
 
@@ -47,11 +51,11 @@ export function CodeEditor({
     };
 
     return (
-        <div className="h-full">
+        <div className="border rounded-md overflow-hidden" style={{ height }}>
             <Editor
                 height="100%"
                 language={language}
-                value={value}
+                value={value || placeholder}
                 onChange={handleChange}
                 theme={theme}
                 options={{

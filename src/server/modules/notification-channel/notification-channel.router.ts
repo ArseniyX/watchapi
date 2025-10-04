@@ -1,6 +1,7 @@
 import { router, protectedProcedure } from "../../trpc";
 import { NotificationChannelService } from "./notification-channel.service";
 import { NotificationChannelRepository } from "./notification-channel.repository";
+import { prisma } from "../../database";
 import {
   createNotificationChannelSchema,
   updateNotificationChannelSchema,
@@ -10,7 +11,7 @@ import {
 } from "./notification-channel.schema";
 
 const notificationChannelService = new NotificationChannelService(
-  new NotificationChannelRepository()
+  new NotificationChannelRepository(prisma)
 );
 
 export const notificationChannelRouter = router({

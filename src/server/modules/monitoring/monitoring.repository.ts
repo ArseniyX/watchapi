@@ -219,4 +219,27 @@ export class MonitoringRepository {
       orderBy: { checkedAt: 'asc' },
     })
   }
+
+  async findRecentFailuresByOrganization(organizationId: string, limit: number = 50) {
+    return this.prisma.monitoringCheck.findMany({
+      where: {
+        apiEndpoint: {
+          organizationId,
+        },
+        status: {
+          not: CheckStatus.SUCCESS,
+        },
+      },
+      include: {
+        apiEndpoint: {
+          select: {
+            name: true,
+            url: true,
+          },
+        },
+      },
+      orderBy: { checkedAt: 'desc' },
+      take: limit,
+    })
+  }
 }

@@ -53,6 +53,11 @@ export const getUptimeChartSchema = z.object({
     days: z.number().min(1).max(365).default(7),
 });
 
+export const getRecentFailuresSchema = z.object({
+    organizationId: z.string().min(1, "Organization ID is required"),
+    limit: z.number().min(1).max(100).default(50),
+});
+
 // Infer types from schemas
 export type CheckEndpointInput = z.infer<typeof checkEndpointSchema>;
 export type SendRequestInput = z.infer<typeof sendRequestSchema>;
@@ -64,3 +69,4 @@ export type GetAnalyticsInput = z.infer<typeof getAnalyticsSchema>;
 export type GetTopEndpointsInput = z.infer<typeof getTopEndpointsSchema>;
 export type GetResponseTimeChartInput = z.infer<typeof getResponseTimeChartSchema>;
 export type GetUptimeChartInput = z.infer<typeof getUptimeChartSchema>;
+export type GetRecentFailuresInput = z.infer<typeof getRecentFailuresSchema>;
