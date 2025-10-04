@@ -1,30 +1,37 @@
-import { PrismaClient, MonitoringCheck, CheckStatus, Prisma } from '../../../generated/prisma'
+import {
+  PrismaClient,
+  MonitoringCheck,
+  CheckStatus,
+  Prisma,
+} from "../../../generated/prisma";
 
 export class MonitoringRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
   // Monitoring Checks
-  async createMonitoringCheck(data: Omit<MonitoringCheck, 'id' | 'checkedAt'>): Promise<MonitoringCheck> {
+  async createMonitoringCheck(
+    data: Omit<MonitoringCheck, "id" | "checkedAt">,
+  ): Promise<MonitoringCheck> {
     return this.prisma.monitoringCheck.create({
       data,
       include: {
         apiEndpoint: true,
       },
-    })
+    });
   }
 
   async findChecksByApiEndpointId(
     apiEndpointId: string,
     options: {
-      skip?: number
-      take?: number
-      orderBy?: Prisma.MonitoringCheckOrderByWithRelationInput
-    } = {}
+      skip?: number;
+      take?: number;
+      orderBy?: Prisma.MonitoringCheckOrderByWithRelationInput;
+    } = {},
   ): Promise<MonitoringCheck[]> {
     return this.prisma.monitoringCheck.findMany({
       where: { apiEndpointId },
       ...options,
-    })
+    });
   }
 
   async getUptimeStats(apiEndpointId: string, from: Date, to: Date) {
@@ -42,20 +49,24 @@ export class MonitoringRepository {
           checkedAt: { gte: from, lte: to },
         },
       }),
-    ])
+    ]);
 
-    const failed = total - successful
-    const uptimePercentage = total > 0 ? (successful / total) * 100 : 0
+    const failed = total - successful;
+    const uptimePercentage = total > 0 ? (successful / total) * 100 : 0;
 
     return {
       total,
       successful,
       failed,
       uptimePercentage,
-    }
+    };
   }
 
-  async getAverageResponseTime(apiEndpointId: string, from: Date, to: Date): Promise<number> {
+  async getAverageResponseTime(
+    apiEndpointId: string,
+    from: Date,
+    to: Date,
+  ): Promise<number> {
     const result = await this.prisma.monitoringCheck.aggregate({
       where: {
         apiEndpointId,
@@ -66,16 +77,16 @@ export class MonitoringRepository {
       _avg: {
         responseTime: true,
       },
-    })
+    });
 
-    return result._avg.responseTime || 0
+    return result._avg.responseTime || 0;
   }
 
   async getResponseTimeHistoryByEndpoint(
     apiEndpointId: string,
     from: Date,
     to: Date,
-    intervalMinutes: number = 60
+    intervalMinutes: number = 60,
   ) {
     // This is a simplified version - you might want to use raw SQL for more complex time-series queries
     return this.prisma.monitoringCheck.findMany({
@@ -89,8 +100,8 @@ export class MonitoringRepository {
         responseTime: true,
         checkedAt: true,
       },
-      orderBy: { checkedAt: 'asc' },
-    })
+      orderBy: { checkedAt: "asc" },
+    });
   }
 
   async deleteOldChecks(beforeDate: Date): Promise<number> {
@@ -100,16 +111,16 @@ export class MonitoringRepository {
           lt: beforeDate,
         },
       },
-    })
+    });
 
-    return result.count
+    return result.count;
   }
 
   async findUserById(userId: string) {
     return this.prisma.user.findUnique({
       where: { id: userId },
       select: { id: true, email: true, name: true },
-    })
+    });
   }
 
   // Analytics methods
@@ -139,11 +150,12 @@ export class MonitoringRepository {
           responseTime: true,
         },
       }),
-    ])
+    ]);
 
-    const failedChecks = totalChecks - successfulChecks
-    const errorRate = totalChecks > 0 ? (failedChecks / totalChecks) * 100 : 0
-    const uptimePercentage = totalChecks > 0 ? (successfulChecks / totalChecks) * 100 : 0
+    const failedChecks = totalChecks - successfulChecks;
+    const errorRate = totalChecks > 0 ? (failedChecks / totalChecks) * 100 : 0;
+    const uptimePercentage =
+      totalChecks > 0 ? (successfulChecks / totalChecks) * 100 : 0;
 
     return {
       totalChecks,
@@ -152,10 +164,15 @@ export class MonitoringRepository {
       errorRate,
       uptimePercentage,
       avgResponseTime: avgResponse._avg.responseTime || 0,
-    }
+    };
   }
 
-  async getTopEndpoints(userId: string, from: Date, to: Date, limit: number = 5) {
+  async getTopEndpoints(
+    userId: string,
+    from: Date,
+    to: Date,
+    limit: number = 5,
+  ) {
     const endpoints = await this.prisma.apiEndpoint.findMany({
       where: { userId },
       include: {
@@ -165,15 +182,20 @@ export class MonitoringRepository {
           },
         },
       },
-    })
+    });
 
-    const endpointStats = endpoints.map(endpoint => {
-      const checks = endpoint.monitoringChecks
-      const totalChecks = checks.length
-      const successfulChecks = checks.filter(c => c.status === CheckStatus.SUCCESS).length
-      const failedChecks = totalChecks - successfulChecks
-      const avgResponseTime = checks.reduce((sum, c) => sum + (c.responseTime || 0), 0) / totalChecks || 0
-      const errorRate = totalChecks > 0 ? (failedChecks / totalChecks) * 100 : 0
+    const endpointStats = endpoints.map((endpoint) => {
+      const checks = endpoint.monitoringChecks;
+      const totalChecks = checks.length;
+      const successfulChecks = checks.filter(
+        (c) => c.status === CheckStatus.SUCCESS,
+      ).length;
+      const failedChecks = totalChecks - successfulChecks;
+      const avgResponseTime =
+        checks.reduce((sum, c) => sum + (c.responseTime || 0), 0) /
+          totalChecks || 0;
+      const errorRate =
+        totalChecks > 0 ? (failedChecks / totalChecks) * 100 : 0;
 
       return {
         id: endpoint.id,
@@ -182,12 +204,12 @@ export class MonitoringRepository {
         totalChecks,
         avgResponseTime: Math.round(avgResponseTime),
         errorRate: errorRate.toFixed(2),
-      }
-    })
+      };
+    });
 
     return endpointStats
       .sort((a, b) => b.totalChecks - a.totalChecks)
-      .slice(0, limit)
+      .slice(0, limit);
   }
 
   async getResponseTimeHistoryByUser(userId: string, from: Date, to: Date) {
@@ -202,8 +224,8 @@ export class MonitoringRepository {
         responseTime: true,
         checkedAt: true,
       },
-      orderBy: { checkedAt: 'asc' },
-    })
+      orderBy: { checkedAt: "asc" },
+    });
   }
 
   async getUptimeHistory(userId: string, from: Date, to: Date) {
@@ -216,11 +238,14 @@ export class MonitoringRepository {
         status: true,
         checkedAt: true,
       },
-      orderBy: { checkedAt: 'asc' },
-    })
+      orderBy: { checkedAt: "asc" },
+    });
   }
 
-  async findRecentFailuresByOrganization(organizationId: string, limit: number = 50) {
+  async findRecentFailuresByOrganization(
+    organizationId: string,
+    limit: number = 50,
+  ) {
     return this.prisma.monitoringCheck.findMany({
       where: {
         apiEndpoint: {
@@ -238,8 +263,8 @@ export class MonitoringRepository {
           },
         },
       },
-      orderBy: { checkedAt: 'desc' },
+      orderBy: { checkedAt: "desc" },
       take: limit,
-    })
+    });
   }
 }

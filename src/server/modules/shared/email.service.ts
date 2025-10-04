@@ -2,142 +2,142 @@ import nodemailer from "nodemailer";
 import { Resend } from "resend";
 
 export interface EmailConfig {
-    host: string;
-    port: number;
-    secure: boolean;
-    auth: {
-        user: string;
-        pass: string;
-    };
+  host: string;
+  port: number;
+  secure: boolean;
+  auth: {
+    user: string;
+    pass: string;
+  };
 }
 
 export interface AlertEmailData {
-    to: string;
-    endpointName: string;
-    endpointUrl: string;
-    status: string;
-    statusCode?: number;
-    errorMessage?: string;
-    responseTime?: number;
-    timestamp: Date;
+  to: string;
+  endpointName: string;
+  endpointUrl: string;
+  status: string;
+  statusCode?: number;
+  errorMessage?: string;
+  responseTime?: number;
+  timestamp: Date;
 }
 
 export interface ContactEmailData {
-    name: string;
-    email: string;
-    subject: string;
-    message: string;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
 }
 
 export interface InvitationEmailData {
-    to: string;
-    organizationName: string;
-    inviterName: string;
-    inviterEmail: string;
-    role: string;
-    invitationUrl: string;
+  to: string;
+  organizationName: string;
+  inviterName: string;
+  inviterEmail: string;
+  role: string;
+  invitationUrl: string;
 }
 
 export class EmailService {
-    private transporter: nodemailer.Transporter | null = null;
-    private resend: Resend | null = null;
+  private transporter: nodemailer.Transporter | null = null;
+  private resend: Resend | null = null;
 
-    constructor() {
-        const resendApiKey = process.env.RESEND_API_KEY;
-        if (resendApiKey) {
-            this.resend = new Resend(resendApiKey);
-        }
-        this.initializeTransporter();
+  constructor() {
+    const resendApiKey = process.env.RESEND_API_KEY;
+    if (resendApiKey) {
+      this.resend = new Resend(resendApiKey);
+    }
+    this.initializeTransporter();
+  }
+
+  async sendWebhookAlert(
+    webhookUrl: string,
+    data: AlertEmailData,
+  ): Promise<boolean> {
+    try {
+      const payload = {
+        type: "endpoint_failure",
+        endpoint: {
+          name: data.endpointName,
+          url: data.endpointUrl,
+        },
+        status: data.status,
+        statusCode: data.statusCode,
+        errorMessage: data.errorMessage,
+        responseTime: data.responseTime,
+        timestamp: data.timestamp.toISOString(),
+      };
+
+      const response = await fetch(webhookUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "User-Agent": "API-Monitor/1.0",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        console.log(`Webhook alert sent to ${webhookUrl}`);
+        return true;
+      } else {
+        console.error(
+          `Webhook alert failed: ${response.status} ${response.statusText}`,
+        );
+        return false;
+      }
+    } catch (error) {
+      console.error("Failed to send webhook alert:", error);
+      return false;
+    }
+  }
+
+  private initializeTransporter() {
+    // Check if email is configured
+    const emailHost = process.env.EMAIL_HOST;
+    const emailPort = process.env.EMAIL_PORT;
+    const emailUser = process.env.EMAIL_USER;
+    const emailPass = process.env.EMAIL_PASS;
+
+    if (!emailHost || !emailUser || !emailPass) {
+      console.warn(
+        "Email not configured. Set EMAIL_HOST, EMAIL_USER, EMAIL_PASS env variables to enable alerts.",
+      );
+      return;
     }
 
-    async sendWebhookAlert(
-        webhookUrl: string,
-        data: AlertEmailData
-    ): Promise<boolean> {
-        try {
-            const payload = {
-                type: "endpoint_failure",
-                endpoint: {
-                    name: data.endpointName,
-                    url: data.endpointUrl,
-                },
-                status: data.status,
-                statusCode: data.statusCode,
-                errorMessage: data.errorMessage,
-                responseTime: data.responseTime,
-                timestamp: data.timestamp.toISOString(),
-            };
+    try {
+      this.transporter = nodemailer.createTransport({
+        host: emailHost,
+        port: parseInt(emailPort || "587"),
+        secure: emailPort === "465",
+        auth: {
+          user: emailUser,
+          pass: emailPass,
+        },
+      });
+      console.log("Email service initialized");
+    } catch (error) {
+      console.error("Failed to initialize email service:", error);
+    }
+  }
 
-            const response = await fetch(webhookUrl, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "User-Agent": "API-Monitor/1.0",
-                },
-                body: JSON.stringify(payload),
-            });
-
-            if (response.ok) {
-                console.log(`Webhook alert sent to ${webhookUrl}`);
-                return true;
-            } else {
-                console.error(
-                    `Webhook alert failed: ${response.status} ${response.statusText}`
-                );
-                return false;
-            }
-        } catch (error) {
-            console.error("Failed to send webhook alert:", error);
-            return false;
-        }
+  async sendAlertEmail(data: AlertEmailData): Promise<boolean> {
+    if (!this.transporter) {
+      console.log("[Email Alert - Not Sent] Email not configured");
+      console.log(
+        `Alert: ${data.endpointName} (${data.endpointUrl}) is ${data.status}`,
+      );
+      if (data.errorMessage) console.log(`Error: ${data.errorMessage}`);
+      return false;
     }
 
-    private initializeTransporter() {
-        // Check if email is configured
-        const emailHost = process.env.EMAIL_HOST;
-        const emailPort = process.env.EMAIL_PORT;
-        const emailUser = process.env.EMAIL_USER;
-        const emailPass = process.env.EMAIL_PASS;
+    try {
+      const subject = `🚨 Alert: ${
+        data.endpointName
+      } - ${data.status.toUpperCase()}`;
 
-        if (!emailHost || !emailUser || !emailPass) {
-            console.warn(
-                "Email not configured. Set EMAIL_HOST, EMAIL_USER, EMAIL_PASS env variables to enable alerts."
-            );
-            return;
-        }
-
-        try {
-            this.transporter = nodemailer.createTransport({
-                host: emailHost,
-                port: parseInt(emailPort || "587"),
-                secure: emailPort === "465",
-                auth: {
-                    user: emailUser,
-                    pass: emailPass,
-                },
-            });
-            console.log("Email service initialized");
-        } catch (error) {
-            console.error("Failed to initialize email service:", error);
-        }
-    }
-
-    async sendAlertEmail(data: AlertEmailData): Promise<boolean> {
-        if (!this.transporter) {
-            console.log("[Email Alert - Not Sent] Email not configured");
-            console.log(
-                `Alert: ${data.endpointName} (${data.endpointUrl}) is ${data.status}`
-            );
-            if (data.errorMessage) console.log(`Error: ${data.errorMessage}`);
-            return false;
-        }
-
-        try {
-            const subject = `🚨 Alert: ${
-                data.endpointName
-            } - ${data.status.toUpperCase()}`;
-
-            const html = `
+      const html = `
         <!DOCTYPE html>
         <html>
         <head>
@@ -162,29 +162,29 @@ export class EmailService {
 
               <div class="detail">
                 <div><span class="label">Endpoint:</span> <span class="value">${
-                    data.endpointName
+                  data.endpointName
                 }</span></div>
                 <div><span class="label">URL:</span> <span class="value">${
-                    data.endpointUrl
+                  data.endpointUrl
                 }</span></div>
               </div>
 
               <div class="detail">
                 <div><span class="label">Status:</span> <span class="value">${data.status.toUpperCase()}</span></div>
                 ${
-                    data.statusCode
-                        ? `<div><span class="label">Status Code:</span> <span class="value">${data.statusCode}</span></div>`
-                        : ""
+                  data.statusCode
+                    ? `<div><span class="label">Status Code:</span> <span class="value">${data.statusCode}</span></div>`
+                    : ""
                 }
                 ${
-                    data.errorMessage
-                        ? `<div><span class="label">Error:</span> <span class="value">${data.errorMessage}</span></div>`
-                        : ""
+                  data.errorMessage
+                    ? `<div><span class="label">Error:</span> <span class="value">${data.errorMessage}</span></div>`
+                    : ""
                 }
                 ${
-                    data.responseTime
-                        ? `<div><span class="label">Response Time:</span> <span class="value">${data.responseTime}ms</span></div>`
-                        : ""
+                  data.responseTime
+                    ? `<div><span class="label">Response Time:</span> <span class="value">${data.responseTime}ms</span></div>`
+                    : ""
                 }
               </div>
 
@@ -194,7 +194,7 @@ export class EmailService {
 
               <p style="margin-top: 20px;">
                 <a href="${
-                    process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+                  process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
                 }/app/monitoring"
                    style="background: #2563eb; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
                   View Monitoring Dashboard
@@ -209,53 +209,51 @@ export class EmailService {
         </html>
       `;
 
-            await this.transporter.sendMail({
-                from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
-                to: data.to,
-                subject,
-                html,
-            });
+      await this.transporter.sendMail({
+        from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+        to: data.to,
+        subject,
+        html,
+      });
 
-            console.log(
-                `Alert email sent to ${data.to} for endpoint: ${data.endpointName}`
-            );
-            return true;
-        } catch (error) {
-            console.error("Failed to send alert email:", error);
-            return false;
-        }
+      console.log(
+        `Alert email sent to ${data.to} for endpoint: ${data.endpointName}`,
+      );
+      return true;
+    } catch (error) {
+      console.error("Failed to send alert email:", error);
+      return false;
+    }
+  }
+
+  async testConnection(): Promise<boolean> {
+    if (!this.transporter) {
+      return false;
     }
 
-    async testConnection(): Promise<boolean> {
-        if (!this.transporter) {
-            return false;
-        }
+    try {
+      await this.transporter.verify();
+      console.log("Email connection verified");
+      return true;
+    } catch (error) {
+      console.error("Email connection failed:", error);
+      return false;
+    }
+  }
 
-        try {
-            await this.transporter.verify();
-            console.log("Email connection verified");
-            return true;
-        } catch (error) {
-            console.error("Email connection failed:", error);
-            return false;
-        }
+  async sendContactEmail(data: ContactEmailData): Promise<boolean> {
+    if (!this.resend) {
+      console.error("Resend not configured. Set RESEND_API_KEY env variable.");
+      return false;
     }
 
-    async sendContactEmail(data: ContactEmailData): Promise<boolean> {
-        if (!this.resend) {
-            console.error(
-                "Resend not configured. Set RESEND_API_KEY env variable."
-            );
-            return false;
-        }
-
-        try {
-            await this.resend.emails.send({
-                from: "Contact Form <support@watchapi.dev>",
-                to: process.env.CONTACT_EMAIL || "aaarse3@gmail.com",
-                replyTo: data.email,
-                subject: `Contact Form: ${data.subject}`,
-                html: `
+    try {
+      await this.resend.emails.send({
+        from: "Contact Form <support@watchapi.dev>",
+        to: process.env.CONTACT_EMAIL || "aaarse3@gmail.com",
+        replyTo: data.email,
+        subject: `Contact Form: ${data.subject}`,
+        html: `
           <!DOCTYPE html>
           <html>
           <head>
@@ -291,31 +289,29 @@ export class EmailService {
           </body>
           </html>
         `,
-            });
+      });
 
-            console.log(`Contact email sent from ${data.email}`);
-            return true;
-        } catch (error) {
-            console.error("Failed to send contact email:", error);
-            return false;
-        }
+      console.log(`Contact email sent from ${data.email}`);
+      return true;
+    } catch (error) {
+      console.error("Failed to send contact email:", error);
+      return false;
+    }
+  }
+
+  async sendInvitationEmail(data: InvitationEmailData): Promise<boolean> {
+    if (!this.resend) {
+      console.error("Resend not configured. Set RESEND_API_KEY env variable.");
+      return false;
     }
 
-    async sendInvitationEmail(data: InvitationEmailData): Promise<boolean> {
-        if (!this.resend) {
-            console.error(
-                "Resend not configured. Set RESEND_API_KEY env variable."
-            );
-            return false;
-        }
-
-        try {
-            await this.resend.emails.send({
-                from: "WatchAPI Team <onboarding@resend.dev>",
-                to: data.to,
-                replyTo: data.inviterEmail,
-                subject: `You've been invited to join ${data.organizationName} on WatchAPI`,
-                html: `
+    try {
+      await this.resend.emails.send({
+        from: "WatchAPI Team <onboarding@resend.dev>",
+        to: data.to,
+        replyTo: data.inviterEmail,
+        subject: `You've been invited to join ${data.organizationName} on WatchAPI`,
+        html: `
           <!DOCTYPE html>
           <html>
           <head>
@@ -365,17 +361,17 @@ export class EmailService {
           </body>
           </html>
         `,
-            });
+      });
 
-            console.log(
-                `Invitation email sent to ${data.to} for organization ${data.organizationName}`
-            );
-            return true;
-        } catch (error) {
-            console.error("Failed to send invitation email:", error);
-            return false;
-        }
+      console.log(
+        `Invitation email sent to ${data.to} for organization ${data.organizationName}`,
+      );
+      return true;
+    } catch (error) {
+      console.error("Failed to send invitation email:", error);
+      return false;
     }
+  }
 }
 
 export const emailService = new EmailService();

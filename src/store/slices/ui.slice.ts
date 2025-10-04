@@ -1,11 +1,11 @@
-import { StateCreator } from 'zustand'
+import { StateCreator } from "zustand";
 
 export interface UISlice {
-  selectedItemId: string | null
-  expandedItems: Record<string, boolean>
-  setSelectedItem: (itemId: string | null) => void
-  toggleExpanded: (itemId: string) => void
-  setExpandedItems: (items: Record<string, boolean>) => void
+  selectedItemId: string | null;
+  expandedItems: Record<string, boolean>;
+  setSelectedItem: (itemId: string | null) => void;
+  toggleExpanded: (itemId: string) => void;
+  setExpandedItems: (items: Record<string, boolean>) => void;
 }
 
 export const createUISlice: StateCreator<UISlice> = (set) => ({
@@ -23,4 +23,4 @@ export const createUISlice: StateCreator<UISlice> = (set) => ({
     })),
 
   setExpandedItems: (items) => set({ expandedItems: items }),
-})
+});

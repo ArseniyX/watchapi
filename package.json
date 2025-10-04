@@ -9,6 +9,7 @@
     "start:migrate": "npx prisma migrate deploy && next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
+    "pretty": "npx prettier --write ./src",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",

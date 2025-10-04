@@ -17,7 +17,7 @@ import { logger, logInfo, logError } from "@/lib/logger";
 
 export class NotificationChannelService {
   constructor(
-    private readonly notificationChannelRepository: NotificationChannelRepository
+    private readonly notificationChannelRepository: NotificationChannelRepository,
   ) {}
 
   async createNotificationChannel(input: CreateNotificationChannelInput) {
@@ -39,7 +39,7 @@ export class NotificationChannelService {
   async updateNotificationChannel(input: UpdateNotificationChannelInput) {
     const existing = await this.notificationChannelRepository.findById(
       input.id,
-      input.organizationId
+      input.organizationId,
     );
 
     if (!existing) {
@@ -62,19 +62,19 @@ export class NotificationChannelService {
         name: input.name,
         config: input.config,
         isActive: input.isActive,
-      }
+      },
     );
 
     return this.notificationChannelRepository.findById(
       input.id,
-      input.organizationId
+      input.organizationId,
     );
   }
 
   async deleteNotificationChannel(input: DeleteNotificationChannelInput) {
     const existing = await this.notificationChannelRepository.findById(
       input.id,
-      input.organizationId
+      input.organizationId,
     );
 
     if (!existing) {
@@ -83,7 +83,7 @@ export class NotificationChannelService {
 
     await this.notificationChannelRepository.delete(
       input.id,
-      input.organizationId
+      input.organizationId,
     );
 
     return { success: true };
@@ -91,14 +91,14 @@ export class NotificationChannelService {
 
   async getNotificationChannels(input: GetNotificationChannelsInput) {
     return this.notificationChannelRepository.findByOrganizationId(
-      input.organizationId
+      input.organizationId,
     );
   }
 
   async getNotificationChannel(input: GetNotificationChannelInput) {
     const channel = await this.notificationChannelRepository.findById(
       input.id,
-      input.organizationId
+      input.organizationId,
     );
 
     if (!channel) {
@@ -118,11 +118,11 @@ export class NotificationChannelService {
       errorMessage?: string;
       responseTime?: number;
       timestamp: Date;
-    }
+    },
   ) {
     const channels =
       await this.notificationChannelRepository.findActiveByOrganizationId(
-        organizationId
+        organizationId,
       );
 
     logInfo("Sending notifications", {
@@ -132,13 +132,11 @@ export class NotificationChannelService {
     });
 
     const results = await Promise.allSettled(
-      channels.map((channel) =>
-        this.sendNotification(channel, alertData)
-      )
+      channels.map((channel) => this.sendNotification(channel, alertData)),
     );
 
     const successCount = results.filter(
-      (r) => r.status === "fulfilled" && r.value
+      (r) => r.status === "fulfilled" && r.value,
     ).length;
     const failureCount = results.length - successCount;
 
@@ -170,34 +168,28 @@ export class NotificationChannelService {
       errorMessage?: string;
       responseTime?: number;
       timestamp: Date;
-    }
+    },
   ): Promise<boolean> {
     try {
       const config = JSON.parse(channel.config);
 
       switch (channel.type) {
         case NotificationType.EMAIL:
-          return this.sendEmailNotification(
-            config as EmailConfig,
-            alertData
-          );
+          return this.sendEmailNotification(config as EmailConfig, alertData);
 
         case NotificationType.WEBHOOK:
           return this.sendWebhookNotification(
             config as WebhookConfig,
-            alertData
+            alertData,
           );
 
         case NotificationType.SLACK:
-          return this.sendSlackNotification(
-            config as SlackConfig,
-            alertData
-          );
+          return this.sendSlackNotification(config as SlackConfig, alertData);
 
         case NotificationType.DISCORD:
           return this.sendDiscordNotification(
             config as DiscordConfig,
-            alertData
+            alertData,
           );
 
         default:
@@ -214,7 +206,7 @@ export class NotificationChannelService {
         {
           channelId: channel.id,
           type: channel.type,
-        }
+        },
       );
       return false;
     }
@@ -222,15 +214,15 @@ export class NotificationChannelService {
 
   private async sendEmailNotification(
     config: EmailConfig,
-    alertData: any
+    alertData: any,
   ): Promise<boolean> {
     const results = await Promise.allSettled(
       config.emails.map((email) =>
         emailService.sendAlertEmail({
           to: email,
           ...alertData,
-        })
-      )
+        }),
+      ),
     );
 
     return results.some((r) => r.status === "fulfilled" && r.value);
@@ -238,7 +230,7 @@ export class NotificationChannelService {
 
   private async sendWebhookNotification(
     config: WebhookConfig,
-    alertData: any
+    alertData: any,
   ): Promise<boolean> {
     try {
       const response = await fetch(config.url, {
@@ -272,15 +264,15 @@ export class NotificationChannelService {
 
   private async sendSlackNotification(
     config: SlackConfig,
-    alertData: any
+    alertData: any,
   ): Promise<boolean> {
     try {
       const statusEmoji =
         alertData.status === "TIMEOUT"
           ? ":clock:"
           : alertData.status === "ERROR"
-          ? ":x:"
-          : ":warning:";
+            ? ":x:"
+            : ":warning:";
 
       const response = await fetch(config.webhookUrl, {
         method: "POST",
@@ -351,15 +343,15 @@ export class NotificationChannelService {
 
   private async sendDiscordNotification(
     config: DiscordConfig,
-    alertData: any
+    alertData: any,
   ): Promise<boolean> {
     try {
       const color =
         alertData.status === "TIMEOUT"
           ? 0xffa500
           : alertData.status === "ERROR"
-          ? 0xff0000
-          : 0xff6b6b;
+            ? 0xff0000
+            : 0xff6b6b;
 
       const response = await fetch(config.webhookUrl, {
         method: "POST",

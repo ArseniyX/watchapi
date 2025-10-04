@@ -3,21 +3,23 @@ import winston from "winston";
 const { combine, timestamp, printf, colorize, errors } = winston.format;
 
 // Custom log format
-const logFormat = printf(({ level, message, timestamp, stack, ...metadata }) => {
-  let log = `${timestamp} [${level}]: ${message}`;
+const logFormat = printf(
+  ({ level, message, timestamp, stack, ...metadata }) => {
+    let log = `${timestamp} [${level}]: ${message}`;
 
-  // Add stack trace for errors
-  if (stack) {
-    log += `\n${stack}`;
-  }
+    // Add stack trace for errors
+    if (stack) {
+      log += `\n${stack}`;
+    }
 
-  // Add metadata if present
-  if (Object.keys(metadata).length > 0) {
-    log += `\n${JSON.stringify(metadata, null, 2)}`;
-  }
+    // Add metadata if present
+    if (Object.keys(metadata).length > 0) {
+      log += `\n${JSON.stringify(metadata, null, 2)}`;
+    }
 
-  return log;
-});
+    return log;
+  },
+);
 
 // Create Winston logger instance
 export const logger = winston.createLogger({
@@ -25,7 +27,7 @@ export const logger = winston.createLogger({
   format: combine(
     errors({ stack: true }), // Capture stack traces
     timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
-    logFormat
+    logFormat,
   ),
   transports: [
     // Console transport for all environments
@@ -33,7 +35,7 @@ export const logger = winston.createLogger({
       format: combine(
         colorize(), // Colorize console output
         timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
-        logFormat
+        logFormat,
       ),
     }),
   ],
@@ -45,26 +47,42 @@ export const logger = winston.createLogger({
 // or configure a writable directory like /tmp/logs
 
 // Helper functions for structured logging
-export const logError = (message: string, error: unknown, metadata?: Record<string, unknown>) => {
+export const logError = (
+  message: string,
+  error: unknown,
+  metadata?: Record<string, unknown>,
+) => {
   logger.error(message, {
-    error: error instanceof Error ? {
-      message: error.message,
-      stack: error.stack,
-      name: error.name,
-    } : error,
+    error:
+      error instanceof Error
+        ? {
+            message: error.message,
+            stack: error.stack,
+            name: error.name,
+          }
+        : error,
     ...metadata,
   });
 };
 
-export const logInfo = (message: string, metadata?: Record<string, unknown>) => {
+export const logInfo = (
+  message: string,
+  metadata?: Record<string, unknown>,
+) => {
   logger.info(message, metadata);
 };
 
-export const logWarn = (message: string, metadata?: Record<string, unknown>) => {
+export const logWarn = (
+  message: string,
+  metadata?: Record<string, unknown>,
+) => {
   logger.warn(message, metadata);
 };
 
-export const logDebug = (message: string, metadata?: Record<string, unknown>) => {
+export const logDebug = (
+  message: string,
+  metadata?: Record<string, unknown>,
+) => {
   logger.debug(message, metadata);
 };
 
@@ -73,7 +91,7 @@ export const logRequest = (
   method: string,
   url: string,
   userId?: string,
-  metadata?: Record<string, unknown>
+  metadata?: Record<string, unknown>,
 ) => {
   logger.info(`${method} ${url}`, {
     userId,
@@ -87,7 +105,7 @@ export const logResponse = (
   url: string,
   statusCode: number,
   duration: number,
-  metadata?: Record<string, unknown>
+  metadata?: Record<string, unknown>,
 ) => {
   logger.info(`${method} ${url} - ${statusCode}`, {
     statusCode,

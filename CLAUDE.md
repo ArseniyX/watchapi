@@ -9,6 +9,7 @@ API Monitoring Platform - A Next.js application for monitoring API endpoints wit
 ## Commands
 
 ### Development
+
 ```bash
 pnpm dev              # Start Next.js dev server on localhost:3000
 pnpm build            # Build for production
@@ -17,6 +18,7 @@ pnpm lint             # Run ESLint
 ```
 
 ### Testing
+
 ```bash
 pnpm test             # Run tests in watch mode
 pnpm test:run         # Run tests once
@@ -26,6 +28,7 @@ pnpm type-check       # Run TypeScript type checking without emitting files
 ```
 
 ### Database (Prisma)
+
 ```bash
 npx prisma generate        # Generate Prisma client (outputs to src/generated/prisma)
 npx prisma migrate dev     # Create and apply migrations
@@ -58,12 +61,14 @@ src/server/
 ```
 
 **Module Pattern**: Each domain module (user, auth, api-endpoint, monitoring, collection, organization) has:
+
 - **Schema** (`[domain].schema.ts`): Zod validation schemas and inferred TypeScript types
 - **Router** (`[domain].router.ts`): tRPC procedures (query/mutation) with input validation using Zod schemas
 - **Service** (`[domain].service.ts`): Business logic, orchestrates repositories, handles domain rules, throws custom errors
 - **Repository** (`[domain].repository.ts`): Direct Prisma queries, data access only (extends BaseRepository)
 
 **Key Modules**:
+
 - `auth`: JWT-based authentication, bcrypt password hashing, OAuth support (GitHub, Google)
 - `api-endpoint`: CRUD for API endpoints to monitor (HTTP method, headers, intervals, expected status)
 - `monitoring`: Executes checks against endpoints, records results (status, response time, errors)
@@ -94,6 +99,7 @@ src/components/
 ```
 
 **State Management**:
+
 - tRPC React Query hooks for server state (`trpc.apiEndpoint.getAll.useQuery()`)
 - Zustand for client state (if needed)
 - React Hook Form + Zod for form handling
@@ -103,6 +109,7 @@ src/components/
 **Custom Configuration**: Prisma client generated to `src/generated/prisma` (not default `node_modules/.prisma`). Import from `@/generated/prisma`, not `@prisma/client`.
 
 **Core Models**:
+
 - `User` → Authentication (local/OAuth), role-based access (USER, ADMIN, SUPER_ADMIN)
 - `Organization` → Multi-tenancy with OrganizationMember for team access
 - `Collection` → Logical grouping of API endpoints
@@ -112,6 +119,7 @@ src/components/
 - `AlertNotification` → Notification channels (email, webhook, Slack, Discord)
 
 **Key Relationships**:
+
 - ApiEndpoint → MonitoringCheck (one-to-many): each endpoint has historical check results
 - ApiEndpoint → Alert (one-to-many): multiple alert rules per endpoint
 - Organization → ApiEndpoint (one-to-many): endpoints belong to organizations
@@ -122,6 +130,7 @@ src/components/
 **JWT-based**: Tokens issued by auth module, validated in tRPC context (trpc.ts)
 
 **Procedures**:
+
 - `publicProcedure`: No authentication required
 - `protectedProcedure`: Requires valid JWT, ctx.user available
 - `adminProcedure`: Requires ADMIN or SUPER_ADMIN role
@@ -131,6 +140,7 @@ src/components/
 ### Error Handling
 
 **Custom Error Classes** (`src/server/errors/custom-errors.ts`):
+
 - `BadRequestError` (400) - Invalid input that passes Zod but fails business rules
 - `UnauthorizedError` (401) - Authentication failures (invalid credentials, missing token)
 - `ForbiddenError` (403) - Authorization failures (insufficient permissions)
@@ -140,16 +150,17 @@ src/components/
 - `InternalServerError` (500) - Unexpected errors
 
 **Usage Pattern**:
+
 ```typescript
 // In services - throw custom errors
 import { NotFoundError, ConflictError } from "../../errors/custom-errors";
 
 if (!user) {
-    throw new NotFoundError("User", userId);  // "User with identifier 'xyz' not found"
+  throw new NotFoundError("User", userId); // "User with identifier 'xyz' not found"
 }
 
 if (existingUser) {
-    throw new ConflictError("User with this email already exists");
+  throw new ConflictError("User with this email already exists");
 }
 ```
 
@@ -158,11 +169,13 @@ if (existingUser) {
 ### Monitoring System
 
 **Scheduler** (`scheduler.ts`):
+
 - Runs every minute to check active API endpoints
 - Auto-starts when `ENABLE_CRON=true` in environment
 - Daily cleanup job removes checks older than 30 days
 
 **Check Execution** (`monitoring.service`):
+
 - Fetches active endpoints, executes HTTP requests
 - Records: status (SUCCESS/FAILURE/TIMEOUT/ERROR), response time, status code, errors
 - Triggers alerts when conditions met
@@ -170,6 +183,7 @@ if (existingUser) {
 ### Import Paths
 
 **Absolute imports** use `@/` prefix:
+
 - `@/components/ui/button` → src/components/ui/button
 - `@/lib/utils` → src/lib/utils
 - `@/server/app` → src/server/app
@@ -178,6 +192,7 @@ if (existingUser) {
 ### Environment Variables
 
 Key variables (see `.env.example`):
+
 - `DATABASE_URL`: SQLite (dev) or PostgreSQL (prod)
 - `JWT_SECRET`: For JWT token signing
 - `ENABLE_CRON`: Set to "true" to enable monitoring scheduler
@@ -205,6 +220,7 @@ All modules follow a schema-first approach using Zod:
 5. **Wrap Prisma enums** with `z.nativeEnum()` as single source of truth
 
 Example:
+
 ```typescript
 // schema.ts
 export const createUserSchema = z.object({

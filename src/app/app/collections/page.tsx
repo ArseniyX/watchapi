@@ -1,5 +1,5 @@
 import PostmanInterface from "@/components/postman-interface";
 
 export default function CollectionPage() {
-    return <PostmanInterface />;
+  return <PostmanInterface />;
 }

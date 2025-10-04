@@ -87,8 +87,8 @@ nextPublicDomain: "https://watchapi.dev"
 
 # Monitoring configuration
 enableCron: "true"
-defaultCheckInterval: "300000"  # 5 minutes
-maxTimeout: "30000"  # 30 seconds
+defaultCheckInterval: "300000" # 5 minutes
+maxTimeout: "30000" # 30 seconds
 
 # OAuth configuration (optional)
 oauth:

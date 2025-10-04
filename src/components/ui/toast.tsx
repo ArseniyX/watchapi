@@ -1,26 +1,32 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { X } from "lucide-react"
-import { cn } from "@/lib/utils"
-import { useToast } from "@/hooks/use-toast"
+import * as React from "react";
+import { X } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 interface ToastProps {
-  id: string
-  title?: React.ReactNode
-  description?: React.ReactNode
-  variant?: "default" | "destructive"
-  onDismiss?: () => void
+  id: string;
+  title?: React.ReactNode;
+  description?: React.ReactNode;
+  variant?: "default" | "destructive";
+  onDismiss?: () => void;
 }
 
-export function Toast({ id, title, description, variant = "default", onDismiss }: ToastProps) {
+export function Toast({
+  id,
+  title,
+  description,
+  variant = "default",
+  onDismiss,
+}: ToastProps) {
   React.useEffect(() => {
     const timer = setTimeout(() => {
-      onDismiss?.()
-    }, 4000)
+      onDismiss?.();
+    }, 4000);
 
-    return () => clearTimeout(timer)
-  }, [onDismiss])
+    return () => clearTimeout(timer);
+  }, [onDismiss]);
 
   return (
     <div
@@ -28,7 +34,7 @@ export function Toast({ id, title, description, variant = "default", onDismiss }
         "pointer-events-auto relative flex w-full items-center justify-between space-x-4 overflow-hidden rounded-md border p-6 pr-8 shadow-lg transition-all",
         variant === "destructive"
           ? "border-destructive bg-destructive text-destructive-foreground"
-          : "border-border bg-background text-foreground"
+          : "border-border bg-background text-foreground",
       )}
     >
       <div className="grid gap-1">
@@ -44,21 +50,17 @@ export function Toast({ id, title, description, variant = "default", onDismiss }
         </button>
       )}
     </div>
-  )
+  );
 }
 
 export function Toaster() {
-  const { toasts, dismiss } = useToast()
+  const { toasts, dismiss } = useToast();
 
   return (
     <div className="fixed top-4 right-4 z-[100] flex max-h-screen w-full max-w-[420px] flex-col gap-2">
       {toasts.map((toast) => (
-        <Toast
-          key={toast.id}
-          {...toast}
-          onDismiss={() => dismiss(toast.id)}
-        />
+        <Toast key={toast.id} {...toast} onDismiss={() => dismiss(toast.id)} />
       ))}
     </div>
-  )
+  );
 }

@@ -11,7 +11,7 @@ import {
 } from "./notification-channel.schema";
 
 const notificationChannelService = new NotificationChannelService(
-  new NotificationChannelRepository(prisma)
+  new NotificationChannelRepository(prisma),
 );
 
 export const notificationChannelRouter = router({

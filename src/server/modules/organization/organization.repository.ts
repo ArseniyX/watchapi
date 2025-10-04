@@ -1,13 +1,24 @@
-import { PrismaClient, Organization, OrganizationMember, OrganizationInvitation, OrganizationRole, MemberStatus } from '../../../generated/prisma'
+import {
+  PrismaClient,
+  Organization,
+  OrganizationMember,
+  OrganizationInvitation,
+  OrganizationRole,
+  MemberStatus,
+} from "../../../generated/prisma";
 
 export class OrganizationRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
   // Organization CRUD
-  async createOrganization(data: { name: string; slug: string; description?: string }) {
+  async createOrganization(data: {
+    name: string;
+    slug: string;
+    description?: string;
+  }) {
     return this.prisma.organization.create({
       data,
-    })
+    });
   }
 
   async findOrganizationById(id: string) {
@@ -22,7 +33,7 @@ export class OrganizationRepository {
           },
         },
       },
-    })
+    });
   }
 
   async findOrganizationBySlug(slug: string) {
@@ -31,7 +42,7 @@ export class OrganizationRepository {
       include: {
         members: true,
       },
-    })
+    });
   }
 
   async findUserOrganizations(userId: string) {
@@ -40,36 +51,39 @@ export class OrganizationRepository {
       include: {
         organization: true,
       },
-    })
+    });
 
-    return memberships.map(m => ({
+    return memberships.map((m) => ({
       ...m.organization,
       role: m.role,
       status: m.status,
       joinedAt: m.joinedAt,
-    }))
+    }));
   }
 
-  async updateOrganization(id: string, data: { name?: string; description?: string }) {
+  async updateOrganization(
+    id: string,
+    data: { name?: string; description?: string },
+  ) {
     return this.prisma.organization.update({
       where: { id },
       data,
-    })
+    });
   }
 
   async deleteOrganization(id: string) {
     await this.prisma.organization.delete({
       where: { id },
-    })
+    });
   }
 
   // Member management
   async addMember(data: {
-    userId: string
-    organizationId: string
-    role: OrganizationRole
-    status?: MemberStatus
-    invitedBy?: string
+    userId: string;
+    organizationId: string;
+    role: OrganizationRole;
+    status?: MemberStatus;
+    invitedBy?: string;
   }) {
     return this.prisma.organizationMember.create({
       data,
@@ -78,7 +92,7 @@ export class OrganizationRepository {
           select: { id: true, name: true, email: true },
         },
       },
-    })
+    });
   }
 
   async findOrganizationMembers(organizationId: string) {
@@ -89,8 +103,8 @@ export class OrganizationRepository {
           select: { id: true, name: true, email: true },
         },
       },
-      orderBy: { joinedAt: 'desc' },
-    })
+      orderBy: { joinedAt: "desc" },
+    });
   }
 
   async findMember(userId: string, organizationId: string) {
@@ -101,10 +115,14 @@ export class OrganizationRepository {
           organizationId,
         },
       },
-    })
+    });
   }
 
-  async updateMemberRole(userId: string, organizationId: string, role: OrganizationRole) {
+  async updateMemberRole(
+    userId: string,
+    organizationId: string,
+    role: OrganizationRole,
+  ) {
     return this.prisma.organizationMember.update({
       where: {
         userId_organizationId: {
@@ -113,10 +131,14 @@ export class OrganizationRepository {
         },
       },
       data: { role },
-    })
+    });
   }
 
-  async updateMemberStatus(userId: string, organizationId: string, status: MemberStatus) {
+  async updateMemberStatus(
+    userId: string,
+    organizationId: string,
+    status: MemberStatus,
+  ) {
     return this.prisma.organizationMember.update({
       where: {
         userId_organizationId: {
@@ -125,7 +147,7 @@ export class OrganizationRepository {
         },
       },
       data: { status },
-    })
+    });
   }
 
   async removeMember(userId: string, organizationId: string) {
@@ -136,40 +158,40 @@ export class OrganizationRepository {
           organizationId,
         },
       },
-    })
+    });
   }
 
   // Invitations
   async createInvitation(data: {
-    email: string
-    organizationId: string
-    role: OrganizationRole
-    invitedBy: string
-    token: string
-    expiresAt: Date
+    email: string;
+    organizationId: string;
+    role: OrganizationRole;
+    invitedBy: string;
+    token: string;
+    expiresAt: Date;
   }) {
     return this.prisma.organizationInvitation.create({
       data,
-    })
+    });
   }
 
   async findInvitationByToken(token: string) {
     return this.prisma.organizationInvitation.findUnique({
       where: { token },
-    })
+    });
   }
 
   async findOrganizationInvitations(organizationId: string) {
     return this.prisma.organizationInvitation.findMany({
       where: { organizationId },
-      orderBy: { createdAt: 'desc' },
-    })
+      orderBy: { createdAt: "desc" },
+    });
   }
 
   async deleteInvitation(id: string) {
     await this.prisma.organizationInvitation.delete({
       where: { id },
-    })
+    });
   }
 
   async deleteExpiredInvitations() {
@@ -179,8 +201,8 @@ export class OrganizationRepository {
           lt: new Date(),
         },
       },
-    })
-    return result.count
+    });
+    return result.count;
   }
 
   // User lookup
@@ -188,13 +210,13 @@ export class OrganizationRepository {
     return this.prisma.user.findUnique({
       where: { email },
       select: { id: true, email: true, name: true },
-    })
+    });
   }
 
   async findUserById(id: string) {
     return this.prisma.user.findUnique({
       where: { id },
       select: { id: true, email: true, name: true },
-    })
+    });
   }
 }

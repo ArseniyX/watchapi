@@ -5,26 +5,26 @@ import { TRPCError } from "@trpc/server";
  * Extends Error to maintain stack traces and instanceof checks
  */
 export abstract class AppError extends Error {
-    abstract readonly statusCode: number;
-    abstract readonly code: string;
+  abstract readonly statusCode: number;
+  abstract readonly code: string;
 
-    constructor(message: string) {
-        super(message);
-        this.name = this.constructor.name;
-        Error.captureStackTrace(this, this.constructor);
-    }
+  constructor(message: string) {
+    super(message);
+    this.name = this.constructor.name;
+    Error.captureStackTrace(this, this.constructor);
+  }
 
-    /**
-     * Convert to tRPC error for API responses
-     */
-    toTRPCError(): TRPCError {
-        return new TRPCError({
-            code: this.getTRPCCode(),
-            message: this.message,
-        });
-    }
+  /**
+   * Convert to tRPC error for API responses
+   */
+  toTRPCError(): TRPCError {
+    return new TRPCError({
+      code: this.getTRPCCode(),
+      message: this.message,
+    });
+  }
 
-    abstract getTRPCCode(): TRPCError["code"];
+  abstract getTRPCCode(): TRPCError["code"];
 }
 
 /**
@@ -32,12 +32,12 @@ export abstract class AppError extends Error {
  * Used for invalid input that passes Zod validation but fails business rules
  */
 export class BadRequestError extends AppError {
-    readonly statusCode = 400;
-    readonly code = "BAD_REQUEST";
+  readonly statusCode = 400;
+  readonly code = "BAD_REQUEST";
 
-    getTRPCCode(): TRPCError["code"] {
-        return "BAD_REQUEST";
-    }
+  getTRPCCode(): TRPCError["code"] {
+    return "BAD_REQUEST";
+  }
 }
 
 /**
@@ -45,12 +45,12 @@ export class BadRequestError extends AppError {
  * Used for authentication failures (invalid credentials, missing token, etc.)
  */
 export class UnauthorizedError extends AppError {
-    readonly statusCode = 401;
-    readonly code = "UNAUTHORIZED";
+  readonly statusCode = 401;
+  readonly code = "UNAUTHORIZED";
 
-    getTRPCCode(): TRPCError["code"] {
-        return "UNAUTHORIZED";
-    }
+  getTRPCCode(): TRPCError["code"] {
+    return "UNAUTHORIZED";
+  }
 }
 
 /**
@@ -58,16 +58,16 @@ export class UnauthorizedError extends AppError {
  * Used for authorization failures (valid user but insufficient permissions)
  */
 export class ForbiddenError extends AppError {
-    readonly statusCode = 403;
-    readonly code = "FORBIDDEN";
+  readonly statusCode = 403;
+  readonly code = "FORBIDDEN";
 
-    constructor(message = "You don't have permission to access this resource") {
-        super(message);
-    }
+  constructor(message = "You don't have permission to access this resource") {
+    super(message);
+  }
 
-    getTRPCCode(): TRPCError["code"] {
-        return "FORBIDDEN";
-    }
+  getTRPCCode(): TRPCError["code"] {
+    return "FORBIDDEN";
+  }
 }
 
 /**
@@ -75,19 +75,19 @@ export class ForbiddenError extends AppError {
  * Used when a requested resource doesn't exist
  */
 export class NotFoundError extends AppError {
-    readonly statusCode = 404;
-    readonly code = "NOT_FOUND";
+  readonly statusCode = 404;
+  readonly code = "NOT_FOUND";
 
-    constructor(resource: string, identifier?: string) {
-        const message = identifier
-            ? `${resource} with identifier '${identifier}' not found`
-            : `${resource} not found`;
-        super(message);
-    }
+  constructor(resource: string, identifier?: string) {
+    const message = identifier
+      ? `${resource} with identifier '${identifier}' not found`
+      : `${resource} not found`;
+    super(message);
+  }
 
-    getTRPCCode(): TRPCError["code"] {
-        return "NOT_FOUND";
-    }
+  getTRPCCode(): TRPCError["code"] {
+    return "NOT_FOUND";
+  }
 }
 
 /**
@@ -95,16 +95,16 @@ export class NotFoundError extends AppError {
  * Used for resource conflicts (duplicate email, concurrent modification, etc.)
  */
 export class ConflictError extends AppError {
-    readonly statusCode = 409;
-    readonly code = "CONFLICT";
+  readonly statusCode = 409;
+  readonly code = "CONFLICT";
 
-    constructor(message: string) {
-        super(message);
-    }
+  constructor(message: string) {
+    super(message);
+  }
 
-    getTRPCCode(): TRPCError["code"] {
-        return "CONFLICT";
-    }
+  getTRPCCode(): TRPCError["code"] {
+    return "CONFLICT";
+  }
 }
 
 /**
@@ -112,16 +112,16 @@ export class ConflictError extends AppError {
  * Used for rate limiting and plan limit violations
  */
 export class TooManyRequestsError extends AppError {
-    readonly statusCode = 429;
-    readonly code = "TOO_MANY_REQUESTS";
+  readonly statusCode = 429;
+  readonly code = "TOO_MANY_REQUESTS";
 
-    constructor(message: string) {
-        super(message);
-    }
+  constructor(message: string) {
+    super(message);
+  }
 
-    getTRPCCode(): TRPCError["code"] {
-        return "TOO_MANY_REQUESTS";
-    }
+  getTRPCCode(): TRPCError["code"] {
+    return "TOO_MANY_REQUESTS";
+  }
 }
 
 /**
@@ -129,23 +129,23 @@ export class TooManyRequestsError extends AppError {
  * Used for unexpected errors that shouldn't happen
  */
 export class InternalServerError extends AppError {
-    readonly statusCode = 500;
-    readonly code = "INTERNAL_SERVER_ERROR";
+  readonly statusCode = 500;
+  readonly code = "INTERNAL_SERVER_ERROR";
 
-    constructor(message = "An unexpected error occurred") {
-        super(message);
-    }
+  constructor(message = "An unexpected error occurred") {
+    super(message);
+  }
 
-    getTRPCCode(): TRPCError["code"] {
-        return "INTERNAL_SERVER_ERROR";
-    }
+  getTRPCCode(): TRPCError["code"] {
+    return "INTERNAL_SERVER_ERROR";
+  }
 }
 
 /**
  * Helper to check if an error is an AppError
  */
 export function isAppError(error: unknown): error is AppError {
-    return error instanceof AppError;
+  return error instanceof AppError;
 }
 
 /**
@@ -155,18 +155,18 @@ export function isAppError(error: unknown): error is AppError {
  * - Other: Wrap in INTERNAL_SERVER_ERROR
  */
 export function toTRPCError(error: unknown): TRPCError {
-    if (error instanceof TRPCError) {
-        return error;
-    }
+  if (error instanceof TRPCError) {
+    return error;
+  }
 
-    if (isAppError(error)) {
-        return error.toTRPCError();
-    }
+  if (isAppError(error)) {
+    return error.toTRPCError();
+  }
 
-    // Unknown error - log it and return generic error
-    console.error("Unexpected error:", error);
-    return new TRPCError({
-        code: "INTERNAL_SERVER_ERROR",
-        message: "An unexpected error occurred",
-    });
+  // Unknown error - log it and return generic error
+  console.error("Unexpected error:", error);
+  return new TRPCError({
+    code: "INTERNAL_SERVER_ERROR",
+    message: "An unexpected error occurred",
+  });
 }

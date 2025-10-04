@@ -3,34 +3,34 @@ import { OrganizationRole, MemberStatus } from "@/generated/prisma";
 
 // Organization schemas
 export const createOrganizationSchema = z.object({
-    name: z.string().min(1, "Organization name is required"),
-    slug: z.string().min(1, "Slug is required").optional(),
-    description: z.string().optional(),
+  name: z.string().min(1, "Organization name is required"),
+  slug: z.string().min(1, "Slug is required").optional(),
+  description: z.string().optional(),
 });
 
 export const updateOrganizationSchema = z.object({
-    name: z.string().min(1, "Organization name is required").optional(),
-    slug: z.string().min(1, "Slug is required").optional(),
-    description: z.string().optional(),
+  name: z.string().min(1, "Organization name is required").optional(),
+  slug: z.string().min(1, "Slug is required").optional(),
+  description: z.string().optional(),
 });
 
 // Member schemas - Use Prisma enums as source of truth
 export const addMemberSchema = z.object({
-    userId: z.string().min(1, "User ID is required"),
-    organizationId: z.string().min(1, "Organization ID is required"),
-    role: z.nativeEnum(OrganizationRole),
-    status: z.nativeEnum(MemberStatus).default(MemberStatus.ACTIVE),
+  userId: z.string().min(1, "User ID is required"),
+  organizationId: z.string().min(1, "Organization ID is required"),
+  role: z.nativeEnum(OrganizationRole),
+  status: z.nativeEnum(MemberStatus).default(MemberStatus.ACTIVE),
 });
 
 export const updateMemberRoleSchema = z.object({
-    userId: z.string().min(1, "User ID is required"),
-    organizationId: z.string().min(1, "Organization ID is required"),
-    role: z.nativeEnum(OrganizationRole),
+  userId: z.string().min(1, "User ID is required"),
+  organizationId: z.string().min(1, "Organization ID is required"),
+  role: z.nativeEnum(OrganizationRole),
 });
 
 export const removeMemberSchema = z.object({
-    userId: z.string().min(1, "User ID is required"),
-    organizationId: z.string().min(1, "Organization ID is required"),
+  userId: z.string().min(1, "User ID is required"),
+  organizationId: z.string().min(1, "Organization ID is required"),
 });
 
 // Infer types from schemas

@@ -1,22 +1,22 @@
-import { router } from './trpc'
-import { prisma } from './database'
-import { UserModule } from './modules/user'
-import { AuthModule } from './modules/auth'
-import { MonitoringModule } from './modules/monitoring'
-import { CollectionModule } from './modules/collection'
-import { OrganizationModule } from './modules/organization'
-import { ApiEndpointModule } from './modules/api-endpoint'
-import { contactRouter } from './modules/contact'
-import { notificationChannelRouter } from './modules/notification-channel'
-import './scheduler' // Initialize monitoring scheduler
+import { router } from "./trpc";
+import { prisma } from "./database";
+import { UserModule } from "./modules/user";
+import { AuthModule } from "./modules/auth";
+import { MonitoringModule } from "./modules/monitoring";
+import { CollectionModule } from "./modules/collection";
+import { OrganizationModule } from "./modules/organization";
+import { ApiEndpointModule } from "./modules/api-endpoint";
+import { contactRouter } from "./modules/contact";
+import { notificationChannelRouter } from "./modules/notification-channel";
+import "./scheduler"; // Initialize monitoring scheduler
 
 // Initialize modules
-const organizationModule = new OrganizationModule(prisma)
-const userModule = new UserModule(prisma, organizationModule.repository)
-const authModule = new AuthModule(userModule.service, process.env.JWT_SECRET!)
-const apiEndpointModule = new ApiEndpointModule(prisma)
-const monitoringModule = new MonitoringModule(prisma)
-const collectionModule = new CollectionModule(prisma)
+const organizationModule = new OrganizationModule(prisma);
+const userModule = new UserModule(prisma, organizationModule.repository);
+const authModule = new AuthModule(userModule.service, process.env.JWT_SECRET!);
+const apiEndpointModule = new ApiEndpointModule(prisma);
+const monitoringModule = new MonitoringModule(prisma);
+const collectionModule = new CollectionModule(prisma);
 
 // Create main app router
 export const appRouter = router({
@@ -28,9 +28,9 @@ export const appRouter = router({
   organization: organizationModule.router,
   contact: contactRouter,
   notificationChannel: notificationChannelRouter,
-})
+});
 
-export type AppRouter = typeof appRouter
+export type AppRouter = typeof appRouter;
 
 // Export modules for use in other parts of the application
 export const modules = {
@@ -40,4 +40,4 @@ export const modules = {
   monitoring: monitoringModule,
   collection: collectionModule,
   organization: organizationModule,
-}
+};

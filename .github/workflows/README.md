@@ -21,6 +21,7 @@ Comprehensive testing pipeline that runs on every push and pull request.
 ### Environment Variables
 
 The workflow sets up all necessary environment variables for testing:
+
 - Database connection for PostgreSQL
 - Mock values for OAuth providers
 - Test API keys

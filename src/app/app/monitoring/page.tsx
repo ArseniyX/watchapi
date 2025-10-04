@@ -1,48 +1,73 @@
-"use client"
+"use client";
 
-import { useState, useMemo } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Search, Settings, CheckCircle, XCircle, AlertTriangle } from "lucide-react"
-import { trpc } from "@/lib/trpc"
-import { useRouter } from "next/navigation"
+import { useState, useMemo } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Search,
+  Settings,
+  CheckCircle,
+  XCircle,
+  AlertTriangle,
+} from "lucide-react";
+import { trpc } from "@/lib/trpc";
+import { useRouter } from "next/navigation";
 
 function formatDuration(ms: number) {
-  if (ms < 1000) return `${ms}ms`
-  if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`
-  return `${Math.floor(ms / 60000)}m ${Math.floor((ms % 60000) / 1000)}s`
+  if (ms < 1000) return `${ms}ms`;
+  if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
+  return `${Math.floor(ms / 60000)}m ${Math.floor((ms % 60000) / 1000)}s`;
 }
 
 function formatTime(date: Date) {
-  const now = new Date()
-  const diffMs = now.getTime() - date.getTime()
-  const diffMins = Math.floor(diffMs / 60000)
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
 
-  if (diffMins < 1) return 'now'
-  if (diffMins < 60) return `${diffMins}m ago`
-  const diffHours = Math.floor(diffMins / 60)
-  if (diffHours < 24) return `${diffHours}h ago`
-  const diffDays = Math.floor(diffHours / 24)
-  return `${diffDays}d ago`
+  if (diffMins < 1) return "now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+  const diffDays = Math.floor(diffHours / 24);
+  return `${diffDays}d ago`;
 }
 
 const StatusIcon = ({ status }: { status: string }) => {
   switch (status) {
     case "SUCCESS":
-      return <CheckCircle className="h-4 w-4 text-green-500" />
+      return <CheckCircle className="h-4 w-4 text-green-500" />;
     case "TIMEOUT":
-      return <AlertTriangle className="h-4 w-4 text-yellow-500" />
+      return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
     case "ERROR":
     case "FAILURE":
-      return <XCircle className="h-4 w-4 text-red-500" />
+      return <XCircle className="h-4 w-4 text-red-500" />;
     default:
-      return <CheckCircle className="h-4 w-4 text-gray-500" />
+      return <CheckCircle className="h-4 w-4 text-gray-500" />;
   }
-}
+};
 
 const StatusBadge = ({ status }: { status: string }) => {
   const variants = {
@@ -50,40 +75,42 @@ const StatusBadge = ({ status }: { status: string }) => {
     TIMEOUT: "secondary",
     ERROR: "destructive",
     FAILURE: "destructive",
-  } as const
+  } as const;
 
   const displayText = {
     SUCCESS: "success",
     TIMEOUT: "timeout",
     ERROR: "error",
     FAILURE: "failed",
-  } as const
+  } as const;
 
   return (
     <Badge variant={variants[status as keyof typeof variants] || "default"}>
       {displayText[status as keyof typeof displayText] || status.toLowerCase()}
     </Badge>
-  )
-}
+  );
+};
 
 export default function MonitoringPage() {
-  const router = useRouter()
-  const [searchQuery, setSearchQuery] = useState("")
-  const { data: endpoints, isLoading } = trpc.apiEndpoint.getMyEndpoints.useQuery(undefined, {
-    refetchOnWindowFocus: true,
-    refetchInterval: 60000, // Refetch every 60 seconds
-  })
+  const router = useRouter();
+  const [searchQuery, setSearchQuery] = useState("");
+  const { data: endpoints, isLoading } =
+    trpc.apiEndpoint.getMyEndpoints.useQuery(undefined, {
+      refetchOnWindowFocus: true,
+      refetchInterval: 60000, // Refetch every 60 seconds
+    });
 
   const filteredEndpoints = useMemo(() => {
-    if (!endpoints) return []
-    if (!searchQuery.trim()) return endpoints
+    if (!endpoints) return [];
+    if (!searchQuery.trim()) return endpoints;
 
-    const query = searchQuery.toLowerCase()
-    return endpoints.filter((endpoint) =>
-      endpoint.name.toLowerCase().includes(query) ||
-      endpoint.url.toLowerCase().includes(query)
-    )
-  }, [endpoints, searchQuery])
+    const query = searchQuery.toLowerCase();
+    return endpoints.filter(
+      (endpoint) =>
+        endpoint.name.toLowerCase().includes(query) ||
+        endpoint.url.toLowerCase().includes(query),
+    );
+  }, [endpoints, searchQuery]);
 
   if (isLoading) {
     return (
@@ -91,7 +118,7 @@ export default function MonitoringPage() {
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
         <p className="text-muted-foreground mt-4">Loading monitoring data...</p>
       </div>
-    )
+    );
   }
 
   return (
@@ -99,9 +126,11 @@ export default function MonitoringPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Monitoring</h1>
-          <p className="text-muted-foreground">Real-time API health and performance monitoring</p>
+          <p className="text-muted-foreground">
+            Real-time API health and performance monitoring
+          </p>
         </div>
-        <Button onClick={() => router.push('/app/collections')}>
+        <Button onClick={() => router.push("/app/collections")}>
           <Settings className="mr-2 h-4 w-4" />
           Configure Monitoring
         </Button>
@@ -133,20 +162,26 @@ export default function MonitoringPage() {
       <Card>
         <CardHeader>
           <CardTitle>API Health Status</CardTitle>
-          <CardDescription>Current status of all monitored endpoints</CardDescription>
+          <CardDescription>
+            Current status of all monitored endpoints
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {!endpoints || endpoints.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-muted-foreground mb-4">No API endpoints configured yet</p>
-              <Button onClick={() => router.push('/app/collections')}>
+              <p className="text-muted-foreground mb-4">
+                No API endpoints configured yet
+              </p>
+              <Button onClick={() => router.push("/app/collections")}>
                 <Settings className="mr-2 h-4 w-4" />
                 Add Your First Endpoint
               </Button>
             </div>
           ) : filteredEndpoints.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-muted-foreground">No endpoints match your search</p>
+              <p className="text-muted-foreground">
+                No endpoints match your search
+              </p>
             </div>
           ) : (
             <Table>
@@ -163,7 +198,10 @@ export default function MonitoringPage() {
               </TableHeader>
               <TableBody>
                 {filteredEndpoints.map((endpoint) => (
-                  <EndpointRow key={`${endpoint.id}-${endpoint.name}-${endpoint.method}-${endpoint.url}`} endpoint={endpoint} />
+                  <EndpointRow
+                    key={`${endpoint.id}-${endpoint.name}-${endpoint.method}-${endpoint.url}`}
+                    endpoint={endpoint}
+                  />
                 ))}
               </TableBody>
             </Table>
@@ -171,38 +209,44 @@ export default function MonitoringPage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
 
 function EndpointRow({ endpoint }: { endpoint: any }) {
   const { data: history } = trpc.monitoring.getHistory.useQuery(
     { endpointId: endpoint.id, take: 1 },
-    { refetchInterval: 30000, refetchOnWindowFocus: true }
-  )
+    { refetchInterval: 30000, refetchOnWindowFocus: true },
+  );
   const { data: uptimeStats } = trpc.monitoring.getUptimeStats.useQuery(
     { endpointId: endpoint.id, days: 30 },
-    { refetchOnWindowFocus: true }
-  )
+    { refetchOnWindowFocus: true },
+  );
 
-  const lastCheck = history?.[0]
-  const uptime = uptimeStats ? `${uptimeStats.uptimePercentage.toFixed(1)}%` : 'N/A'
+  const lastCheck = history?.[0];
+  const uptime = uptimeStats
+    ? `${uptimeStats.uptimePercentage.toFixed(1)}%`
+    : "N/A";
 
   return (
     <TableRow>
       <TableCell>
         <div className="flex items-center space-x-2">
-          <StatusIcon status={lastCheck?.status || 'unknown'} />
-          <StatusBadge status={lastCheck?.status || 'unknown'} />
+          <StatusIcon status={lastCheck?.status || "unknown"} />
+          <StatusBadge status={lastCheck?.status || "unknown"} />
         </div>
       </TableCell>
-      <TableCell className="font-mono">{endpoint.name || endpoint.url}</TableCell>
+      <TableCell className="font-mono">
+        {endpoint.name || endpoint.url}
+      </TableCell>
       <TableCell>
         <Badge variant="outline" className="font-mono text-xs">
           {endpoint.method}
         </Badge>
       </TableCell>
       <TableCell className="font-mono">
-        {lastCheck?.responseTime ? formatDuration(lastCheck.responseTime) : 'N/A'}
+        {lastCheck?.responseTime
+          ? formatDuration(lastCheck.responseTime)
+          : "N/A"}
       </TableCell>
       <TableCell>{uptime}</TableCell>
       <TableCell>
@@ -211,8 +255,8 @@ function EndpointRow({ endpoint }: { endpoint: any }) {
         </Badge>
       </TableCell>
       <TableCell className="text-muted-foreground">
-        {lastCheck ? formatTime(new Date(lastCheck.checkedAt)) : 'Never'}
+        {lastCheck ? formatTime(new Date(lastCheck.checkedAt)) : "Never"}
       </TableCell>
     </TableRow>
-  )
+  );
 }

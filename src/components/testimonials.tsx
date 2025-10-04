@@ -1,5 +1,5 @@
-import { Card, CardContent } from "@/components/ui/card"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Card, CardContent } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const testimonials = [
   {
@@ -19,13 +19,14 @@ const testimonials = [
     avatar: "/professional-man.jpg",
   },
   {
-    content: "The CI/CD integration was seamless. We had it up and running in our pipeline within minutes, not hours.",
+    content:
+      "The CI/CD integration was seamless. We had it up and running in our pipeline within minutes, not hours.",
     author: "Emily Watson",
     role: "DevOps Engineer",
     company: "CloudNative",
     avatar: "/professional-woman-engineer.png",
   },
-]
+];
 
 export function Testimonials() {
   return (
@@ -49,7 +50,10 @@ export function Testimonials() {
                   </blockquote>
                   <div className="flex items-center space-x-3">
                     <Avatar>
-                      <AvatarImage src={testimonial.avatar || "/placeholder.svg"} alt={testimonial.author} />
+                      <AvatarImage
+                        src={testimonial.avatar || "/placeholder.svg"}
+                        alt={testimonial.author}
+                      />
                       <AvatarFallback>
                         {testimonial.author
                           .split(" ")
@@ -58,7 +62,9 @@ export function Testimonials() {
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <div className="font-semibold text-foreground">{testimonial.author}</div>
+                      <div className="font-semibold text-foreground">
+                        {testimonial.author}
+                      </div>
                       <div className="text-sm text-muted-foreground">
                         {testimonial.role} at {testimonial.company}
                       </div>
@@ -71,5 +77,5 @@ export function Testimonials() {
         </div>
       </div>
     </section>
-  )
+  );
 }

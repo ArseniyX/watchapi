@@ -5,26 +5,26 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 interface AuthGuardProps {
-    children: React.ReactNode;
+  children: React.ReactNode;
 }
 
 export function AuthGuard({ children }: AuthGuardProps) {
-    const { user, isLoading } = useAuth();
-    const router = useRouter();
+  const { user, isLoading } = useAuth();
+  const router = useRouter();
 
-    useEffect(() => {
-        if (!isLoading && !user) {
-            router.push("/login");
-        }
-    }, [user, isLoading, router]);
-
-    if (isLoading) {
-        return null;
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.push("/login");
     }
+  }, [user, isLoading, router]);
 
-    if (!user) {
-        return null; // Redirect is happening
-    }
+  if (isLoading) {
+    return null;
+  }
 
-    return <>{children}</>;
+  if (!user) {
+    return null; // Redirect is happening
+  }
+
+  return <>{children}</>;
 }

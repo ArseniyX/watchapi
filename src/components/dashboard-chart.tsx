@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis } from "recharts"
+import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
 
 const data = [
   { name: "00:00", value: 245 },
@@ -15,13 +15,19 @@ const data = [
   { name: "18:00", value: 298 },
   { name: "20:00", value: 234 },
   { name: "22:00", value: 267 },
-]
+];
 
 export function DashboardChart() {
   return (
     <ResponsiveContainer width="100%" height={350}>
       <AreaChart data={data}>
-        <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+        <XAxis
+          dataKey="name"
+          stroke="#888888"
+          fontSize={12}
+          tickLine={false}
+          axisLine={false}
+        />
         <YAxis
           stroke="#888888"
           fontSize={12}
@@ -39,5 +45,5 @@ export function DashboardChart() {
         />
       </AreaChart>
     </ResponsiveContainer>
-  )
+  );
 }

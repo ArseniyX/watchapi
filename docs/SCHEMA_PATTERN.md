@@ -33,14 +33,14 @@ import { z } from "zod";
 
 // Define Zod schema
 export const createOrganizationSchema = z.object({
-    name: z.string().min(1, "Organization name is required"),
-    slug: z.string().min(1, "Slug is required").optional(),
-    description: z.string().optional(),
+  name: z.string().min(1, "Organization name is required"),
+  slug: z.string().min(1, "Slug is required").optional(),
+  description: z.string().optional(),
 });
 
 export const updateOrganizationSchema = z.object({
-    name: z.string().min(1, "Organization name is required").optional(),
-    description: z.string().optional(),
+  name: z.string().min(1, "Organization name is required").optional(),
+  description: z.string().optional(),
 });
 
 // Infer TypeScript types from schemas
@@ -54,17 +54,21 @@ export type UpdateOrganizationInput = z.infer<typeof updateOrganizationSchema>;
 import {
   CreateOrganizationInput,
   UpdateOrganizationInput,
-} from './organization.schema'
+} from "./organization.schema";
 
 export class OrganizationService {
   // Use inferred types - NO manual type definitions needed!
   async createOrganization(userId: string, data: CreateOrganizationInput) {
     // data is fully typed
-    const slug = data.slug || this.generateSlug(data.name)
+    const slug = data.slug || this.generateSlug(data.name);
     // ...
   }
 
-  async updateOrganization(userId: string, id: string, data: UpdateOrganizationInput) {
+  async updateOrganization(
+    userId: string,
+    id: string,
+    data: UpdateOrganizationInput,
+  ) {
     // data is fully typed
     // ...
   }
@@ -77,32 +81,31 @@ export class OrganizationService {
 import {
   createOrganizationSchema,
   updateOrganizationSchema,
-} from './organization.schema'
+} from "./organization.schema";
 
 export const createOrganizationRouter = (service: OrganizationService) =>
   router({
     // Use schema directly for validation
     create: protectedProcedure
-      .input(createOrganizationSchema)  // ← Validates input
+      .input(createOrganizationSchema) // ← Validates input
       .mutation(async ({ input, ctx }) => {
         // input is automatically typed!
-        return service.createOrganization(ctx.user.id, input)
+        return service.createOrganization(ctx.user.id, input);
       }),
 
     update: protectedProcedure
-      .input(
-        z.object({ id: z.string() }).merge(updateOrganizationSchema)
-      )
+      .input(z.object({ id: z.string() }).merge(updateOrganizationSchema))
       .mutation(async ({ input, ctx }) => {
-        const { id, ...data } = input
-        return service.updateOrganization(ctx.user.id, id, data)
+        const { id, ...data } = input;
+        return service.updateOrganization(ctx.user.id, id, data);
       }),
-  })
+  });
 ```
 
 ## Pattern Advantages
 
 ### Before (Manual Types)
+
 ```typescript
 // ❌ Define types manually
 export interface CreateOrganizationInput {
@@ -127,6 +130,7 @@ async createOrganization(data: CreateOrganizationInput) {
 ```
 
 ### After (Schema-First)
+
 ```typescript
 // ✅ Define schema once
 export const createOrganizationSchema = z.object({
@@ -150,27 +154,29 @@ async createOrganization(data: CreateOrganizationInput) {
 ## Common Patterns
 
 ### Optional Fields with Defaults
+
 ```typescript
 export const createEndpointSchema = z.object({
   name: z.string().min(1),
   timeout: z.number().default(5000),
   interval: z.number().default(300000),
-})
+});
 ```
 
 ### Enums (Use Prisma Enums!)
+
 ```typescript
 // ✅ CORRECT: Use Prisma enum as source of truth
-import { OrganizationRole } from '@/generated/prisma'
+import { OrganizationRole } from "@/generated/prisma";
 
 export const updateMemberRoleSchema = z.object({
-  role: z.nativeEnum(OrganizationRole),  // ← Wraps Prisma enum
-})
+  role: z.nativeEnum(OrganizationRole), // ← Wraps Prisma enum
+});
 
 // ❌ WRONG: Don't duplicate enum definitions
 export const updateMemberRoleSchema = z.object({
-  role: z.enum(["OWNER", "ADMIN", "MEMBER"]),  // ← Now two sources of truth!
-})
+  role: z.enum(["OWNER", "ADMIN", "MEMBER"]), // ← Now two sources of truth!
+});
 
 // Why use Prisma enums?
 // 1. Database enforces enum at DB level
@@ -180,26 +186,28 @@ export const updateMemberRoleSchema = z.object({
 ```
 
 ### Nested Objects
+
 ```typescript
 export const createEndpointSchema = z.object({
   name: z.string(),
   headers: z.record(z.string(), z.string()).optional(),
   body: z.string().optional(),
-})
+});
 ```
 
 ### Extending Schemas
+
 ```typescript
 // Base schema
-const baseSchema = z.object({ name: z.string() })
+const baseSchema = z.object({ name: z.string() });
 
 // Extended schema
 const createSchema = baseSchema.extend({
   description: z.string().optional(),
-})
+});
 
 // Or merge
-const updateWithId = z.object({ id: z.string() }).merge(updateSchema)
+const updateWithId = z.object({ id: z.string() }).merge(updateSchema);
 ```
 
 ## Migration Checklist

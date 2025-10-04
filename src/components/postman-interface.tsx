@@ -5,19 +5,19 @@ import { Sidebar } from "@/components/sidebar";
 import { RequestBuilder } from "@/components/request-builder";
 
 export default function PostmanInterface() {
-    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-    return (
-        <div className="flex h-screen flex-col bg-background">
-            <div className="flex flex-1 overflow-hidden">
-                <Sidebar
-                    collapsed={sidebarCollapsed}
-                    onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-                />
-                <main className="flex-1 overflow-hidden border-t border-border">
-                    <RequestBuilder />
-                </main>
-            </div>
-        </div>
-    );
+  return (
+    <div className="flex h-screen flex-col bg-background">
+      <div className="flex flex-1 overflow-hidden">
+        <Sidebar
+          collapsed={sidebarCollapsed}
+          onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+        />
+        <main className="flex-1 overflow-hidden border-t border-border">
+          <RequestBuilder />
+        </main>
+      </div>
+    </div>
+  );
 }
