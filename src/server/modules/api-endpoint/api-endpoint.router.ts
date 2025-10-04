@@ -19,7 +19,7 @@ export const createApiEndpointRouter = (
         if (!ctx.organizationId) {
           throw new Error("No organization context");
         }
-        return apiEndpointService.createApiEndpoint(
+        return await apiEndpointService.createApiEndpoint(
           ctx.user.id,
           ctx.organizationPlan,
           ctx.organizationId,

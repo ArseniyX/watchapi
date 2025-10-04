@@ -35,17 +35,14 @@ export class ApiEndpointService {
       !isUnlimited(limits.maxEndpoints) &&
       currentEndpoints.length >= limits.maxEndpoints
     ) {
-      throw new Error(
+      throw new TooManyRequestsError(
         `Plan limit reached. ${userPlan} plan allows maximum ${limits.maxEndpoints} endpoints. Upgrade your plan to add more.`,
       );
     }
 
-    // Check minimum check interval
-    if (input.interval < limits.minCheckInterval) {
-      throw new Error(
-        `Check interval cannot be less than ${limits.minCheckInterval / 1000} seconds for ${userPlan} plan. Upgrade to reduce check interval.`,
-      );
-    }
+    // Use plan's minimum interval if provided interval is too low
+    // This allows endpoint creation to succeed, applying safe defaults
+    const safeInterval = Math.max(input.interval, limits.minCheckInterval);
 
     return this.apiEndpointRepository.create({
       name: input.name.trim(),
@@ -55,7 +52,7 @@ export class ApiEndpointService {
       body: input.body?.trim() || null,
       expectedStatus: input.expectedStatus,
       timeout: input.timeout,
-      interval: input.interval,
+      interval: safeInterval, // Use safe interval instead of rejecting
       userId,
       organizationId,
       collectionId: input.collectionId || null,

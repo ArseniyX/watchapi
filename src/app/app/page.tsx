@@ -10,6 +10,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Activity, Clock, AlertTriangle, TrendingUp } from "lucide-react";
 import { DashboardChart } from "@/components/dashboard-chart";
+import { OnboardingChecklist } from "@/components/onboarding-checklist";
 import { trpc } from "@/lib/trpc";
 
 function formatDuration(ms: number) {
@@ -104,6 +105,9 @@ export default function DashboardPage() {
           </p>
         </div>
       </div>
+
+      {/* Onboarding Checklist */}
+      <OnboardingChecklist />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>

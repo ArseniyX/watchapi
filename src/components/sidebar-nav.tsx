@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   BarChart3,
   Bell,
+  CreditCard,
   Database,
   Home,
   Users,
@@ -49,6 +50,11 @@ const items = [
     title: "Team",
     url: "/app/team",
     icon: Users,
+  },
+  {
+    title: "Billing",
+    url: "/app/billing",
+    icon: CreditCard,
   },
 ];
 

@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import { prisma } from "./database";
 import { PlanType } from "@/generated/prisma";
 import { logger, logError } from "@/lib/logger";
+import { isAppError } from "./errors/custom-errors";
 
 export interface Context {
   user?: {
@@ -110,7 +111,37 @@ export const createTRPCContext = async (
   }
 };
 
-const t = initTRPC.context<Context>().create();
+const t = initTRPC.context<Context>().create({
+  errorFormatter({ shape, error }) {
+    // Convert custom AppError to proper tRPC error
+    // tRPC wraps thrown errors in error.cause, so check there first
+    if (error.cause && isAppError(error.cause)) {
+      const appError = error.cause;
+      return {
+        ...shape,
+        message: appError.message,
+        data: {
+          ...shape.data,
+          code: appError.getTRPCCode(),
+        },
+      };
+    }
+
+    // Also check if the error itself is an AppError (shouldn't happen but defensive)
+    if (isAppError(error)) {
+      return {
+        ...shape,
+        message: error.message,
+        data: {
+          ...shape.data,
+          code: error.getTRPCCode(),
+        },
+      };
+    }
+
+    return shape;
+  },
+});
 
 export const router = t.router;
 export const publicProcedure = t.procedure;

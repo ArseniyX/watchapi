@@ -17,20 +17,25 @@ const plans = [
     price: "$0",
     description: "Perfect for small projects",
     features: [
-      "Up to 5 endpoints",
+      "Up to 10 endpoints",
+      "Up to 3 team members",
       "Hourly health checks",
       "Email alerts",
       "7-day history",
+      "API request builder",
     ],
     cta: "Start Free",
     popular: false,
+    highlight: null,
   },
   {
-    name: "Team",
+    name: "Starter",
     price: "$39",
     description: "For development teams",
+    priceNote: "flat rate/month",
     features: [
-      "Unlimited endpoints",
+      "Up to 50 endpoints",
+      "Up to 10 team members",
       "Every-minute checks",
       "Email & webhook alerts",
       "30-day history",
@@ -39,14 +44,17 @@ const plans = [
     ],
     cta: "Start Free Trial",
     popular: true,
+    highlight: null,
   },
   {
-    name: "Business",
+    name: "Pro",
     price: "$99",
     description: "For production teams",
+    priceNote: "flat rate/month",
     features: [
-      "Everything in Team",
-      "Custom check intervals",
+      "Up to 250 endpoints",
+      "Up to 25 team members",
+      "30-second check intervals",
       "Advanced analytics",
       "90-day history",
       "SLA monitoring",
@@ -54,6 +62,7 @@ const plans = [
     ],
     cta: "Start Free Trial",
     popular: false,
+    highlight: null,
   },
 ];
 
@@ -63,11 +72,11 @@ export function Pricing() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl text-balance">
-            Simple, transparent pricing
+            Simple, team-friendly pricing
           </h2>
           <p className="mt-6 text-lg leading-8 text-muted-foreground text-pretty">
-            Start free. Upgrade when you need more. All paid plans include a
-            14-day free trial.
+            One flat rate for your entire team. No per-user fees. API testing
+            and monitoring in one tool.
           </p>
         </div>
         <div className="mx-auto mt-16 max-w-5xl">
@@ -104,6 +113,16 @@ export function Pricing() {
                       {plan.price !== "$0" && "/mo"}
                     </span>
                   </div>
+                  {"priceNote" in plan && plan.priceNote && (
+                    <p className="text-xs text-muted-foreground mt-2">
+                      {plan.priceNote}
+                    </p>
+                  )}
+                  {"highlight" in plan && plan.highlight && (
+                    <div className="mt-3 inline-flex items-center rounded-full bg-green-500/10 px-3 py-1 text-xs font-medium text-green-600 dark:text-green-400">
+                      {plan.highlight}
+                    </div>
+                  )}
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <ul className="space-y-4">
@@ -128,6 +147,19 @@ export function Pricing() {
                 </CardContent>
               </Card>
             ))}
+          </div>
+
+          {/* Comparison Link */}
+          <div className="text-center mt-12">
+            <p className="text-muted-foreground text-sm">
+              Not sure which plan is right for you?{" "}
+              <Link
+                href="/compare"
+                className="text-primary hover:underline font-medium"
+              >
+                Compare WatchAPI with other tools →
+              </Link>
+            </p>
           </div>
         </div>
       </div>

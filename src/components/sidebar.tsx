@@ -23,7 +23,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { toast } from "sonner";
+import { useToast } from "@/hooks/use-toast";
 
 interface CollectionTreeItemFolder {
   id: string;
@@ -124,12 +124,21 @@ function CollectionTree({
   const setSelectedItem = useAppStore((state) => state.setSelectedItem);
   const toggleExpanded = useAppStore((state) => state.toggleExpanded);
   const removeTab = useAppStore((state) => state.removeTab);
+  const { toast } = useToast();
 
   const utils = trpc.useUtils();
   const createEndpointMutation = trpc.apiEndpoint.create.useMutation({
     onSuccess: () => {
       utils.collection.getMyCollections.invalidate();
       utils.apiEndpoint.getMyEndpoints.invalidate();
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to create endpoint",
+        description:
+          error.message || "An error occurred while creating the endpoint",
+        variant: "destructive",
+      });
     },
   });
 
@@ -138,7 +147,10 @@ function CollectionTree({
       onSuccess: () => {
         utils.collection.getMyCollections.invalidate();
         utils.apiEndpoint.getMyEndpoints.invalidate();
-        toast.success("Collection deleted successfully");
+        toast({
+          title: "Success",
+          description: "Collection deleted successfully",
+        });
         setDeleteDialog({
           open: false,
           itemId: null,
@@ -147,7 +159,12 @@ function CollectionTree({
         });
       },
       onError: (error) => {
-        toast.error(error.message || "Failed to delete collection");
+        toast({
+          title: "Failed to delete collection",
+          description:
+            error.message || "An error occurred while deleting the collection",
+          variant: "destructive",
+        });
       },
     },
   );
@@ -156,7 +173,10 @@ function CollectionTree({
     onSuccess: () => {
       utils.collection.getMyCollections.invalidate();
       utils.apiEndpoint.getMyEndpoints.invalidate();
-      toast.success("Endpoint deleted successfully");
+      toast({
+        title: "Success",
+        description: "Endpoint deleted successfully",
+      });
       setDeleteDialog({
         open: false,
         itemId: null,
@@ -165,7 +185,12 @@ function CollectionTree({
       });
     },
     onError: (error) => {
-      toast.error(error.message || "Failed to delete endpoint");
+      toast({
+        title: "Failed to delete endpoint",
+        description:
+          error.message || "An error occurred while deleting the endpoint",
+        variant: "destructive",
+      });
     },
   });
 
@@ -319,10 +344,12 @@ function CollectionTree({
 
 export function Sidebar({}: SidebarProps) {
   const [searchQuery, setSearchQuery] = useState("");
+  const setExpandedItems = useAppStore((state) => state.setExpandedItems);
 
   // Use tRPC directly - don't duplicate in Zustand
   const utils = trpc.useUtils();
-  const { data: collectionsData } = trpc.collection.getMyCollections.useQuery();
+  const { data: collectionsData, isLoading } =
+    trpc.collection.getMyCollections.useQuery();
   const createCollectionMutation = trpc.collection.createCollection.useMutation(
     {
       onSuccess: () => {
@@ -330,6 +357,17 @@ export function Sidebar({}: SidebarProps) {
       },
     },
   );
+
+  // Auto-expand all collections when data loads
+  useEffect(() => {
+    if (collectionsData && collectionsData.length > 0) {
+      const expandedState: Record<string, boolean> = {};
+      collectionsData.forEach((collection) => {
+        expandedState[collection.id] = true;
+      });
+      setExpandedItems(expandedState);
+    }
+  }, [collectionsData, setExpandedItems]);
 
   // Transform server data to UI format and filter based on search
   const collections = useMemo(() => {
@@ -447,7 +485,34 @@ export function Sidebar({}: SidebarProps) {
             </Button>
           </div>
 
-          <CollectionTree items={collections} />
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : collections.length === 0 && !searchQuery ? (
+            <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+              <DatabaseIcon className="h-12 w-12 text-muted-foreground/50 mb-4" />
+              <p className="text-sm font-medium text-foreground mb-1">
+                No collections yet
+              </p>
+              <p className="text-xs text-muted-foreground mb-4">
+                Create a collection to organize your API endpoints
+              </p>
+              <Button size="sm" onClick={handleAddCollection} className="gap-2">
+                <Plus className="h-4 w-4" />
+                Create Collection
+              </Button>
+            </div>
+          ) : collections.length === 0 && searchQuery ? (
+            <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+              <Search className="h-12 w-12 text-muted-foreground/50 mb-4" />
+              <p className="text-sm text-muted-foreground">
+                No collections match "{searchQuery}"
+              </p>
+            </div>
+          ) : (
+            <CollectionTree items={collections} />
+          )}
         </div>
       </div>
     </aside>
