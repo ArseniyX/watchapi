@@ -75,11 +75,13 @@ export function Pricing() {
             {plans.map((plan, index) => (
               <Card
                 key={plan.name}
-                className={`relative transition-all duration-300 hover:scale-105 ${
+                className={`relative transition-all duration-300 hover:scale-105 animate-in fade-in slide-in-from-bottom-8 ${
                   plan.popular ? "ring-2 ring-primary shadow-xl" : ""
                 }`}
                 style={{
-                  animation: `fadeInUp 0.5s ease-out ${index * 0.1}s both`,
+                  animationDelay: `${index * 100}ms`,
+                  animationDuration: "700ms",
+                  animationFillMode: "both",
                 }}
               >
                 {plan.popular && (

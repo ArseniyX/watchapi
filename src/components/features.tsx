@@ -1,5 +1,3 @@
-"use client";
-
 import {
   Card,
   CardDescription,
@@ -7,7 +5,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Activity, Bell, TrendingUp, Clock } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
 
 const features = [
   {
@@ -37,32 +34,8 @@ const features = [
 ];
 
 export function Features() {
-  const [isVisible, setIsVisible] = useState(false);
-  const sectionRef = useRef<HTMLElement>(null);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-        }
-      },
-      { threshold: 0.1 },
-    );
-
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, []);
-
   return (
-    <section
-      ref={sectionRef}
-      id="features"
-      className="py-20 sm:py-32 bg-muted/30"
-    >
+    <section id="features" className="py-20 sm:py-32 bg-muted/30">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl text-balance">
@@ -78,13 +51,10 @@ export function Features() {
             {features.map((feature, index) => (
               <Card
                 key={feature.title}
-                className={`relative overflow-hidden border-2 transition-all duration-500 hover:shadow-lg hover:border-primary/50 ${
-                  isVisible
-                    ? "opacity-100 translate-y-0"
-                    : "opacity-0 translate-y-8"
-                }`}
+                className="relative overflow-hidden border-2 transition-all duration-500 hover:shadow-lg hover:border-primary/50 animate-in fade-in slide-in-from-bottom-4"
                 style={{
-                  transitionDelay: `${index * 100}ms`,
+                  animationDelay: `${index * 100}ms`,
+                  animationFillMode: "both",
                 }}
               >
                 <CardHeader>

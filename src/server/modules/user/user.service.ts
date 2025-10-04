@@ -26,7 +26,7 @@ export class UserService {
       throw new ConflictError("User with this email already exists");
     }
 
-    const hashedPassword = await bcrypt.hash(input.password, 12);
+    const hashedPassword = await bcrypt.hash(input.password, 10);
 
     const user = await this.userRepository.create({
       email: input.email.trim(),
@@ -103,7 +103,7 @@ export class UserService {
       if (input.password.length < 6) {
         throw new BadRequestError("Password must be at least 6 characters");
       }
-      updateData.password = await bcrypt.hash(input.password, 12);
+      updateData.password = await bcrypt.hash(input.password, 10);
     }
 
     if (input.provider !== undefined) {
