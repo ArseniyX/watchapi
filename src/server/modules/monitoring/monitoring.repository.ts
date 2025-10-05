@@ -35,21 +35,28 @@ export class MonitoringRepository {
   }
 
   async getUptimeStats(apiEndpointId: string, from: Date, to: Date) {
-    const [total, successful] = await Promise.all([
-      this.prisma.monitoringCheck.count({
-        where: {
-          apiEndpointId,
-          checkedAt: { gte: from, lte: to },
-        },
-      }),
-      this.prisma.monitoringCheck.count({
-        where: {
-          apiEndpointId,
-          status: CheckStatus.SUCCESS,
-          checkedAt: { gte: from, lte: to },
-        },
-      }),
-    ]);
+    // Use groupBy instead of multiple COUNT queries for better performance
+    const stats = await this.prisma.monitoringCheck.groupBy({
+      by: ['status'],
+      where: {
+        apiEndpointId,
+        checkedAt: { gte: from, lte: to },
+      },
+      _count: {
+        id: true,
+      },
+    });
+
+    let total = 0;
+    let successful = 0;
+
+    for (const stat of stats) {
+      const count = stat._count.id;
+      total += count;
+      if (stat.status === CheckStatus.SUCCESS) {
+        successful = count;
+      }
+    }
 
     const failed = total - successful;
     const uptimePercentage = total > 0 ? (successful / total) * 100 : 0;

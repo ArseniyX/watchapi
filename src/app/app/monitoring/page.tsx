@@ -97,7 +97,8 @@ export default function MonitoringPage() {
   const { data: endpoints, isLoading } =
     trpc.apiEndpoint.getMyEndpoints.useQuery(undefined, {
       refetchOnWindowFocus: true,
-      refetchInterval: 60000, // Refetch every 60 seconds
+      refetchInterval: false, // Let the scheduler handle updates
+      staleTime: 60000, // Consider fresh for 1 minute
     });
 
   const filteredEndpoints = useMemo(() => {
@@ -215,11 +216,18 @@ export default function MonitoringPage() {
 function EndpointRow({ endpoint }: { endpoint: any }) {
   const { data: history } = trpc.monitoring.getHistory.useQuery(
     { endpointId: endpoint.id, take: 1 },
-    { refetchInterval: 30000, refetchOnWindowFocus: true },
+    {
+      refetchInterval: false, // Disable auto-refetch to reduce DB load
+      refetchOnWindowFocus: true,
+      staleTime: 30000, // Consider data fresh for 30 seconds
+    },
   );
   const { data: uptimeStats } = trpc.monitoring.getUptimeStats.useQuery(
     { endpointId: endpoint.id, days: 30 },
-    { refetchOnWindowFocus: true },
+    {
+      refetchOnWindowFocus: true,
+      staleTime: 60000, // Stats don't change as frequently
+    },
   );
 
   const lastCheck = history?.[0];

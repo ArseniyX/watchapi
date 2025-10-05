@@ -28,6 +28,15 @@ const buildDatabaseUrl = () => {
     params.set("connect_timeout", "10"); // 10 seconds
   }
 
+  // Prisma connection pool settings
+  if (!params.has("connection_limit")) {
+    params.set("connection_limit", "5"); // Max 5 connections in pool
+  }
+
+  if (!params.has("pool_timeout")) {
+    params.set("pool_timeout", "10"); // Wait max 10s for connection from pool
+  }
+
   url.search = params.toString();
   return url.toString();
 };
@@ -35,20 +44,17 @@ const buildDatabaseUrl = () => {
 export const prisma =
   globalThis.__prisma ||
   new PrismaClient({
-    log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
+    log: process.env.NODE_ENV === "development"
+      ? process.env.PRISMA_LOG_QUERIES === "true"
+        ? ["query", "error", "warn"]
+        : ["error", "warn"]
+      : ["error"],
     datasources: {
       db: {
         url: buildDatabaseUrl(),
       },
     },
-    // Connection pool configuration
-    // Default pool size is 10, but we limit it to prevent connection saturation
-    __internal: {
-      engine: {
-        connection_limit: 20, // Max connections in pool
-      },
-    },
-  } as any);
+  });
 
 if (process.env.NODE_ENV !== "production") {
   globalThis.__prisma = prisma;
