@@ -10,7 +10,7 @@ test.describe("Plan Limits & Upgrade Flow", () => {
   });
 
   test.describe("Endpoint Limit Enforcement", () => {
-    test("should block FREE user from creating more than 10 endpoints", async ({
+    test("should block FREE user from creating more than 3 endpoints", async ({
       page,
     }) => {
       await page.goto("/app/collections");
@@ -18,22 +18,22 @@ test.describe("Plan Limits & Upgrade Flow", () => {
       // Step 1: Create a collection
       await createCollection(page);
 
-      // Step 2: Create 10 endpoints (FREE plan limit)
-      console.log("Creating 10 endpoints...");
-      for (let i = 0; i < 10; i++) {
+      // Step 2: Create 3 endpoints (FREE plan limit)
+      console.log("Creating 3 endpoints...");
+      for (let i = 0; i < 3; i++) {
         await page.locator('text="New Collection"').hover();
         await page.waitForTimeout(300);
         await page.click('[data-testid="add-endpoint-button"]');
         await page.waitForTimeout(600); // Wait for creation
       }
 
-      // Count endpoints before attempting 11th
+      // Count endpoints before attempting 4th
       const countBefore = await page
         .locator('aside >> text="New Request"')
         .count();
       console.log(`Created ${countBefore} endpoints`);
 
-      // Step 3: Attempt to create 11th endpoint (should be blocked)
+      // Step 3: Attempt to create 4th endpoint (should be blocked)
       await page.locator('text="New Collection"').hover();
       await page.waitForTimeout(300);
       await page.click('[data-testid="add-endpoint-button"]');
@@ -41,7 +41,7 @@ test.describe("Plan Limits & Upgrade Flow", () => {
 
       // Step 4: Verify error toast appears
       const errorToast = page.locator(
-        'text="Plan limit reached. FREE plan allows maximum 10 endpoints. Upgrade your plan to add more."',
+        'text="Plan limit reached. FREE plan allows maximum 3 endpoints. Upgrade your plan to add more."',
       );
 
       // Check if error is visible or if we need to look for it in the DOM
@@ -53,9 +53,9 @@ test.describe("Plan Limits & Upgrade Flow", () => {
           .locator('aside >> text="New Request"')
           .count();
 
-        // If the count is still 10 or less, the limit was enforced
-        expect(countAfter).toBeLessThanOrEqual(10);
-        expect(countBefore).toBeLessThanOrEqual(10);
+        // If the count is still 3 or less, the limit was enforced
+        expect(countAfter).toBeLessThanOrEqual(3);
+        expect(countBefore).toBeLessThanOrEqual(3);
       } else {
         // Error toast is visible - limit was enforced
         await expect(errorToast).toBeVisible();
@@ -65,7 +65,7 @@ test.describe("Plan Limits & Upgrade Flow", () => {
       const finalCount = await page
         .locator('aside >> text="New Request"')
         .count();
-      expect(finalCount).toBeLessThanOrEqual(10);
+      expect(finalCount).toBeLessThanOrEqual(3);
     });
   });
 

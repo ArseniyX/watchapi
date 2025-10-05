@@ -15,11 +15,11 @@ export interface PlanLimits {
 
 export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
   [PlanType.FREE]: {
-    maxEndpoints: 10,
-    maxChecksPerMonth: 43200, // ~1 check per endpoint per hour (10 endpoints × 24 hours × 30 days / 2)
-    minCheckInterval: 3600000, // 1 hour
+    maxEndpoints: 3,
+    maxChecksPerMonth: 4320, // ~3 endpoints × 2 checks/hour × 30 days (3 × 2 × 24 × 30)
+    minCheckInterval: 1800000, // 30 minutes
     maxAlerts: 3,
-    maxTeamMembers: 3, // Compete with Postman's 3 free users
+    maxTeamMembers: 1, // Force team upgrade for collaboration
     retentionDays: 7,
     rateLimit: {
       requestsPerMinute: 60,
@@ -27,11 +27,11 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     },
   },
   [PlanType.STARTER]: {
-    maxEndpoints: 50,
-    maxChecksPerMonth: 2160000, // ~1 check per endpoint per minute (50 × 60 × 24 × 30)
-    minCheckInterval: 60000, // 1 minute
+    maxEndpoints: 25,
+    maxChecksPerMonth: 1080000, // ~25 endpoints × 30 checks/hour × 30 days (25 × 30 × 24 × 30)
+    minCheckInterval: 120000, // 2 minutes
     maxAlerts: 20,
-    maxTeamMembers: 10, // Much more generous than Postman
+    maxTeamMembers: 5, // Right-sized for small teams
     retentionDays: 30,
     rateLimit: {
       requestsPerMinute: 120,
@@ -39,11 +39,11 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     },
   },
   [PlanType.PRO]: {
-    maxEndpoints: 250,
-    maxChecksPerMonth: 10800000, // ~1 check per endpoint every 30 seconds (250 × 2 × 60 × 24 × 30)
-    minCheckInterval: 30000, // 30 seconds
-    maxAlerts: 100,
-    maxTeamMembers: 25, // vs Postman Pro at $975/month for 25 users
+    maxEndpoints: 100,
+    maxChecksPerMonth: 4320000, // ~100 endpoints × 60 checks/hour × 30 days (100 × 60 × 24 × 30)
+    minCheckInterval: 60000, // 1 minute
+    maxAlerts: 50,
+    maxTeamMembers: 15, // Production teams
     retentionDays: 90,
     rateLimit: {
       requestsPerMinute: 300,

@@ -31,7 +31,7 @@ describe("ApiEndpointService", () => {
         method: HttpMethod.GET,
         expectedStatus: 200,
         timeout: 5000,
-        interval: 3600000, // Use valid interval for FREE plan (1 hour)
+        interval: 1800000, // Use valid interval for FREE plan (30 minutes)
       };
 
       const mockEndpoint = {
@@ -73,7 +73,7 @@ describe("ApiEndpointService", () => {
       mockApiEndpointRepository.findByOrganizationId.mockResolvedValue([]);
       mockApiEndpointRepository.create.mockResolvedValue({
         id: "endpoint-1",
-        interval: 3600000, // Plan minimum (1 hour for FREE)
+        interval: 1800000, // Plan minimum (30 minutes for FREE)
       });
 
       await service.createApiEndpoint("user-1", "FREE", "org-1", {
@@ -85,10 +85,10 @@ describe("ApiEndpointService", () => {
         interval: 60000, // 1 minute, less than FREE plan minimum
       });
 
-      // Should call create with plan's minimum interval (3600000ms = 1 hour)
+      // Should call create with plan's minimum interval (1800000ms = 30 minutes)
       expect(mockApiEndpointRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          interval: 3600000, // Clamped to FREE plan minimum
+          interval: 1800000, // Clamped to FREE plan minimum
         }),
       );
     });
@@ -102,7 +102,7 @@ describe("ApiEndpointService", () => {
         body: '{"test": "data"}',
         expectedStatus: 201,
         timeout: 5000,
-        interval: 3600000, // Use valid interval for FREE plan (1 hour)
+        interval: 1800000, // Use valid interval for FREE plan (30 minutes)
       };
 
       mockApiEndpointRepository.findByOrganizationId.mockResolvedValue([]);
@@ -290,7 +290,7 @@ describe("ApiEndpointService", () => {
         service.updateApiEndpoint("user-1", "FREE", "org-1", "endpoint-1", {
           interval: 60000, // 1 minute, less than FREE plan minimum
         }),
-      ).rejects.toThrow("Check interval cannot be less than 3600 seconds for FREE plan");
+      ).rejects.toThrow("Check interval cannot be less than 1800 seconds for FREE plan");
     });
 
     it("should update with partial data", async () => {
