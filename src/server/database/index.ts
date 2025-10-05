@@ -56,26 +56,6 @@ export const prisma =
       },
     },
     errorFormat: "pretty",
-  }).$extends({
-    query: {
-      async $allOperations({ operation, model, args, query }) {
-        const start = Date.now();
-        try {
-          const result = await query(args);
-          const duration = Date.now() - start;
-
-          // Log slow queries in development
-          if (process.env.NODE_ENV === "development" && duration > 1000) {
-            console.warn(`⚠️  Slow query (${duration}ms): ${model}.${operation}`);
-          }
-
-          return result;
-        } catch (error) {
-          console.error(`❌ Query failed: ${model}.${operation}`, error);
-          throw error;
-        }
-      },
-    },
   });
 
 if (process.env.NODE_ENV !== "production") {
