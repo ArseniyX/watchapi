@@ -30,11 +30,12 @@ const buildDatabaseUrl = () => {
 
   // Prisma connection pool settings
   if (!params.has("connection_limit")) {
-    params.set("connection_limit", "5"); // Max 5 connections in pool
+    // Increase limit - 5 was too small for concurrent requests
+    params.set("connection_limit", "10"); // Max 10 connections in pool
   }
 
   if (!params.has("pool_timeout")) {
-    params.set("pool_timeout", "10"); // Wait max 10s for connection from pool
+    params.set("pool_timeout", "20"); // Wait max 20s for connection from pool
   }
 
   url.search = params.toString();
@@ -52,6 +53,27 @@ export const prisma =
     datasources: {
       db: {
         url: buildDatabaseUrl(),
+      },
+    },
+    errorFormat: "pretty",
+  }).$extends({
+    query: {
+      async $allOperations({ operation, model, args, query }) {
+        const start = Date.now();
+        try {
+          const result = await query(args);
+          const duration = Date.now() - start;
+
+          // Log slow queries in development
+          if (process.env.NODE_ENV === "development" && duration > 1000) {
+            console.warn(`⚠️  Slow query (${duration}ms): ${model}.${operation}`);
+          }
+
+          return result;
+        } catch (error) {
+          console.error(`❌ Query failed: ${model}.${operation}`, error);
+          throw error;
+        }
       },
     },
   });
