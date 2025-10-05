@@ -196,7 +196,6 @@ Key variables (see `.env.example`):
 - `DATABASE_URL`: SQLite (dev) or PostgreSQL (prod)
 - `JWT_SECRET`: For JWT token signing
 - `ENABLE_CRON`: Set to "true" to enable monitoring scheduler
-- `NEXTAUTH_URL`, `NEXTAUTH_SECRET`: For NextAuth.js
 - OAuth: `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`
 - `DEFAULT_CHECK_INTERVAL`, `MAX_TIMEOUT`: Monitoring defaults
 

@@ -55,6 +55,8 @@ jobs:
         run: pnpm exec playwright test
         env:
           DATABASE_URL_E2E: ${{ secrets.DATABASE_URL_E2E }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          NEXT_PUBLIC_DOMAIN: "http://localhost:3000"
           CI: true
 
       - name: Upload E2E test results
