@@ -83,18 +83,24 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 // Graceful shutdown - close connections on process exit
-process.on("beforeExit", async () => {
-  await prisma.$disconnect();
-});
+// Only register handlers once to avoid memory leaks in dev mode with hot reload
+const HANDLERS_REGISTERED_KEY = Symbol.for("app.prisma.handlersRegistered");
+if (!globalThis[HANDLERS_REGISTERED_KEY as any]) {
+  process.on("beforeExit", async () => {
+    await prisma.$disconnect();
+  });
 
-process.on("SIGINT", async () => {
-  await prisma.$disconnect();
-  process.exit(0);
-});
+  process.on("SIGINT", async () => {
+    await prisma.$disconnect();
+    process.exit(0);
+  });
 
-process.on("SIGTERM", async () => {
-  await prisma.$disconnect();
-  process.exit(0);
-});
+  process.on("SIGTERM", async () => {
+    await prisma.$disconnect();
+    process.exit(0);
+  });
+
+  globalThis[HANDLERS_REGISTERED_KEY as any] = true;
+}
 
 export default prisma;

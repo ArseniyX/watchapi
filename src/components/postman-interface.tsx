@@ -14,7 +14,7 @@ export default function PostmanInterface() {
           collapsed={sidebarCollapsed}
           onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
         />
-        <main className="flex-1 overflow-hidden border-t border-border">
+        <main className="flex-1">
           <RequestBuilder />
         </main>
       </div>

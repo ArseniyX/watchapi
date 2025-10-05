@@ -44,7 +44,7 @@ export function RequestUrlBar({
         type="text"
         value={url}
         onChange={(e) => onUrlChange(e.target.value)}
-        className="flex-1 font-mono text-xs border-border"
+        className="flex-1 font-mono text-xs border-border shadow-none"
         placeholder="Enter request URL"
       />
       <Button onClick={onSend} className="bg-primary hover:bg-primary/90">

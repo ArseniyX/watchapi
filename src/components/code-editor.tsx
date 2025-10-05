@@ -18,7 +18,7 @@ export function CodeEditor({
   language = "json",
   readOnly = false,
   placeholder = "",
-  height = "200px",
+  height = "100%",
 }: CodeEditorProps) {
   const [theme, setTheme] = useState<"vs-dark" | "light">("vs-dark");
 
@@ -51,7 +51,10 @@ export function CodeEditor({
   };
 
   return (
-    <div className="border rounded-md overflow-hidden" style={{ height }}>
+    <div
+      className="border rounded-md overflow-hidden"
+      style={{ height, paddingTop: "0.5rem" }}
+    >
       <Editor
         height="100%"
         language={language}

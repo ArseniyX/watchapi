@@ -51,7 +51,10 @@ export function ResponseViewer({ requestSent, response }: ResponseViewerProps) {
 
   return (
     <div className="flex h-80 flex-col border-t border-border bg-card">
-      <Tabs defaultValue="response" className="flex flex-1 flex-col min-h-0">
+      <Tabs
+        defaultValue="response"
+        className="flex flex-1 flex-col min-h-0 gap-0"
+      >
         <div className="flex items-center justify-between border-b border-border px-4">
           <TabsList className="h-10 bg-transparent">
             <TabsTrigger value="response" className="text-xs">
@@ -80,8 +83,8 @@ export function ResponseViewer({ requestSent, response }: ResponseViewerProps) {
                   response.status >= 200 && response.status < 300
                     ? "bg-green-500/10 text-green-500"
                     : response.status >= 400
-                      ? "bg-red-500/10 text-red-500"
-                      : "bg-yellow-500/10 text-yellow-500"
+                    ? "bg-red-500/10 text-red-500"
+                    : "bg-yellow-500/10 text-yellow-500"
                 }`}
               >
                 {response.status} {response.statusText}
