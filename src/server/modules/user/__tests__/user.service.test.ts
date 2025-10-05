@@ -79,7 +79,7 @@ describe("UserService", () => {
       const result = await service.createUser(input);
 
       expect(mockUserRepository.findByEmail).toHaveBeenCalledWith(input.email);
-      expect(bcrypt.hash).toHaveBeenCalledWith(input.password, 12);
+      expect(bcrypt.hash).toHaveBeenCalledWith(input.password, 10);
       expect(mockUserRepository.create).toHaveBeenCalledWith({
         email: input.email,
         name: input.name,
@@ -371,7 +371,7 @@ describe("UserService", () => {
 
       await service.updateUser("user-1", { password: "newpassword123" });
 
-      expect(bcrypt.hash).toHaveBeenCalledWith("newpassword123", 12);
+      expect(bcrypt.hash).toHaveBeenCalledWith("newpassword123", 10);
       expect(mockUserRepository.update).toHaveBeenCalledWith("user-1", {
         password: "hashed-newpassword123",
       });

@@ -31,7 +31,7 @@ describe("ApiEndpointService", () => {
         method: HttpMethod.GET,
         expectedStatus: 200,
         timeout: 5000,
-        interval: 300000,
+        interval: 3600000, // Use valid interval for FREE plan (1 hour)
       };
 
       const mockEndpoint = {
@@ -60,7 +60,7 @@ describe("ApiEndpointService", () => {
         body: null,
         expectedStatus: input.expectedStatus,
         timeout: input.timeout,
-        interval: input.interval,
+        interval: input.interval, // Should use provided interval if above plan minimum
         userId: "user-1",
         organizationId: "org-1",
         collectionId: null,
@@ -69,18 +69,28 @@ describe("ApiEndpointService", () => {
       expect(result).toEqual(mockEndpoint);
     });
 
-    it("should throw error if interval is below plan limit", async () => {
+    it("should use plan minimum interval if provided interval is too low", async () => {
       mockApiEndpointRepository.findByOrganizationId.mockResolvedValue([]);
-      await expect(
-        service.createApiEndpoint("user-1", "FREE", "org-1", {
-          name: "Test",
-          url: "https://api.example.com",
-          method: HttpMethod.GET,
-          expectedStatus: 200,
-          timeout: 5000,
-          interval: 60000, // 1 minute, less than FREE plan minimum of 5 minutes
+      mockApiEndpointRepository.create.mockResolvedValue({
+        id: "endpoint-1",
+        interval: 3600000, // Plan minimum (1 hour for FREE)
+      });
+
+      await service.createApiEndpoint("user-1", "FREE", "org-1", {
+        name: "Test",
+        url: "https://api.example.com",
+        method: HttpMethod.GET,
+        expectedStatus: 200,
+        timeout: 5000,
+        interval: 60000, // 1 minute, less than FREE plan minimum
+      });
+
+      // Should call create with plan's minimum interval (3600000ms = 1 hour)
+      expect(mockApiEndpointRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          interval: 3600000, // Clamped to FREE plan minimum
         }),
-      ).rejects.toThrow("Check interval cannot be less than 300 seconds");
+      );
     });
 
     it("should create endpoint with headers and body", async () => {
@@ -92,7 +102,7 @@ describe("ApiEndpointService", () => {
         body: '{"test": "data"}',
         expectedStatus: 201,
         timeout: 5000,
-        interval: 300000,
+        interval: 3600000, // Use valid interval for FREE plan (1 hour)
       };
 
       mockApiEndpointRepository.findByOrganizationId.mockResolvedValue([]);
@@ -280,7 +290,7 @@ describe("ApiEndpointService", () => {
         service.updateApiEndpoint("user-1", "FREE", "org-1", "endpoint-1", {
           interval: 60000, // 1 minute, less than FREE plan minimum
         }),
-      ).rejects.toThrow("Check interval cannot be less than 300 seconds");
+      ).rejects.toThrow("Check interval cannot be less than 3600 seconds for FREE plan");
     });
 
     it("should update with partial data", async () => {
