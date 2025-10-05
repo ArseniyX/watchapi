@@ -32,13 +32,14 @@ describe("ApiEndpointService", () => {
         expectedStatus: 200,
         timeout: 5000,
         interval: 1800000, // Use valid interval for FREE plan (30 minutes)
+        isActive: false, // Default: monitoring disabled
       };
 
       const mockEndpoint = {
         id: "endpoint-1",
         ...input,
         userId: "user-1",
-        isActive: true,
+        isActive: false,
       };
 
       mockApiEndpointRepository.findByOrganizationId.mockResolvedValue([]);
@@ -64,7 +65,7 @@ describe("ApiEndpointService", () => {
         userId: "user-1",
         organizationId: "org-1",
         collectionId: null,
-        isActive: true,
+        isActive: false,
       });
       expect(result).toEqual(mockEndpoint);
     });
@@ -83,6 +84,7 @@ describe("ApiEndpointService", () => {
         expectedStatus: 200,
         timeout: 5000,
         interval: 60000, // 1 minute, less than FREE plan minimum
+        isActive: false,
       });
 
       // Should call create with plan's minimum interval (1800000ms = 30 minutes)
@@ -103,6 +105,7 @@ describe("ApiEndpointService", () => {
         expectedStatus: 201,
         timeout: 5000,
         interval: 1800000, // Use valid interval for FREE plan (30 minutes)
+        isActive: false, // Default: monitoring disabled
       };
 
       mockApiEndpointRepository.findByOrganizationId.mockResolvedValue([]);
@@ -122,7 +125,7 @@ describe("ApiEndpointService", () => {
         userId: "user-1",
         organizationId: "org-1",
         collectionId: null,
-        isActive: true,
+        isActive: false,
       });
     });
 
@@ -134,6 +137,7 @@ describe("ApiEndpointService", () => {
         expectedStatus: 200,
         timeout: 5000,
         interval: 300000,
+        isActive: false,
       };
 
       mockApiEndpointRepository.findByOrganizationId.mockResolvedValue([]);

@@ -1,5 +1,7 @@
 import nodemailer from "nodemailer";
 import { Resend } from "resend";
+import { render } from "@react-email/render";
+import TeamInvitationEmail from "@/emails/team-invitation";
 
 export interface EmailConfig {
   host: string;
@@ -306,61 +308,22 @@ export class EmailService {
     }
 
     try {
+      const emailHtml = await render(
+        TeamInvitationEmail({
+          organizationName: data.organizationName,
+          inviterName: data.inviterName,
+          inviterEmail: data.inviterEmail,
+          role: data.role,
+          invitationUrl: data.invitationUrl,
+        }),
+      );
+
       await this.resend.emails.send({
-        from: "WatchAPI Team <onboarding@resend.dev>",
+        from: "WatchAPI Team <support@watchapi.dev>",
         to: data.to,
         replyTo: data.inviterEmail,
         subject: `You've been invited to join ${data.organizationName} on WatchAPI`,
-        html: `
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <style>
-              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-              .header { background: #2563eb; color: white; padding: 30px 20px; border-radius: 5px 5px 0 0; text-align: center; }
-              .content { background: #ffffff; padding: 30px 20px; border: 1px solid #e5e7eb; border-top: none; }
-              .info-box { margin: 20px 0; padding: 15px; background: #f9fafb; border-left: 3px solid #2563eb; border-radius: 3px; }
-              .button { display: inline-block; padding: 12px 30px; background: #2563eb; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; font-weight: 600; }
-              .button:hover { background: #1d4ed8; }
-              .footer { margin-top: 20px; padding-top: 20px; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 12px; text-align: center; }
-              .label { font-weight: bold; color: #6b7280; margin-right: 5px; }
-            </style>
-          </head>
-          <body>
-            <div class="container">
-              <div class="header">
-                <h1 style="margin: 0; font-size: 24px;">🎉 You're Invited!</h1>
-              </div>
-              <div class="content">
-                <p>Hi there!</p>
-
-                <p><strong>${data.inviterName}</strong> (${data.inviterEmail}) has invited you to join <strong>${data.organizationName}</strong> on WatchAPI.</p>
-
-                <div class="info-box">
-                  <p style="margin: 0;"><span class="label">Organization:</span> ${data.organizationName}</p>
-                  <p style="margin: 10px 0 0 0;"><span class="label">Your Role:</span> ${data.role}</p>
-                </div>
-
-                <p>WatchAPI is a lightweight API monitoring platform that helps teams track endpoint health, performance, and uptime with real-time alerts.</p>
-
-                <div style="text-align: center;">
-                  <a href="${data.invitationUrl}" class="button">Accept Invitation</a>
-                </div>
-
-                <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
-                  This invitation will expire in 7 days. If you didn't expect this invitation, you can safely ignore this email.
-                </p>
-
-                <div class="footer">
-                  <p>This is an automated message from WatchAPI.</p>
-                  <p>If you have any questions, reply to this email or contact ${data.inviterEmail}</p>
-                </div>
-              </div>
-            </div>
-          </body>
-          </html>
-        `,
+        html: emailHtml,
       });
 
       console.log(

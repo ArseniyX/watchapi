@@ -181,6 +181,12 @@ export class OrganizationRepository {
     });
   }
 
+  async findInvitationById(id: string) {
+    return this.prisma.organizationInvitation.findUnique({
+      where: { id },
+    });
+  }
+
   async findOrganizationInvitations(organizationId: string) {
     return this.prisma.organizationInvitation.findMany({
       where: { organizationId },

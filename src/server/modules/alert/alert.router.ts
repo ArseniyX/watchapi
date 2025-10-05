@@ -19,7 +19,12 @@ export const createAlertRouter = (alertService: AlertService) =>
         if (!ctx.organizationId) {
           throw new Error("No organization context");
         }
-        return alertService.createAlert(input, ctx.user.id, ctx.organizationId);
+        return alertService.createAlert(
+          input,
+          ctx.user.id,
+          ctx.organizationId,
+          ctx.organizationPlan || "FREE",
+        );
       }),
 
     getById: protectedProcedure

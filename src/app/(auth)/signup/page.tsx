@@ -2,7 +2,7 @@
 
 import type React from "react";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -17,7 +17,7 @@ import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Eye, EyeOff, Github, Mail } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Logo } from "@/components/logo";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
@@ -33,6 +33,8 @@ export default function SignupPage() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const invitationToken = searchParams.get("invitation");
   const { loginWithOAuth, register } = useAuth();
   const { toast } = useToast();
 
@@ -41,11 +43,21 @@ export default function SignupPage() {
     setIsLoading(true);
 
     try {
-      await register(formData.email, formData.password, formData.name);
+      // Pass invitation token to register - it will handle acceptance automatically
+      await register(
+        formData.email,
+        formData.password,
+        formData.name,
+        invitationToken || undefined,
+      );
+
       toast({
         title: "Success",
-        description: "Account created successfully!",
+        description: invitationToken
+          ? "Account created and invitation accepted!"
+          : "Account created successfully!",
       });
+
       router.push("/app");
     } catch (error) {
       toast({
@@ -72,7 +84,9 @@ export default function SignupPage() {
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">Create your account</CardTitle>
           <CardDescription>
-            Start monitoring your APIs in minutes
+            {invitationToken
+              ? "Create an account to accept your team invitation"
+              : "Start monitoring your APIs in minutes"}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -181,7 +195,9 @@ export default function SignupPage() {
           <div className="grid grid-cols-2 gap-4">
             <Button
               variant="outline"
-              onClick={() => loginWithOAuth("github")}
+              onClick={() =>
+                loginWithOAuth("github", invitationToken || undefined)
+              }
               type="button"
             >
               <Github className="mr-2 h-4 w-4" />
@@ -189,7 +205,9 @@ export default function SignupPage() {
             </Button>
             <Button
               variant="outline"
-              onClick={() => loginWithOAuth("google")}
+              onClick={() =>
+                loginWithOAuth("google", invitationToken || undefined)
+              }
               type="button"
             >
               <Mail className="mr-2 h-4 w-4" />

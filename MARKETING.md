@@ -1,6 +1,6 @@
 Core Value Proposition
 
-"Enterprise-grade API monitoring at 60% less cost, built for teams tired of Postman's complexity"
+"Unlimited API endpoints like Postman, with enterprise monitoring at 60% less cost"
 
 Go-to-Market Strategy
 
@@ -13,17 +13,19 @@ Go-to-Market Strategy
 
 2. Product-Led Growth Loop
 
-- Generous free tier (10k calls/month) → natural viral loop when devs share endpoints with teammates
+- Unlimited endpoints on free tier (like Postman) → zero friction for adoption
+- Limit active monitors/alerts → monetize the monitoring value, not storage
 - Friction removal: No credit card for free tier, 60-second setup vs Postman's 15+ minutes
 - In-app sharing: "Invite team to see this alert" → organic team expansion
 - Public status pages (free feature) → brand exposure when shared with clients
 
 3. Strategic Positioning
 
-Against Postman: "Testing tool trying to do monitoring" vs "Monitoring-first with testing built-in"
+Against Postman: "All the testing features you love, with real-time monitoring Postman can't match"
 
-- Target their pain: Complex UI, expensive seats, poor real-time capabilities
-- Win on: Price (60% cheaper), simplicity, better alerting
+- Match their strength: Unlimited endpoints, clean UI, collections
+- Target their pain: Limited monitoring capabilities, expensive team seats
+- Win on: Advanced monitoring (60% cheaper than dedicated tools), better alerting, flat-rate pricing
 
 Against DataDog/New Relic: "Built for dev teams, not ops teams"
 
@@ -54,8 +56,8 @@ Phase 3 (Months 7-12):
 
 Small teams (3-5 devs):
 
-- "Stop paying $245/month for features you don't use. Get monitoring that actually prevents outages for
-  $39/month"
+- "Keep all your API endpoints in one place like Postman, but get real monitoring that prevents outages.
+  $39/month flat rate for your whole team"
 
 SaaS/Fintech (5-15 devs):
 
@@ -64,7 +66,8 @@ SaaS/Fintech (5-15 devs):
 
 Enterprise (15+ devs):
 
-- "Give every team API monitoring without $50/seat taxes. Unlimited calls, predictable pricing at $299/month"
+- "Store unlimited endpoints, monitor what matters. No per-seat fees, no endpoint limits.
+  Enterprise monitoring at $299/month"
 
 6. Quick Win Tactics (First 90 Days)
 

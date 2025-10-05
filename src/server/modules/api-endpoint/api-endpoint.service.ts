@@ -25,23 +25,28 @@ export class ApiEndpointService {
     organizationId: string,
     input: CreateApiEndpointInput,
   ): Promise<ApiEndpoint> {
-    // Check plan limits
-    const limits = getPlanLimits(userPlan);
+    // Check plan limits only if enabling monitoring
+    if (input.isActive) {
+      const limits = getPlanLimits(userPlan);
 
-    // Check max endpoints limit (per organization)
-    const currentEndpoints =
-      await this.apiEndpointRepository.findByOrganizationId(organizationId);
-    if (
-      !isUnlimited(limits.maxEndpoints) &&
-      currentEndpoints.length >= limits.maxEndpoints
-    ) {
-      throw new TooManyRequestsError(
-        `Plan limit reached. ${userPlan} plan allows maximum ${limits.maxEndpoints} endpoints. Upgrade your plan to add more.`,
-      );
+      // Check max active endpoints (endpoints with monitoring enabled)
+      const currentEndpoints =
+        await this.apiEndpointRepository.findByOrganizationId(organizationId);
+      const activeEndpoints = currentEndpoints.filter((ep) => ep.isActive);
+
+      if (
+        !isUnlimited(limits.maxEndpoints) &&
+        activeEndpoints.length >= limits.maxEndpoints
+      ) {
+        throw new TooManyRequestsError(
+          `Plan limit reached. ${userPlan} plan allows maximum ${limits.maxEndpoints} active monitors. You have ${activeEndpoints.length} active. Disable monitoring on other endpoints or upgrade your plan.`,
+        );
+      }
     }
 
     // Use plan's minimum interval if provided interval is too low
     // This allows endpoint creation to succeed, applying safe defaults
+    const limits = getPlanLimits(userPlan);
     const safeInterval = Math.max(input.interval, limits.minCheckInterval);
 
     return this.apiEndpointRepository.create({
@@ -56,7 +61,7 @@ export class ApiEndpointService {
       userId,
       organizationId,
       collectionId: input.collectionId || null,
-      isActive: true,
+      isActive: input.isActive,
     });
   }
 
@@ -147,6 +152,21 @@ export class ApiEndpointService {
     }
 
     if (input.isActive !== undefined) {
+      // If enabling monitoring, check plan limits
+      if (input.isActive && !endpoint.isActive) {
+        const currentEndpoints =
+          await this.apiEndpointRepository.findByOrganizationId(organizationId);
+        const activeEndpoints = currentEndpoints.filter((ep) => ep.isActive);
+
+        if (
+          !isUnlimited(limits.maxEndpoints) &&
+          activeEndpoints.length >= limits.maxEndpoints
+        ) {
+          throw new TooManyRequestsError(
+            `Plan limit reached. ${userPlan} plan allows maximum ${limits.maxEndpoints} active monitors. You have ${activeEndpoints.length} active. Disable monitoring on other endpoints or upgrade your plan.`,
+          );
+        }
+      }
       updateData.isActive = input.isActive;
     }
 

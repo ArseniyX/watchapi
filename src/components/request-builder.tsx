@@ -15,6 +15,7 @@ import { useForm } from "react-hook-form";
 import { ParamsTab } from "@/components/request/tabs/params-tab";
 import { HeadersTab } from "@/components/request/tabs/headers-tab";
 import { BodyTab } from "@/components/request/tabs/body-tab";
+import { MonitoringTab } from "@/components/request/tabs/monitoring-tab";
 import Image from "next/image";
 
 // Store form state per tab in memory only
@@ -100,6 +101,10 @@ export function RequestBuilder() {
             formData: [] as KeyValuePair[],
             bodyContent: endpoint.body || "",
             responseData: null,
+            isActive: endpoint.isActive ?? false,
+            interval: endpoint.interval || 300000,
+            expectedStatus: endpoint.expectedStatus || 200,
+            timeout: endpoint.timeout || 30000,
           };
         }
       }
@@ -117,6 +122,10 @@ export function RequestBuilder() {
       formData: [] as KeyValuePair[],
       bodyContent: "",
       responseData: null,
+      isActive: false,
+      interval: 300000,
+      expectedStatus: 200,
+      timeout: 30000,
     };
   }, [activeTabId, collectionsData]);
 
@@ -141,6 +150,10 @@ export function RequestBuilder() {
   const formData = watch("formData");
   const bodyContent = watch("bodyContent");
   const responseData = watch("responseData");
+  const isActive = watch("isActive");
+  const interval = watch("interval");
+  const expectedStatus = watch("expectedStatus");
+  const timeout = watch("timeout");
 
   const [requestSent, setRequestSent] = useState(false);
 
@@ -165,6 +178,10 @@ export function RequestBuilder() {
         formData,
         bodyContent,
         responseData,
+        isActive,
+        interval,
+        expectedStatus,
+        timeout,
       };
       tabFormsCache.set(prevTabIdRef.current, currentValues);
     }
@@ -419,6 +436,10 @@ export function RequestBuilder() {
         url: url || "",
         method: method as any,
         headers: headersRecord,
+        isActive,
+        interval,
+        expectedStatus,
+        timeout,
       };
 
       // Include body field
@@ -445,6 +466,10 @@ export function RequestBuilder() {
         formData,
         bodyContent,
         responseData,
+        isActive,
+        interval,
+        expectedStatus,
+        timeout,
       };
       tabFormsCache.set(activeTabId, currentValues);
 
@@ -621,6 +646,15 @@ export function RequestBuilder() {
               >
                 Body
               </TabsTrigger>
+              <TabsTrigger
+                value="monitoring"
+                className="text-xs data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none data-[state=active]:bg-transparent"
+              >
+                Monitoring
+                {isActive && (
+                  <span className="ml-1 h-2 w-2 rounded-full bg-green-500 inline-block" />
+                )}
+              </TabsTrigger>
             </TabsList>
           </div>
 
@@ -672,6 +706,30 @@ export function RequestBuilder() {
               onFormDataAdd={handleAddFormData}
               onFormDataUpdate={handleUpdateFormData}
               onFormDataRemove={handleRemoveFormData}
+            />
+          </TabsContent>
+
+          <TabsContent
+            value="monitoring"
+            className="flex-1 overflow-hidden p-0 m-0 h-full"
+          >
+            <MonitoringTab
+              isActive={isActive}
+              interval={interval}
+              expectedStatus={expectedStatus}
+              timeout={timeout}
+              onIsActiveChange={(value) =>
+                setValue("isActive", value, { shouldDirty: true })
+              }
+              onIntervalChange={(value) =>
+                setValue("interval", value, { shouldDirty: true })
+              }
+              onExpectedStatusChange={(value) =>
+                setValue("expectedStatus", value, { shouldDirty: true })
+              }
+              onTimeoutChange={(value) =>
+                setValue("timeout", value, { shouldDirty: true })
+              }
             />
           </TabsContent>
         </Tabs>

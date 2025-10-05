@@ -38,8 +38,10 @@ export class UserService {
       role: "USER",
     });
 
-    // Create personal organization for new user
-    await this.createPersonalOrganization(user);
+    // Create personal organization for new user (unless skipped for invitation)
+    if (!input.skipPersonalOrg) {
+      await this.createPersonalOrganization(user);
+    }
 
     return user;
   }
@@ -70,8 +72,10 @@ export class UserService {
       role: "USER",
     });
 
-    // Create personal organization for new OAuth user
-    await this.createPersonalOrganization(user);
+    // Create personal organization for new OAuth user (unless skipped for invitation)
+    if (!input.skipPersonalOrg) {
+      await this.createPersonalOrganization(user);
+    }
 
     return user;
   }
@@ -134,6 +138,13 @@ export class UserService {
     options: { skip?: number; take?: number } = {},
   ): Promise<User[]> {
     return this.userRepository.findMany(options);
+  }
+
+  /**
+   * Create a personal organization for a user
+   */
+  async createPersonalOrganizationForUser(user: User): Promise<void> {
+    await this.createPersonalOrganization(user);
   }
 
   /**

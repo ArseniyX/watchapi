@@ -62,10 +62,13 @@ export const createAuthRouter = (authService: AuthService) =>
     oauthCallback: publicProcedure
       .input(oauthCallbackSchema)
       .mutation(async ({ input }) => {
-        const result = await authService.authenticateWithOAuth({
-          ...input.profile,
-          provider: input.provider,
-        });
+        const result = await authService.authenticateWithOAuth(
+          {
+            ...input.profile,
+            provider: input.provider,
+          },
+          input.invitationToken,
+        );
         return {
           user: {
             id: result.user.id,

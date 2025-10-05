@@ -14,7 +14,11 @@ import "./scheduler"; // Initialize monitoring scheduler
 // Initialize modules
 const organizationModule = new OrganizationModule(prisma);
 const userModule = new UserModule(prisma, organizationModule.repository);
-const authModule = new AuthModule(userModule.service, process.env.JWT_SECRET!);
+const authModule = new AuthModule(
+  userModule.service,
+  organizationModule.service,
+  process.env.JWT_SECRET!,
+);
 const apiEndpointModule = new ApiEndpointModule(prisma);
 const monitoringModule = new MonitoringModule(prisma, alertService);
 const collectionModule = new CollectionModule(prisma);

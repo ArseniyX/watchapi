@@ -17,7 +17,8 @@ const plans = [
     price: "$0",
     description: "Perfect for trying out",
     features: [
-      "3 API endpoints",
+      "Unlimited API endpoints",
+      "3 active monitors",
       "30-minute health checks",
       "Email alerts only",
       "7-day history",
@@ -34,7 +35,8 @@ const plans = [
     description: "For development teams",
     priceNote: "flat rate/month",
     features: [
-      "25 API endpoints",
+      "Unlimited API endpoints",
+      "25 active monitors",
       "2-minute checks",
       "Email, Slack & Discord alerts",
       "30-day history",
@@ -52,7 +54,8 @@ const plans = [
     description: "For production teams",
     priceNote: "flat rate/month",
     features: [
-      "100 API endpoints",
+      "Unlimited API endpoints",
+      "100 active monitors",
       "1-minute checks",
       "Advanced AI anomaly detection",
       "Webhook alerts",

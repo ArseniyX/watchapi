@@ -7,9 +7,14 @@ import {
   UpdateAlertInput,
   CreateAlertNotificationInput,
 } from "./alert.schema";
-import { NotFoundError, ForbiddenError } from "../../errors/custom-errors";
-import { AlertCondition, CheckStatus } from "@/generated/prisma";
+import {
+  NotFoundError,
+  ForbiddenError,
+  TooManyRequestsError,
+} from "../../errors/custom-errors";
+import { AlertCondition, CheckStatus, PlanType } from "@/generated/prisma";
 import { logger, logInfo, logError } from "@/lib/logger";
+import { getPlanLimits, isUnlimited } from "../../config/plan-limits";
 
 export interface AlertEvaluationContext {
   apiEndpointId: string;
@@ -35,6 +40,7 @@ export class AlertService {
     input: CreateAlertInput,
     userId: string,
     organizationId: string,
+    userPlan: PlanType,
   ) {
     // Verify endpoint exists and user has access
     const endpoint = await this.apiEndpointRepository.findById(
@@ -43,6 +49,20 @@ export class AlertService {
     );
     if (!endpoint) {
       throw new ForbiddenError("API endpoint not found or access denied");
+    }
+
+    // Check plan limits for alerts
+    const limits = getPlanLimits(userPlan);
+    const currentAlerts =
+      await this.alertRepository.findByOrganization(organizationId);
+
+    if (
+      !isUnlimited(limits.maxAlerts) &&
+      currentAlerts.length >= limits.maxAlerts
+    ) {
+      throw new TooManyRequestsError(
+        `Plan limit reached. ${userPlan} plan allows maximum ${limits.maxAlerts} active monitors/alerts. Upgrade your plan to add more.`,
+      );
     }
 
     return this.alertRepository.create({

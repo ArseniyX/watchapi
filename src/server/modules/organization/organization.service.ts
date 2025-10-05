@@ -278,7 +278,7 @@ export class OrganizationService {
 
   async resendInvitation(invitationId: string) {
     const invitation =
-      await this.organizationRepository.findInvitationByToken(invitationId);
+      await this.organizationRepository.findInvitationById(invitationId);
 
     if (!invitation) {
       throw new Error("Invitation not found");

@@ -72,6 +72,9 @@ export default async function handler(
       avatar: githubUser.avatar_url,
     };
 
+    // Get invitation token from cookies if present (set by frontend)
+    const invitationToken = req.cookies.oauth_invitation_token;
+
     // Call tRPC mutation to authenticate
     const authResponse = await fetch(
       `${process.env.NEXT_PUBLIC_DOMAIN || `http://localhost:3000`}/api/trpc/auth.oauthCallback`,
@@ -83,6 +86,7 @@ export default async function handler(
         body: JSON.stringify({
           provider: "github",
           profile,
+          invitationToken,
         }),
       },
     );

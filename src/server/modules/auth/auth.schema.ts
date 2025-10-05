@@ -5,6 +5,7 @@ export const registerSchema = z.object({
   email: z.string().email("Invalid email format").min(1, "Email is required"),
   name: z.string().min(1, "Name cannot be empty").optional(),
   password: z.string().min(6, "Password must be at least 6 characters"),
+  invitationToken: z.string().optional(),
 });
 
 export const loginSchema = z.object({
@@ -25,6 +26,7 @@ export const oauthProfileSchema = z.object({
 export const oauthCallbackSchema = z.object({
   provider: oauthProviderSchema,
   profile: oauthProfileSchema,
+  invitationToken: z.string().optional(),
 });
 
 // Token schemas

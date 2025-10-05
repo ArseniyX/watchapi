@@ -107,12 +107,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
-  const register = async (email: string, password: string, name?: string) => {
+  const register = async (
+    email: string,
+    password: string,
+    name?: string,
+    invitationToken?: string,
+  ) => {
     try {
       const result = await registerMutation.mutateAsync({
         email,
         password,
         name,
+        invitationToken,
       });
       setStoredToken(result.tokens.accessToken);
       localStorage.setItem("refreshToken", result.tokens.refreshToken);
@@ -122,9 +128,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
-  const loginWithOAuth = (provider: "github" | "google") => {
-    // Store the provider in session storage to handle callback
+  const loginWithOAuth = (
+    provider: "github" | "google",
+    invitationToken?: string,
+  ) => {
+    // Store the provider in session storage
     sessionStorage.setItem("oauth_provider", provider);
+
+    // Store invitation token in cookie (accessible by backend callback)
+    if (invitationToken) {
+      document.cookie = `oauth_invitation_token=${invitationToken}; path=/; max-age=600`; // 10 minutes
+    }
 
     // Redirect to OAuth provider
     const baseUrl = window.location.origin;

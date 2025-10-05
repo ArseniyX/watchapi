@@ -20,6 +20,7 @@ export const createApiEndpointSchema = z.object({
     .positive("Interval must be greater than 0")
     .default(300000), // 5 minutes
   collectionId: z.string().optional(),
+  isActive: z.boolean().optional().default(false), // Monitoring disabled by default
 });
 
 // API Endpoint update schema

@@ -78,16 +78,18 @@ export default function TeamPage() {
       { organizationId: selectedOrgId! },
       { enabled: !!selectedOrgId },
     );
-  const { data: invitations } = trpc.organization.getInvitations.useQuery(
-    { organizationId: selectedOrgId! },
-    { enabled: !!selectedOrgId },
-  );
+  const { data: invitations, refetch: refetchInvitations } =
+    trpc.organization.getInvitations.useQuery(
+      { organizationId: selectedOrgId! },
+      { enabled: !!selectedOrgId },
+    );
 
   const inviteMember = trpc.organization.inviteMember.useMutation({
     onSuccess: () => {
       toast.success("Member invited successfully");
       setEmail("");
       refetchMembers();
+      refetchInvitations();
     },
     onError: (error) => {
       toast.error(error.message);
@@ -108,6 +110,16 @@ export default function TeamPage() {
     onSuccess: () => {
       toast.success("Role updated successfully");
       refetchMembers();
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
+  const resendInvitation = trpc.organization.resendInvitation.useMutation({
+    onSuccess: () => {
+      toast.success("Invitation resent successfully");
+      refetchInvitations();
     },
     onError: (error) => {
       toast.error(error.message);
@@ -248,6 +260,58 @@ export default function TeamPage() {
           </CardContent>
         </Card>
       </div>
+
+      {invitations && invitations.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Pending Invitations</CardTitle>
+            <CardDescription>
+              Invitations sent to people who haven't registered yet
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {invitations.map((invitation) => (
+                <div
+                  key={invitation.id}
+                  className="flex items-center justify-between p-4 border rounded-lg bg-muted/50"
+                >
+                  <div className="flex items-center space-x-4">
+                    <Avatar>
+                      <AvatarFallback>
+                        {invitation.email[0].toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-medium">{invitation.email}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Invited {new Date(invitation.createdAt).toLocaleDateString()}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Expires {new Date(invitation.expiresAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-4">
+                    <RoleBadge role={invitation.role} />
+                    <Badge variant="secondary">Pending</Badge>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        resendInvitation.mutate({ invitationId: invitation.id });
+                      }}
+                      disabled={resendInvitation.isPending}
+                    >
+                      {resendInvitation.isPending ? "Sending..." : "Resend"}
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>

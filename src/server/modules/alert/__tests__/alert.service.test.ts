@@ -4,8 +4,16 @@ import { AlertRepository } from "../alert.repository";
 import { ApiEndpointRepository } from "../../api-endpoint/api-endpoint.repository";
 import { MonitoringRepository } from "../../monitoring/monitoring.repository";
 import { NotificationChannelService } from "../../notification-channel/notification-channel.service";
-import { AlertCondition, CheckStatus } from "../../../../generated/prisma";
-import { NotFoundError, ForbiddenError } from "../../../errors/custom-errors";
+import {
+  AlertCondition,
+  CheckStatus,
+  PlanType,
+} from "../../../../generated/prisma";
+import {
+  NotFoundError,
+  ForbiddenError,
+  TooManyRequestsError,
+} from "../../../errors/custom-errors";
 
 // Mock repositories and services
 const mockAlertRepository = {
@@ -93,6 +101,7 @@ describe("AlertService", () => {
       };
 
       mockApiEndpointRepository.findById.mockResolvedValue(mockEndpoint);
+      mockAlertRepository.findByOrganization.mockResolvedValue([]);
       mockAlertRepository.create.mockResolvedValue(mockAlert);
 
       const result = await service.createAlert(
@@ -105,10 +114,14 @@ describe("AlertService", () => {
         },
         "user-1",
         "org-1",
+        PlanType.FREE,
       );
 
       expect(mockApiEndpointRepository.findById).toHaveBeenCalledWith(
         "endpoint-1",
+        "org-1",
+      );
+      expect(mockAlertRepository.findByOrganization).toHaveBeenCalledWith(
         "org-1",
       );
       expect(mockAlertRepository.create).toHaveBeenCalled();
@@ -129,8 +142,39 @@ describe("AlertService", () => {
           },
           "user-1",
           "org-1",
+          PlanType.FREE,
         ),
       ).rejects.toThrow(ForbiddenError);
+    });
+
+    it("should throw TooManyRequestsError if plan limit reached", async () => {
+      const mockEndpoint = {
+        id: "endpoint-1",
+        name: "Test API",
+        url: "https://api.example.com",
+        organizationId: "org-1",
+      };
+
+      // Mock 3 existing alerts for FREE plan (max is 3)
+      const existingAlerts = Array(3).fill({ id: "alert-x" });
+
+      mockApiEndpointRepository.findById.mockResolvedValue(mockEndpoint);
+      mockAlertRepository.findByOrganization.mockResolvedValue(existingAlerts);
+
+      await expect(
+        service.createAlert(
+          {
+            name: "Test Alert",
+            apiEndpointId: "endpoint-1",
+            condition: AlertCondition.RESPONSE_TIME_ABOVE,
+            threshold: 1000,
+            isActive: true,
+          },
+          "user-1",
+          "org-1",
+          PlanType.FREE,
+        ),
+      ).rejects.toThrow(TooManyRequestsError);
     });
   });
 

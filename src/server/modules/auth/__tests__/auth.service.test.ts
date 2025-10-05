@@ -12,6 +12,12 @@ const mockUserService = {
   createOAuthUser: vi.fn(),
   updateUser: vi.fn(),
   verifyPassword: vi.fn(),
+  createPersonalOrganizationForUser: vi.fn(),
+};
+
+// Mock OrganizationService
+const mockOrganizationService = {
+  acceptInvitation: vi.fn(),
 };
 
 // Mock JWT
@@ -27,7 +33,11 @@ describe("AuthService", () => {
   const jwtSecret = "test-secret";
 
   beforeEach(() => {
-    service = new AuthService(mockUserService as any, jwtSecret);
+    service = new AuthService(
+      mockUserService as any,
+      mockOrganizationService as any,
+      jwtSecret,
+    );
     vi.clearAllMocks();
   });
 
@@ -50,7 +60,10 @@ describe("AuthService", () => {
 
       const result = await service.register(input);
 
-      expect(mockUserService.createUser).toHaveBeenCalledWith(input);
+      expect(mockUserService.createUser).toHaveBeenCalledWith({
+        ...input,
+        skipPersonalOrg: true,
+      });
       expect(result.user).toEqual(mockUser);
       expect(result.tokens).toHaveProperty("accessToken");
       expect(result.tokens).toHaveProperty("refreshToken");
@@ -240,6 +253,7 @@ describe("AuthService", () => {
         provider: profile.provider,
         providerId: profile.id,
         avatar: profile.avatar,
+        skipPersonalOrg: true,
       });
       expect(result.user).toEqual(mockUser);
       expect(result.isNewUser).toBe(true);
@@ -348,6 +362,7 @@ describe("AuthService", () => {
         provider: "github",
         providerId: profile.id,
         avatar: undefined,
+        skipPersonalOrg: true,
       });
       expect(result.isNewUser).toBe(true);
     });

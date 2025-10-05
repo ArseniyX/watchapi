@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import { UserService } from "../user/user.service";
+import { OrganizationService } from "../organization/organization.service";
 import { User } from "../../../generated/prisma";
 import {
   LoginInput,
@@ -12,13 +13,24 @@ import { UnauthorizedError, NotFoundError } from "../../errors/custom-errors";
 export class AuthService {
   constructor(
     private readonly userService: UserService,
+    private readonly organizationService: OrganizationService,
     private readonly jwtSecret: string,
   ) {}
 
   async register(
     input: RegisterInput,
   ): Promise<{ user: User; tokens: AuthTokens }> {
-    const user = await this.userService.createUser(input);
+    // Create user without personal org (handled by setupNewUser)
+    const user = await this.userService.createUser({
+      email: input.email,
+      name: input.name,
+      password: input.password,
+      skipPersonalOrg: true,
+    });
+
+    // Handle invitation or create personal org
+    await this.setupNewUser(user, input.invitationToken);
+
     const tokens = this.generateTokens(user);
 
     return { user, tokens };
@@ -81,6 +93,7 @@ export class AuthService {
 
   async authenticateWithOAuth(
     profile: OAuthProfile,
+    invitationToken?: string,
   ): Promise<{ user: User; tokens: AuthTokens; isNewUser: boolean }> {
     // Check if user exists with this provider
     let user = await this.userService.getUserByProvider(
@@ -102,14 +115,19 @@ export class AuthService {
           avatar: profile.avatar,
         });
       } else {
-        // Create new user
+        // Create new user without personal org (handled by setupNewUser)
         user = await this.userService.createOAuthUser({
           email: profile.email,
           name: profile.name,
           provider: profile.provider,
           providerId: profile.id,
           avatar: profile.avatar,
+          skipPersonalOrg: true,
         });
+
+        // Handle invitation or create personal org
+        await this.setupNewUser(user, invitationToken);
+
         isNewUser = true;
       }
     } else {
@@ -123,6 +141,32 @@ export class AuthService {
     const tokens = this.generateTokens(user);
 
     return { user, tokens, isNewUser };
+  }
+
+  /**
+   * Unified setup for new users - handles invitation acceptance or creates personal org
+   * Single source of truth for both regular signup and OAuth
+   */
+  private async setupNewUser(
+    user: User,
+    invitationToken?: string,
+  ): Promise<void> {
+    if (invitationToken) {
+      try {
+        // Try to accept invitation
+        await this.organizationService.acceptInvitation(invitationToken, user.id);
+        console.log(`User ${user.id} joined via invitation: ${invitationToken}`);
+        return; // Success - user is now part of invited organization
+      } catch (error) {
+        // Invitation failed (expired, invalid, etc.)
+        console.error("Failed to accept invitation:", error);
+        // Fall through to create personal org
+      }
+    }
+
+    // No invitation or invitation failed - create personal organization
+    await this.userService.createPersonalOrganizationForUser(user);
+    console.log(`Created personal organization for user ${user.id}`);
   }
 
   private generateTokens(user: User): AuthTokens {
