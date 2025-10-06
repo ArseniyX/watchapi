@@ -51,13 +51,29 @@ export function OnboardingChecklist() {
 
   // Fetch onboarding status from backend
   const { data: endpoints } = trpc.apiEndpoint.getMyEndpoints.useQuery();
-  const { data: alerts } = trpc.alert.getByOrganization.useQuery();
   const { data: organizations } =
     trpc.organization.getMyOrganizations.useQuery();
 
-  useEffect(() => {
-    if (!endpoints && !alerts && !organizations) return;
+  // Get organization ID as soon as available
+  const orgId = organizations?.[0]?.id;
 
+  const { data: notificationChannels } =
+    trpc.notificationChannel.getAll.useQuery(
+      { organizationId: orgId || "" },
+      { enabled: !!orgId, refetchOnMount: false, refetchOnWindowFocus: false },
+    );
+
+  const { data: orgMembers } = trpc.organization.getMembers.useQuery(
+    { organizationId: orgId || "" },
+    { enabled: !!orgId, refetchOnMount: false, refetchOnWindowFocus: false },
+  );
+
+  const { data: orgInvitations } = trpc.organization.getInvitations.useQuery(
+    { organizationId: orgId || "" },
+    { enabled: !!orgId, refetchOnMount: false, refetchOnWindowFocus: false },
+  );
+
+  useEffect(() => {
     setSteps((prevSteps) => {
       const newSteps = [...prevSteps];
 
@@ -73,23 +89,27 @@ export function OnboardingChecklist() {
         if (monitorStep) monitorStep.completed = true;
       }
 
-      // Check if alerts are configured
-      if (alerts && alerts.length > 0) {
+      // Check if notification channels are configured
+      if (
+        notificationChannels &&
+        Array.isArray(notificationChannels) &&
+        notificationChannels.length > 0
+      ) {
         const alertStep = newSteps.find((s) => s.id === "configure_alerts");
         if (alertStep) alertStep.completed = true;
       }
 
-      // Check if team members invited (check current organization)
-      // Simple heuristic: if they have multiple organizations, they likely invited someone
-      // TODO: Add proper member count check via separate query if needed
-      if (organizations && organizations.length > 1) {
+      // Check if team members invited (including pending invitations)
+      const totalMembers =
+        (orgMembers?.length || 0) + (orgInvitations?.length || 0);
+      if (totalMembers > 1) {
         const teamStep = newSteps.find((s) => s.id === "invite_team");
         if (teamStep) teamStep.completed = true;
       }
 
       return newSteps;
     });
-  }, [endpoints, alerts, organizations]);
+  }, [endpoints, notificationChannels, orgMembers, orgInvitations]);
 
   const completedCount = steps.filter((s) => s.completed).length;
   const totalSteps = steps.length;

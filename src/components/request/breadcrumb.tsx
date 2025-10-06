@@ -22,6 +22,7 @@ interface RequestBreadcrumbProps {
   onCopyLink?: () => void;
   onRequestNameChange?: (name: string) => void;
   onCollectionNameChange?: (name: string) => void;
+  isDirty?: boolean;
 }
 
 export function RequestBreadcrumb({
@@ -33,6 +34,7 @@ export function RequestBreadcrumb({
   onCopyLink,
   onRequestNameChange,
   onCollectionNameChange,
+  isDirty = false,
 }: RequestBreadcrumbProps) {
   const [requestEditValue, setRequestEditValue] = useState(request);
   const [collectionEditValue, setCollectionEditValue] = useState(collection);
@@ -174,6 +176,7 @@ export function RequestBreadcrumb({
           variant="ghost"
           className="h-7 gap-1 text-xs"
           onClick={onSave}
+          disabled={!isDirty}
         >
           <Save className="h-3 w-3" />
           Save

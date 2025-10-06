@@ -58,7 +58,10 @@ export function MonitoringTab({
           <div className="flex items-center gap-3">
             <Activity className="h-5 w-5 text-primary" />
             <div>
-              <Label htmlFor="monitoring-enabled" className="text-base font-medium cursor-pointer">
+              <Label
+                htmlFor="monitoring-enabled"
+                className="text-base font-medium cursor-pointer"
+              >
                 Enable Monitoring
               </Label>
               <p className="text-sm text-muted-foreground">
@@ -84,8 +87,8 @@ export function MonitoringTab({
               </p>
               <p className="text-yellow-800 dark:text-yellow-300">
                 You have {planLimit.currentActiveMonitors} of{" "}
-                {planLimit.maxActiveMonitors} active monitors. Disable monitoring
-                on other endpoints or upgrade your plan.
+                {planLimit.maxActiveMonitors} active monitors. Disable
+                monitoring on other endpoints or upgrade your plan.
               </p>
             </div>
           </div>
@@ -105,7 +108,7 @@ export function MonitoringTab({
                   <SelectValue placeholder="Select interval" />
                 </SelectTrigger>
                 <SelectContent>
-                  {minIntervalMinutes <= 1 && (
+                  {/* {minIntervalMinutes <= 1 && (
                     <SelectItem value="60000">Every 1 minute</SelectItem>
                   )}
                   {minIntervalMinutes <= 2 && (
@@ -116,7 +119,7 @@ export function MonitoringTab({
                   )}
                   {minIntervalMinutes <= 10 && (
                     <SelectItem value="600000">Every 10 minutes</SelectItem>
-                  )}
+                  )} */}
                   {minIntervalMinutes <= 30 && (
                     <SelectItem value="1800000">Every 30 minutes</SelectItem>
                   )}
@@ -173,9 +176,12 @@ export function MonitoringTab({
             </div>
 
             {/* Monitoring Status */}
-            <div className="rounded-lg border border-border bg-muted/50 p-4">
+            {/* <div className="rounded-lg border border-border bg-muted/50 p-4">
               <div className="flex items-center gap-2 mb-2">
-                <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/20">
+                <Badge
+                  variant="outline"
+                  className="bg-green-500/10 text-green-600 border-green-500/20"
+                >
                   <Activity className="h-3 w-3 mr-1" />
                   Monitoring Active
                 </Badge>
@@ -183,10 +189,10 @@ export function MonitoringTab({
               <p className="text-sm text-muted-foreground">
                 This endpoint will be checked every {intervalMinutes}{" "}
                 {intervalMinutes === 1 ? "minute" : "minutes"}. You'll be
-                notified if the response status is not {expectedStatus} or if the
-                request times out.
+                notified if the response status is not {expectedStatus} or if
+                the request times out.
               </p>
-            </div>
+            </div> */}
           </div>
         )}
 
@@ -194,9 +200,9 @@ export function MonitoringTab({
         {!isActive && !isAtLimit && (
           <div className="rounded-lg border border-border bg-muted/30 p-4">
             <p className="text-sm text-muted-foreground">
-              Monitoring is currently disabled. This endpoint is saved for testing
-              but won't be automatically checked. Enable monitoring to track uptime
-              and performance.
+              Monitoring is currently disabled. This endpoint is saved for
+              testing but won't be automatically checked. Enable monitoring to
+              track uptime and performance.
             </p>
           </div>
         )}

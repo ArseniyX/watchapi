@@ -52,19 +52,26 @@ export function RequestTabs() {
           >
             {tab.type === "request" ? tab.method || "GET" : "COLLECTION"}
           </span>
-          <span className="text-xs text-foreground truncate">
-            {tab.name}
-            {tab.isDirty && " *"}
-          </span>
-          <button
-            className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity"
-            onClick={(e) => {
-              e.stopPropagation();
-              removeTab(tab.id);
-            }}
-          >
-            <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-          </button>
+          <span className="text-xs text-foreground truncate">{tab.name}</span>
+          <div className="ml-2 relative w-3 h-3">
+            {tab.isDirty && (
+              <span className="absolute inset-0 flex items-center justify-center group-hover:opacity-0 transition-opacity">
+                <span className="h-1.5 w-1.5 rounded-full bg-foreground" />
+              </span>
+            )}
+            <button
+              className={cn(
+                "absolute inset-0 flex items-center justify-center transition-opacity",
+                tab.isDirty ? "opacity-0 group-hover:opacity-100" : "opacity-0 group-hover:opacity-100"
+              )}
+              onClick={(e) => {
+                e.stopPropagation();
+                removeTab(tab.id);
+              }}
+            >
+              <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+            </button>
+          </div>
         </div>
       ))}
       <Button

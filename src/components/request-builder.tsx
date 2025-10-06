@@ -447,13 +447,7 @@ export function RequestBuilder() {
         updateData.body = bodyContent || "";
       }
 
-      console.log("Saving to DB:", updateData);
-      await updateEndpointMutation.mutateAsync(updateData);
-
-      // Wait for collections to refresh
-      await utils.collection.getMyCollections.invalidate();
-
-      // Save current values to cache
+      // Save current values to cache first
       const currentValues = {
         method,
         url,
@@ -473,11 +467,17 @@ export function RequestBuilder() {
       };
       tabFormsCache.set(activeTabId, currentValues);
 
-      // Reset form to mark as not dirty - update the default values
+      // Update tab to mark as saved immediately (before API call)
+      updateTab(activeTabId, { isDirty: false });
+
+      // Reset form to mark as not dirty
       reset(currentValues, { keepDefaultValues: false });
 
-      // Update tab to mark as saved
-      updateTab(activeTabId, { isDirty: false });
+      console.log("Saving to DB:", updateData);
+      await updateEndpointMutation.mutateAsync(updateData);
+
+      // Wait for collections to refresh
+      await utils.collection.getMyCollections.invalidate();
     } catch (error) {
       console.error("Failed to save endpoint:", error);
     }
@@ -603,6 +603,7 @@ export function RequestBuilder() {
         onCopyLink={() => console.log("Copy link")}
         onRequestNameChange={handleRequestNameChange}
         onCollectionNameChange={handleCollectionNameChange}
+        isDirty={isDirty}
       />
 
       {/* Request URL Bar */}
