@@ -9,6 +9,7 @@ import { ApiEndpointModule } from "./modules/api-endpoint";
 import { contactRouter } from "./modules/contact";
 import { notificationChannelRouter } from "./modules/notification-channel";
 import { alertRouter, alertService } from "./modules/alert";
+import { cliRouter } from "./modules/cli";
 import "./scheduler"; // Initialize monitoring scheduler
 
 // Initialize modules
@@ -34,6 +35,7 @@ export const appRouter = router({
   contact: contactRouter,
   notificationChannel: notificationChannelRouter,
   alert: alertRouter,
+  cli: cliRouter,
 });
 
 export type AppRouter = typeof appRouter;
