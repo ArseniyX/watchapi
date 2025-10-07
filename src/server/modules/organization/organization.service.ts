@@ -135,11 +135,12 @@ export class OrganizationService {
       }
 
       // Add user directly as they already have an account
+      // Set status to ACTIVE since they already have an account
       const member = await this.organizationRepository.addMember({
         userId: existingUser.id,
         organizationId: data.organizationId,
         role: data.role,
-        status: MemberStatus.INVITED,
+        status: MemberStatus.ACTIVE,
         invitedBy: data.invitedBy,
       });
 

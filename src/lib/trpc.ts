@@ -1,6 +1,7 @@
 import { createTRPCReact } from "@trpc/react-query";
 import { createTRPCProxyClient, httpBatchLink } from "@trpc/client";
 import type { AppRouter } from "../server/app";
+import { useOrganizationStore } from "@/stores/organization-store";
 
 export const trpc = createTRPCReact<AppRouter>();
 
@@ -16,8 +17,11 @@ export const trpcClient = trpc.createClient({
       url: `${getBaseUrl()}/api/trpc`,
       headers() {
         const token = localStorage.getItem("accessToken");
+        // Get orgId from Zustand store's persisted state
+        const orgId = useOrganizationStore.getState().selectedOrgId;
         return {
           authorization: token ? `Bearer ${token}` : undefined,
+          "x-organization-id": orgId || undefined,
         };
       },
     }),
@@ -32,8 +36,11 @@ export const vanillaTrpc = createTRPCProxyClient<AppRouter>({
       headers() {
         if (typeof window !== "undefined") {
           const token = localStorage.getItem("accessToken");
+          // Get orgId from Zustand store's persisted state
+          const orgId = useOrganizationStore.getState().selectedOrgId;
           return {
             authorization: token ? `Bearer ${token}` : undefined,
+            "x-organization-id": orgId || undefined,
           };
         }
         return {};

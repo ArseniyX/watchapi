@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -35,10 +35,21 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { trpc } from "@/lib/trpc";
 import { OrganizationRole } from "@/generated/prisma";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
+import { useOrganizationStore } from "@/stores/organization-store";
 
 const RoleIcon = ({ role }: { role: string }) => {
   switch (role) {
@@ -67,9 +78,14 @@ const RoleBadge = ({ role }: { role: string }) => {
 
 export default function TeamPage() {
   const { user: currentUser } = useAuth();
+  const { selectedOrgId, setSelectedOrgId } = useOrganizationStore();
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<OrganizationRole>(OrganizationRole.MEMBER);
-  const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
+  const [memberToRemove, setMemberToRemove] = useState<{
+    userId: string;
+    name: string;
+    email: string;
+  } | null>(null);
 
   const { data: organizations } =
     trpc.organization.getMyOrganizations.useQuery();
@@ -126,10 +142,12 @@ export default function TeamPage() {
     },
   });
 
-  // Select first organization by default
-  if (organizations && organizations.length > 0 && !selectedOrgId) {
-    setSelectedOrgId(organizations[0].id);
-  }
+  // Select first organization by default if none selected
+  useEffect(() => {
+    if (organizations && organizations.length > 0 && !selectedOrgId) {
+      setSelectedOrgId(organizations[0].id);
+    }
+  }, [organizations, selectedOrgId, setSelectedOrgId]);
 
   const handleInvite = () => {
     if (!selectedOrgId || !email) return;
@@ -140,6 +158,11 @@ export default function TeamPage() {
       role,
     });
   };
+
+  const currentUserMember = members?.find((m) => m.user.id === currentUser?.id);
+  const currentUserRole = currentUserMember?.role;
+  const isAdminOrOwner =
+    currentUserRole === "ADMIN" || currentUserRole === "OWNER";
 
   const activeMembers =
     members?.filter((m) => m.status === "ACTIVE").length || 0;
@@ -285,10 +308,12 @@ export default function TeamPage() {
                     <div>
                       <p className="font-medium">{invitation.email}</p>
                       <p className="text-sm text-muted-foreground">
-                        Invited {new Date(invitation.createdAt).toLocaleDateString()}
+                        Invited{" "}
+                        {new Date(invitation.createdAt).toLocaleDateString()}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        Expires {new Date(invitation.expiresAt).toLocaleDateString()}
+                        Expires{" "}
+                        {new Date(invitation.expiresAt).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
@@ -299,7 +324,9 @@ export default function TeamPage() {
                       variant="outline"
                       size="sm"
                       onClick={() => {
-                        resendInvitation.mutate({ invitationId: invitation.id });
+                        resendInvitation.mutate({
+                          invitationId: invitation.id,
+                        });
                       }}
                       disabled={resendInvitation.isPending}
                     >
@@ -374,7 +401,7 @@ export default function TeamPage() {
                     >
                       {member.status.toLowerCase()}
                     </Badge>
-                    <DropdownMenu>
+                    <DropdownMenu modal={false}>
                       <DropdownMenuTrigger asChild>
                         <Button
                           variant="ghost"
@@ -387,52 +414,66 @@ export default function TeamPage() {
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        {member.role !== "OWNER" &&
-                          member.user.id !== currentUser?.id && (
-                            <>
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  const newRole =
-                                    member.role === "ADMIN"
-                                      ? OrganizationRole.MEMBER
-                                      : OrganizationRole.ADMIN;
-                                  updateRole.mutate({
-                                    userId: member.user.id,
-                                    organizationId: selectedOrgId!,
-                                    role: newRole,
-                                  });
-                                }}
-                                disabled={updateRole.isPending}
-                              >
-                                {updateRole.isPending
-                                  ? "Updating..."
-                                  : `Change to ${
-                                      member.role === "ADMIN"
-                                        ? "Member"
-                                        : "Admin"
-                                    }`}
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                            </>
-                          )}
-                        {member.user.id !== currentUser?.id &&
-                          member.role !== "OWNER" && (
+                      <DropdownMenuContent
+                        align="end"
+                        className="z-[9999]"
+                        side="bottom"
+                        sideOffset={5}
+                        avoidCollisions={true}
+                        collisionPadding={10}
+                      >
+                        {member.user.id === currentUser?.id ? (
+                          <DropdownMenuItem
+                            disabled
+                            className="text-muted-foreground"
+                          >
+                            You cannot modify your own membership
+                          </DropdownMenuItem>
+                        ) : member.role === "OWNER" ? (
+                          <DropdownMenuItem
+                            disabled
+                            className="text-muted-foreground"
+                          >
+                            Owner cannot be modified
+                          </DropdownMenuItem>
+                        ) : !isAdminOrOwner ? (
+                          <DropdownMenuItem
+                            disabled
+                            className="text-muted-foreground"
+                          >
+                            Only admins and owners can modify members
+                          </DropdownMenuItem>
+                        ) : (
+                          <>
                             <DropdownMenuItem
-                              className="text-destructive focus:text-destructive"
                               onClick={() => {
-                                if (
-                                  confirm(
-                                    `Are you sure you want to remove ${
-                                      member.user.name || member.user.email
-                                    } from this organization?`,
-                                  )
-                                ) {
-                                  removeMember.mutate({
-                                    userId: member.user.id,
-                                    organizationId: selectedOrgId!,
-                                  });
-                                }
+                                const newRole =
+                                  member.role === "ADMIN"
+                                    ? OrganizationRole.MEMBER
+                                    : OrganizationRole.ADMIN;
+                                updateRole.mutate({
+                                  userId: member.user.id,
+                                  organizationId: selectedOrgId!,
+                                  role: newRole,
+                                });
+                              }}
+                              disabled={updateRole.isPending}
+                            >
+                              {updateRole.isPending
+                                ? "Updating..."
+                                : `Change to ${
+                                    member.role === "ADMIN" ? "Member" : "Admin"
+                                  }`}
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              variant="destructive"
+                              onClick={() => {
+                                setMemberToRemove({
+                                  userId: member.user.id,
+                                  name: member.user.name || member.user.email,
+                                  email: member.user.email,
+                                });
                               }}
                               disabled={removeMember.isPending}
                             >
@@ -440,24 +481,8 @@ export default function TeamPage() {
                                 ? "Removing..."
                                 : "Remove from Team"}
                             </DropdownMenuItem>
-                          )}
-                        {member.user.id === currentUser?.id && (
-                          <DropdownMenuItem
-                            disabled
-                            className="text-muted-foreground"
-                          >
-                            You cannot modify your own membership
-                          </DropdownMenuItem>
+                          </>
                         )}
-                        {member.role === "OWNER" &&
-                          member.user.id !== currentUser?.id && (
-                            <DropdownMenuItem
-                              disabled
-                              className="text-muted-foreground"
-                            >
-                              Owner cannot be modified
-                            </DropdownMenuItem>
-                          )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
@@ -467,6 +492,40 @@ export default function TeamPage() {
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog
+        open={!!memberToRemove}
+        onOpenChange={(open) => !open && setMemberToRemove(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove Team Member</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove{" "}
+              <span className="font-semibold">{memberToRemove?.name}</span> (
+              {memberToRemove?.email}) from this organization? This action cannot
+              be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (memberToRemove && selectedOrgId) {
+                  removeMember.mutate({
+                    userId: memberToRemove.userId,
+                    organizationId: selectedOrgId,
+                  });
+                  setMemberToRemove(null);
+                }
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
