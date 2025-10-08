@@ -6,6 +6,7 @@ import {
   CreateUserInput,
   CreateOAuthUserInput,
   UpdateUserInput,
+  OnboardingStatus,
 } from "./user.schema";
 import {
   ConflictError,
@@ -145,6 +146,25 @@ export class UserService {
    */
   async createPersonalOrganizationForUser(user: User): Promise<void> {
     await this.createPersonalOrganization(user);
+  }
+
+  /**
+   * Get onboarding status for a user
+   */
+  async getOnboardingStatus(userId: string): Promise<OnboardingStatus> {
+    const status = await this.userRepository.getOnboardingStatus(userId);
+
+    // Calculate completed steps
+    let completedSteps = 0;
+    if (status.hasEndpoints) completedSteps += 2; // endpoints + monitoring (auto-enabled)
+    if (status.hasNotificationChannels) completedSteps += 1;
+    if (status.hasTeamMembers) completedSteps += 1;
+
+    return {
+      ...status,
+      completedSteps,
+      totalSteps: 4,
+    };
   }
 
   /**

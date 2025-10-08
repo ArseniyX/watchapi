@@ -12,6 +12,10 @@ export const createUserRouter = (userService: UserService) =>
       return userService.getUserById(ctx.user.id);
     }),
 
+    getOnboardingStatus: protectedProcedure.query(async ({ ctx }) => {
+      return userService.getOnboardingStatus(ctx.user.id);
+    }),
+
     updateProfile: protectedProcedure
       .input(updateProfileSchema)
       .mutation(async ({ input, ctx }) => {

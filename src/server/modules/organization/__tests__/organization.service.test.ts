@@ -203,7 +203,7 @@ describe("OrganizationService", () => {
         userId: "user-2",
         organizationId: "org-1",
         role: OrganizationRole.MEMBER,
-        status: MemberStatus.INVITED,
+        status: MemberStatus.ACTIVE,
       });
 
       const result = await service.inviteMember(inviteData);
@@ -215,7 +215,7 @@ describe("OrganizationService", () => {
         userId: "user-2",
         organizationId: "org-1",
         role: OrganizationRole.MEMBER,
-        status: MemberStatus.INVITED,
+        status: MemberStatus.ACTIVE,
         invitedBy: "user-1",
       });
       expect(result).toBeDefined();

@@ -98,4 +98,49 @@ export class UserRepository implements IUserRepository {
   async count(where?: Prisma.UserWhereInput): Promise<number> {
     return this.prisma.user.count({ where });
   }
+
+  async getOnboardingStatus(userId: string): Promise<{
+    hasEndpoints: boolean;
+    hasNotificationChannels: boolean;
+    hasTeamMembers: boolean;
+  }> {
+    // Get user's organization
+    const userOrgs = await this.prisma.organizationMember.findMany({
+      where: { userId },
+      select: { organizationId: true },
+    });
+
+    if (userOrgs.length === 0) {
+      return {
+        hasEndpoints: false,
+        hasNotificationChannels: false,
+        hasTeamMembers: false,
+      };
+    }
+
+    const orgIds = userOrgs.map((o) => o.organizationId);
+
+    // Run queries in parallel for speed
+    const [endpointCount, notificationCount, memberCount, invitationCount] =
+      await Promise.all([
+        this.prisma.apiEndpoint.count({
+          where: { organizationId: { in: orgIds } },
+        }),
+        this.prisma.notificationChannel.count({
+          where: { organizationId: { in: orgIds } },
+        }),
+        this.prisma.organizationMember.count({
+          where: { organizationId: { in: orgIds } },
+        }),
+        this.prisma.organizationInvitation.count({
+          where: { organizationId: { in: orgIds } },
+        }),
+      ]);
+
+    return {
+      hasEndpoints: endpointCount > 0,
+      hasNotificationChannels: notificationCount > 0,
+      hasTeamMembers: memberCount + invitationCount > 1, // > 1 because user itself is a member
+    };
+  }
 }

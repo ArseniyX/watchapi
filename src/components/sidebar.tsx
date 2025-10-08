@@ -197,7 +197,7 @@ function CollectionTree({
   const handleAddRequest = (collectionId: string) => {
     createEndpointMutation.mutate({
       name: "New Request",
-      url: "https://api.example.com",
+      url: "",
       method: "GET",
       collectionId,
     });

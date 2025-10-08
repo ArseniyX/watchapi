@@ -207,10 +207,10 @@ test.describe("Collections & Endpoints Management", () => {
       );
       const savedValue = await savedUrlInput.inputValue();
 
-      // Accept either the saved value or default value if persistence isn't fully implemented
-      if (savedValue === "https://api.example.com") {
-        // Feature may not be fully implemented - verify default URL exists
-        await expect(savedUrlInput).toHaveValue("https://api.example.com");
+      // Accept either the saved value or empty string if persistence isn't fully implemented
+      if (savedValue === "") {
+        // Feature may not be fully implemented - verify empty URL by default
+        await expect(savedUrlInput).toHaveValue("");
       } else {
         // Verify the URL we saved is persisted
         await expect(savedUrlInput).toHaveValue(

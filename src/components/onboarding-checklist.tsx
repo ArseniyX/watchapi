@@ -49,67 +49,43 @@ export function OnboardingChecklist() {
     },
   ]);
 
-  // Fetch onboarding status from backend
-  const { data: endpoints } = trpc.apiEndpoint.getMyEndpoints.useQuery();
-  const { data: organizations } =
-    trpc.organization.getMyOrganizations.useQuery();
-
-  // Get organization ID as soon as available
-  const orgId = organizations?.[0]?.id;
-
-  const { data: notificationChannels } =
-    trpc.notificationChannel.getAll.useQuery(
-      { organizationId: orgId || "" },
-      { enabled: !!orgId, refetchOnMount: false, refetchOnWindowFocus: false },
-    );
-
-  const { data: orgMembers } = trpc.organization.getMembers.useQuery(
-    { organizationId: orgId || "" },
-    { enabled: !!orgId, refetchOnMount: false, refetchOnWindowFocus: false },
-  );
-
-  const { data: orgInvitations } = trpc.organization.getInvitations.useQuery(
-    { organizationId: orgId || "" },
-    { enabled: !!orgId, refetchOnMount: false, refetchOnWindowFocus: false },
+  // Single query for all onboarding status - much faster!
+  const { data: onboardingStatus, isLoading } = trpc.user.getOnboardingStatus.useQuery(
+    undefined,
+    { refetchOnMount: false, refetchOnWindowFocus: false }
   );
 
   useEffect(() => {
+    if (!onboardingStatus) return;
+
     setSteps((prevSteps) => {
       const newSteps = [...prevSteps];
 
       // Check if user has created an endpoint
-      if (endpoints && endpoints.length > 0) {
+      if (onboardingStatus.hasEndpoints) {
         const endpointStep = newSteps.find((s) => s.id === "create_endpoint");
         if (endpointStep) endpointStep.completed = true;
-      }
 
-      // Check if monitoring is set up (if they have endpoints, monitoring is auto-enabled)
-      if (endpoints && endpoints.length > 0) {
+        // Monitoring is auto-enabled with endpoints
         const monitorStep = newSteps.find((s) => s.id === "setup_monitor");
         if (monitorStep) monitorStep.completed = true;
       }
 
       // Check if notification channels are configured
-      if (
-        notificationChannels &&
-        Array.isArray(notificationChannels) &&
-        notificationChannels.length > 0
-      ) {
+      if (onboardingStatus.hasNotificationChannels) {
         const alertStep = newSteps.find((s) => s.id === "configure_alerts");
         if (alertStep) alertStep.completed = true;
       }
 
-      // Check if team members invited (including pending invitations)
-      const totalMembers =
-        (orgMembers?.length || 0) + (orgInvitations?.length || 0);
-      if (totalMembers > 1) {
+      // Check if team members invited
+      if (onboardingStatus.hasTeamMembers) {
         const teamStep = newSteps.find((s) => s.id === "invite_team");
         if (teamStep) teamStep.completed = true;
       }
 
       return newSteps;
     });
-  }, [endpoints, notificationChannels, orgMembers, orgInvitations]);
+  }, [onboardingStatus]);
 
   const completedCount = steps.filter((s) => s.completed).length;
   const totalSteps = steps.length;
@@ -117,6 +93,11 @@ export function OnboardingChecklist() {
 
   // Hide checklist if dismissed or all complete
   if (!isVisible || isComplete) return null;
+
+  // Don't show until data is loaded
+  if (isLoading || !onboardingStatus) {
+    return null;
+  }
 
   return (
     <Card className="border-2 border-primary/20 bg-primary/5">

@@ -49,6 +49,15 @@ export const getUsersSchema = z.object({
   take: z.number().min(1).max(100).default(10),
 });
 
+// Onboarding status schema
+export const onboardingStatusSchema = z.object({
+  hasEndpoints: z.boolean(),
+  hasNotificationChannels: z.boolean(),
+  hasTeamMembers: z.boolean(),
+  completedSteps: z.number(),
+  totalSteps: z.number(),
+});
+
 // Infer types from schemas
 export type CreateUserInput = z.infer<typeof createUserSchema>;
 export type CreateOAuthUserInput = z.infer<typeof createOAuthUserSchema>;
@@ -56,3 +65,4 @@ export type UpdateUserInput = z.infer<typeof updateUserSchema>;
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
 export type GetUsersInput = z.infer<typeof getUsersSchema>;
+export type OnboardingStatus = z.infer<typeof onboardingStatusSchema>;
