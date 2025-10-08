@@ -6,7 +6,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { Suspense } from "react";
 import Script from "next/script";
 import { TRPCProvider } from "../components/providers/trpc-provider";
-import { AuthProvider } from "../components/providers/auth-provider";
+import { AuthInitializer } from "../components/providers/auth-initializer";
 import { ThemeProvider } from "../components/providers/theme-provider";
 import { Toaster } from "@/components/ui/toast";
 import { StructuredData } from "@/components/structured-data";
@@ -135,12 +135,11 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <TRPCProvider>
-          <AuthProvider>
-            <ThemeProvider>
-              <Suspense fallback={null}>{children}</Suspense>
-              <Toaster />
-            </ThemeProvider>
-          </AuthProvider>
+          <ThemeProvider>
+            <AuthInitializer />
+            <Suspense fallback={null}>{children}</Suspense>
+            <Toaster />
+          </ThemeProvider>
         </TRPCProvider>
         <Analytics />
         <Script
