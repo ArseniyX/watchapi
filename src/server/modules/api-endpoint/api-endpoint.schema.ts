@@ -4,7 +4,7 @@ import { HttpMethod } from "@/generated/prisma";
 // API Endpoint creation schema
 export const createApiEndpointSchema = z.object({
   name: z.string().min(1, "Endpoint name is required"),
-  url: z.string().url("Invalid URL format").min(1, "URL is required"),
+  url: z.string(), // Allow any string, validation happens when endpoint is activated
   method: z.nativeEnum(HttpMethod).default(HttpMethod.GET),
   headers: z.record(z.string(), z.string()).optional(),
   body: z.string().optional(),
