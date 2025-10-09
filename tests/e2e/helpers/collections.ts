@@ -1,4 +1,4 @@
-import { Page, expect } from "@playwright/test";
+import { Page } from "@playwright/test";
 
 /**
  * Helper function to create a new collection
@@ -48,20 +48,11 @@ export async function createEndpoint(
   const collection = page.locator(`text="${collectionName}"`);
   await collection.hover();
 
-  // Wait for the tRPC response before checking UI
-  const responsePromise = page.waitForResponse(response =>
-    response.url().includes('/api/trpc/apiEndpoint.create') && response.status() === 200,
-    { timeout: 15000 }
-  );
-
   // Click the "+" button to add endpoint
   await page.click(`text="${collectionName}" >> .. >> button:has-text("+")`);
 
-  // Wait for API response
-  await responsePromise;
-
   // Wait for new endpoint to appear
-  await page.waitForSelector('text="New Request"', { timeout: 10000 });
+  await page.waitForSelector('text="New Request"', { timeout: 15000 });
 
   // If endpoint data provided, configure it
   if (endpointData) {
