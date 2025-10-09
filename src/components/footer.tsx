@@ -7,10 +7,13 @@ const footerLinks = {
     { name: "Pricing", href: "#pricing" },
     { name: "Compare", href: "/compare" },
   ],
+  Resources: [
+    { name: "Blog", href: "/blog" },
+    { name: "Contact", href: "/contact" },
+  ],
   Company: [
     { name: "Privacy", href: "/privacy" },
     { name: "Terms", href: "/terms" },
-    { name: "Contact", href: "/contact" },
   ],
 };
 
