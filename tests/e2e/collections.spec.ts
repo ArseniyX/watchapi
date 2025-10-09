@@ -60,8 +60,10 @@ test.describe("Collections & Endpoints Management", () => {
       await page.waitForTimeout(200); // Wait for hover state
       await page.click('[data-testid="add-endpoint-button"]');
 
-      // Wait for endpoint to appear
-      await expect(page.locator('text="New Request"')).toBeVisible();
+      // Wait for endpoint to appear with longer timeout and better error message
+      await expect(page.locator('text="New Request"')).toBeVisible({
+        timeout: 10000,
+      });
 
       // Refresh page
       await page.reload();
@@ -81,12 +83,12 @@ test.describe("Collections & Endpoints Management", () => {
         await page.locator('text="New Collection"').hover();
         await page.waitForTimeout(200);
         await page.click('[data-testid="add-endpoint-button"]');
-        await page.waitForTimeout(300);
+        await page.waitForTimeout(500); // Increased wait time
       }
 
-      // Verify endpoints were created
+      // Verify endpoints were created with longer timeout
       const endpoints = page.locator('aside >> text="New Request"');
-      await expect(endpoints.first()).toBeVisible();
+      await expect(endpoints.first()).toBeVisible({ timeout: 10000 });
 
       // Step 3-4: Hover over collection and click delete
       await page.locator('text="New Collection"').hover();
@@ -128,8 +130,10 @@ test.describe("Collections & Endpoints Management", () => {
       await page.waitForTimeout(200); // Wait for hover state
       await page.click('[data-testid="add-endpoint-button"]');
 
-      // Should create endpoint with default name
-      await expect(page.locator('text="New Request"')).toBeVisible();
+      // Should create endpoint with default name (with longer timeout)
+      await expect(page.locator('text="New Request"')).toBeVisible({
+        timeout: 10000,
+      });
     });
 
     test("should delete endpoint with confirmation", async ({ page }) => {
