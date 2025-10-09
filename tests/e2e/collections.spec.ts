@@ -58,7 +58,13 @@ test.describe("Collections & Endpoints Management", () => {
       // Create an endpoint by hovering and clicking add button
       await page.locator('text="New Collection"').hover();
       await page.waitForTimeout(200); // Wait for hover state
+
+      // Wait for the network request to complete
+      const responsePromise = page.waitForResponse(response =>
+        response.url().includes('/api/trpc/apiEndpoint.create') && response.status() === 200
+      );
       await page.click('[data-testid="add-endpoint-button"]');
+      await responsePromise;
 
       // Wait for endpoint to appear with longer timeout and better error message
       await expect(page.locator('text="New Request"')).toBeVisible({
@@ -82,8 +88,14 @@ test.describe("Collections & Endpoints Management", () => {
       for (let i = 0; i < 2; i++) {
         await page.locator('text="New Collection"').hover();
         await page.waitForTimeout(200);
+
+        const responsePromise = page.waitForResponse(response =>
+          response.url().includes('/api/trpc/apiEndpoint.create') && response.status() === 200,
+          { timeout: 15000 }
+        );
         await page.click('[data-testid="add-endpoint-button"]');
-        await page.waitForTimeout(500); // Increased wait time
+        await responsePromise;
+        await page.waitForTimeout(300);
       }
 
       // Verify endpoints were created with longer timeout
@@ -128,7 +140,13 @@ test.describe("Collections & Endpoints Management", () => {
       // Hover over collection and add endpoint
       await page.locator('text="New Collection"').hover();
       await page.waitForTimeout(200); // Wait for hover state
+
+      const responsePromise = page.waitForResponse(response =>
+        response.url().includes('/api/trpc/apiEndpoint.create') && response.status() === 200,
+        { timeout: 15000 }
+      );
       await page.click('[data-testid="add-endpoint-button"]');
+      await responsePromise;
 
       // Should create endpoint with default name (with longer timeout)
       await expect(page.locator('text="New Request"')).toBeVisible({
@@ -143,8 +161,14 @@ test.describe("Collections & Endpoints Management", () => {
       await createCollection(page);
       await page.locator('text="New Collection"').hover();
       await page.waitForTimeout(200); // Wait for hover state
+
+      const responsePromise = page.waitForResponse(response =>
+        response.url().includes('/api/trpc/apiEndpoint.create') && response.status() === 200,
+        { timeout: 15000 }
+      );
       await page.click('[data-testid="add-endpoint-button"]');
-      await page.waitForSelector('text="New Request"');
+      await responsePromise;
+      await page.waitForSelector('text="New Request"', { timeout: 10000 });
 
       // Hover over endpoint and delete
       await page.locator('text="New Request"').hover();
@@ -172,8 +196,14 @@ test.describe("Collections & Endpoints Management", () => {
       await createCollection(page);
       await page.locator('text="New Collection"').hover();
       await page.waitForTimeout(200);
+
+      const responsePromise = page.waitForResponse(response =>
+        response.url().includes('/api/trpc/apiEndpoint.create') && response.status() === 200,
+        { timeout: 15000 }
+      );
       await page.click('[data-testid="add-endpoint-button"]');
-      await page.waitForSelector('text="New Request"');
+      await responsePromise;
+      await page.waitForSelector('text="New Request"', { timeout: 10000 });
 
       // Step 4-5: Verify new endpoint appears
       await expect(page.locator('text="New Request"')).toBeVisible();
@@ -264,8 +294,14 @@ test.describe("Collections & Endpoints Management", () => {
       // Create an endpoint in the collection
       await page.locator('text="New Collection"').hover();
       await page.waitForTimeout(200);
+
+      const responsePromise = page.waitForResponse(response =>
+        response.url().includes('/api/trpc/apiEndpoint.create') && response.status() === 200,
+        { timeout: 15000 }
+      );
       await page.click('[data-testid="add-endpoint-button"]');
-      await page.waitForSelector('text="New Request"');
+      await responsePromise;
+      await page.waitForSelector('text="New Request"', { timeout: 10000 });
 
       // Search for "Collection" (should match)
       await page.fill('input[placeholder*="Search"]', "Collection");
