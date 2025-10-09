@@ -51,45 +51,25 @@ export function Hero() {
             </Link>
           </div>
 
-          {/* Stats */}
-          <div className="mt-16 grid grid-cols-3 gap-8 animate-in fade-in slide-in-from-top-4 duration-700 delay-500">
-            <div>
-              <div className="text-3xl font-bold text-foreground">99.9%</div>
-              <div className="text-sm text-muted-foreground mt-1">Uptime</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-foreground">&lt;50ms</div>
-              <div className="text-sm text-muted-foreground mt-1">
-                Response Time
-              </div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-foreground">24/7</div>
-              <div className="text-sm text-muted-foreground mt-1">
-                Monitoring
-              </div>
-            </div>
-          </div>
-
           {/* Hero Image with 3D Effect */}
-          <div className="mt-20 relative animate-in fade-in scale-in-95 duration-1000 delay-700">
+          <div className="mt-16 relative">
             <div
               className="relative mx-auto max-w-6xl"
               style={{ perspective: "2000px" }}
             >
               {/* Floating background blobs for depth */}
               <div
-                className="absolute -top-12 -left-12 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-in fade-in duration-1000 delay-800"
+                className="absolute -top-12 -left-12 w-96 h-96 bg-primary/10 rounded-full blur-3xl"
                 style={{ transform: "translateZ(-100px)" }}
               />
               <div
-                className="absolute -bottom-12 -right-12 w-96 h-96 bg-primary/5 rounded-full blur-3xl animate-in fade-in duration-1000 delay-900"
+                className="absolute -bottom-12 -right-12 w-96 h-96 bg-primary/5 rounded-full blur-3xl"
                 style={{ transform: "translateZ(-100px)" }}
               />
 
               {/* Main image container with 3D transform */}
               <div
-                className="relative animate-in slide-in-from-bottom-12 duration-1000 delay-800"
+                className="relative"
                 style={{
                   transform:
                     "perspective(2000px) rotateY(8deg) rotateX(6deg) scale(1.05)",
@@ -136,6 +116,88 @@ export function Hero() {
                     <div className="absolute inset-0 bg-gradient-to-t from-background/30 via-transparent to-primary/5 pointer-events-none" />
                     {/* Subtle light reflection */}
                     <div className="absolute top-0 left-0 right-0 h-1/3 bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
+
+                    {/* Floating Stats Tooltips */}
+                    {/* Top Right - Uptime */}
+                    <div
+                      className="absolute top-8 right-8 bg-white dark:bg-zinc-900 backdrop-blur-md border-2 border-green-500/30 dark:border-green-500/50 rounded-xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.3)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.6)] ring-1 ring-green-500/10"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-500/20 ring-2 ring-green-500/40">
+                          <svg
+                            className="h-5 w-5 text-green-500"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                            />
+                          </svg>
+                        </div>
+                        <div>
+                          <div className="text-2xl font-bold text-foreground">
+                            99.9%
+                          </div>
+                          <div className="text-xs text-muted-foreground font-medium">
+                            Uptime
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Bottom Left - Response Time */}
+                    <div
+                      className="absolute bottom-8 left-8 bg-white dark:bg-zinc-900 backdrop-blur-md border-2 border-blue-500/30 dark:border-blue-500/50 rounded-xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.3)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.6)] ring-1 ring-blue-500/10"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/20 ring-2 ring-blue-500/40">
+                          <svg
+                            className="h-5 w-5 text-blue-500"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M13 10V3L4 14h7v7l9-11h-7z"
+                            />
+                          </svg>
+                        </div>
+                        <div>
+                          <div className="text-2xl font-bold text-foreground">
+                            &lt;50ms
+                          </div>
+                          <div className="text-xs text-muted-foreground font-medium">
+                            Response
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Bottom Right - 24/7 Monitoring */}
+                    <div
+                      className="absolute bottom-8 right-8 bg-white dark:bg-zinc-900 backdrop-blur-md border-2 border-primary/30 dark:border-primary/50 rounded-xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.3)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.6)] ring-1 ring-primary/10"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/20 ring-2 ring-primary/40">
+                          <Activity className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                          <div className="text-2xl font-bold text-foreground">
+                            24/7
+                          </div>
+                          <div className="text-xs text-muted-foreground font-medium">
+                            Monitoring
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
