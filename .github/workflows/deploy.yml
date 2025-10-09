@@ -9,7 +9,7 @@ permissions:
   packages: write
 
 jobs:
-  test:
+  lint-and-test:
     runs-on: ubuntu-latest
 
     steps:
@@ -41,15 +41,51 @@ jobs:
         run: pnpm type-check
         continue-on-error: true
 
-      - name: Run unit tests
-        run: pnpm test:run
-
-      - name: Run tests with coverage
+      - name: Run unit tests with coverage
         run: pnpm test:coverage
         continue-on-error: true
 
+  e2e-test:
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, '[skip e2e]') && !contains(github.event.head_commit.message, '[fast-deploy]')"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: latest
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
       - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: pnpm exec playwright install --with-deps chromium
+
+      - name: Install Playwright dependencies only
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: pnpm exec playwright install-deps chromium
 
       - name: Run E2E tests
         run: pnpm exec playwright test
@@ -70,7 +106,8 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     environment: production
-    needs: test
+    needs: [lint-and-test, e2e-test]
+    if: always() && (needs.lint-and-test.result == 'success') && (needs.e2e-test.result == 'success' || needs.e2e-test.result == 'skipped')
     
     env:
       REGISTRY: ghcr.io
