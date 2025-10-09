@@ -15,13 +15,13 @@ export function Header() {
 
           <nav className="hidden md:flex items-center space-x-8">
             <Link
-              href="#features"
+              href="/#features"
               className="text-muted-foreground hover:text-foreground transition-colors"
             >
               Features
             </Link>
             <Link
-              href="#pricing"
+              href="/#pricing"
               className="text-muted-foreground hover:text-foreground transition-colors"
             >
               Pricing
