@@ -26,11 +26,7 @@ export const createApiEndpointSchema = z.object({
 // API Endpoint update schema
 export const updateApiEndpointSchema = z.object({
   name: z.string().min(1, "Endpoint name cannot be empty").optional(),
-  url: z
-    .string()
-    .url("Invalid URL format")
-    .min(1, "URL cannot be empty")
-    .optional(),
+  url: z.string().optional(), // Allow any string, validation happens when endpoint is activated
   method: z.nativeEnum(HttpMethod).optional(),
   headers: z.record(z.string(), z.string()).optional(),
   body: z.string().optional(),
