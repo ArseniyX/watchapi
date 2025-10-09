@@ -19,6 +19,7 @@ export const createAuthRouter = (authService: AuthService) =>
             id: result.user.id,
             email: result.user.email,
             name: result.user.name,
+            avatar: result.user.avatar,
             role: result.user.role,
           },
           tokens: result.tokens,
@@ -30,6 +31,7 @@ export const createAuthRouter = (authService: AuthService) =>
       return {
         user: {
           id: result.user.id,
+          avatar: result.user.avatar,
           email: result.user.email,
           name: result.user.name,
           role: result.user.role,
@@ -55,6 +57,7 @@ export const createAuthRouter = (authService: AuthService) =>
           id: user.id,
           email: user.email,
           name: user.name,
+          avatar: user.avatar,
           role: user.role,
         };
       }),

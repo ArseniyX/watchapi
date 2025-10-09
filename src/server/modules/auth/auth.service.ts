@@ -154,8 +154,13 @@ export class AuthService {
     if (invitationToken) {
       try {
         // Try to accept invitation
-        await this.organizationService.acceptInvitation(invitationToken, user.id);
-        console.log(`User ${user.id} joined via invitation: ${invitationToken}`);
+        await this.organizationService.acceptInvitation(
+          invitationToken,
+          user.id,
+        );
+        console.log(
+          `User ${user.id} joined via invitation: ${invitationToken}`,
+        );
         return; // Success - user is now part of invited organization
       } catch (error) {
         // Invitation failed (expired, invalid, etc.)

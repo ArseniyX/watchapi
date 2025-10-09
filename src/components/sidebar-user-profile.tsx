@@ -2,6 +2,7 @@
 
 import { LogOut, User, Moon, Sun } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/components/providers/theme-provider";
@@ -49,8 +50,18 @@ export function SidebarUserProfile() {
           className="cursor-pointer flex items-center w-full rounded-md transition-colors group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0"
           data-testid="user-profile-dropdown"
         >
-          <div className="h-8 w-8 rounded-full bg-secondary flex items-center justify-center shrink-0 transition-all hover:bg-primary/10">
-            <User className="h-4 w-4" />
+          <div className="h-5 w-5 rounded-full bg-secondary flex items-center justify-center shrink-0 transition-all hover:bg-primary/10 overflow-hidden">
+            {user.avatar ? (
+              <Image
+                src={user.avatar}
+                alt={user.name || user.email || "User avatar"}
+                width={32}
+                height={32}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <User className="h-4 w-4" />
+            )}
           </div>
           <div className="flex flex-col group-data-[collapsible=icon]:hidden text-left">
             <span className="text-sm font-medium">
