@@ -54,9 +54,20 @@ export class AuthService {
 
   async verifyToken(token: string): Promise<User | null> {
     try {
-      const payload = jwt.verify(token, this.jwtSecret) as {
+      const payload = jwt.verify(token, this.jwtSecret, {
+        algorithms: ["HS256"],
+        issuer: "watchapi",
+        audience: "watchapi-app",
+      }) as {
         userId: string;
+        type: string;
       };
+
+      // Verify it's an access token
+      if (payload.type !== "access") {
+        return null;
+      }
+
       return this.userService.getUserById(payload.userId);
     } catch (error) {
       return null;
@@ -65,7 +76,11 @@ export class AuthService {
 
   async refreshToken(refreshToken: string): Promise<AuthTokens> {
     try {
-      const payload = jwt.verify(refreshToken, this.jwtSecret) as {
+      const payload = jwt.verify(refreshToken, this.jwtSecret, {
+        algorithms: ["HS256"],
+        issuer: "watchapi",
+        audience: "watchapi-app",
+      }) as {
         userId: string;
         type: string;
       };
@@ -175,16 +190,42 @@ export class AuthService {
   }
 
   private generateTokens(user: User): AuthTokens {
+    const now = Math.floor(Date.now() / 1000);
+
     const accessToken = jwt.sign(
-      { userId: user.id, email: user.email, role: user.role },
+      {
+        userId: user.id,
+        email: user.email,
+        role: user.role,
+        type: "access",
+        iss: "watchapi",
+        aud: "watchapi-app",
+        iat: now,
+        jti: `${user.id}-${now}-${Math.random().toString(36).substring(7)}`,
+      },
       this.jwtSecret,
-      { expiresIn: "7d" }, // Increased to 7 days for better UX
+      {
+        expiresIn: "7d", // 15 minutes for security
+        algorithm: "HS256", // Explicit algorithm to prevent "none" attack
+      },
     );
 
     const refreshToken = jwt.sign(
-      { userId: user.id, type: "refresh" },
+      {
+        userId: user.id,
+        type: "refresh",
+        iss: "watchapi",
+        aud: "watchapi-app",
+        iat: now,
+        jti: `${user.id}-${now}-${Math.random()
+          .toString(36)
+          .substring(7)}-refresh`,
+      },
       this.jwtSecret,
-      { expiresIn: "30d" }, // 30 days for refresh token
+      {
+        expiresIn: "30d", // 30 days for refresh token
+        algorithm: "HS256",
+      },
     );
 
     return { accessToken, refreshToken };

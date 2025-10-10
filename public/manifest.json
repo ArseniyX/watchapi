@@ -2,7 +2,7 @@
   "name": "WatchAPI",
   "short_name": "WatchAPI",
   "description": "Lightweight API monitoring and uptime tracking platform for development teams",
-  "start_url": "/",
+  "start_url": "/app",
   "scope": "/",
   "display": "standalone",
   "background_color": "#333333",

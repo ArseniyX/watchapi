@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useAuthStore, getStoredToken } from "@/stores/auth-store";
 import { useAuth } from "@/hooks/use-auth";
+import { isTokenExpiring } from "@/lib/jwt-utils";
 
 export function AuthInitializer() {
   const { isInitialized, setIsLoading, setIsInitialized } = useAuthStore();
@@ -31,32 +32,39 @@ export function AuthInitializer() {
     initAuth();
   }, []); // Empty deps - only run once
 
-  // Periodic token refresh (every 6 days)
+  // Proactive token refresh - check every 2 minutes and refresh if expiring soon
   useEffect(() => {
     const { user } = useAuthStore.getState();
     if (!user) return;
 
-    const refreshInterval = setInterval(
-      async () => {
-        const token = getStoredToken();
-        if (token) {
-          await verifyAndRefreshToken(token);
-        }
-      },
-      6 * 24 * 60 * 60 * 1000, // 6 days
-    );
+    const checkAndRefreshToken = async () => {
+      const token = getStoredToken();
+      if (!token) return;
+
+      // Refresh if token expires in less than 3 minutes
+      if (isTokenExpiring(token, 180)) {
+        console.log("Token expiring soon, refreshing...");
+        await verifyAndRefreshToken(token);
+      }
+    };
+
+    // Check immediately
+    checkAndRefreshToken();
+
+    // Then check every 2 minutes
+    const refreshInterval = setInterval(checkAndRefreshToken, 2 * 60 * 1000);
 
     return () => clearInterval(refreshInterval);
   }, []); // Empty deps - set up once
 
-  // Handle page visibility - refresh token when page becomes visible
+  // Handle page visibility - refresh token when page becomes visible if expiring
   useEffect(() => {
     const handleVisibilityChange = async () => {
       if (document.visibilityState === "visible") {
         const { user } = useAuthStore.getState();
         if (user) {
           const token = getStoredToken();
-          if (token) {
+          if (token && isTokenExpiring(token, 180)) {
             await verifyAndRefreshToken(token);
           }
         }
