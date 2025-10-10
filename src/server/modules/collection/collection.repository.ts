@@ -35,6 +35,18 @@ export class CollectionRepository extends BaseRepository {
     });
   }
 
+  async findByIdAndOrganization(id: string, organizationId: string): Promise<Collection | null> {
+    return this.prisma.collection.findFirst({
+      where: {
+        id,
+        organizationId,
+      },
+      include: {
+        apiEndpoints: true,
+      },
+    });
+  }
+
   async findByOrganizationId(organizationId: string): Promise<Collection[]> {
     return this.prisma.collection.findMany({
       where: { organizationId },
@@ -79,9 +91,10 @@ export class CollectionRepository extends BaseRepository {
     });
   }
 
-  async search(query: string): Promise<Collection[]> {
+  async search(query: string, organizationId?: string): Promise<Collection[]> {
     return this.prisma.collection.findMany({
       where: {
+        ...(organizationId ? { organizationId } : {}),
         OR: [
           { name: { contains: query } },
           { description: { contains: query } },

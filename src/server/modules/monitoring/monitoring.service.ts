@@ -319,7 +319,7 @@ export class MonitoringService {
     const to = new Date();
     const from = new Date(to.getTime() - days * 24 * 60 * 60 * 1000);
 
-    return this.monitoringRepository.getResponseTimeHistoryByUser(
+    return this.monitoringRepository.getResponseTimeHistoryByEndpoint(
       apiEndpointId,
       from,
       to,
@@ -351,7 +351,7 @@ export class MonitoringService {
   }
 
   // Analytics methods
-  async getAnalytics(userId: string, days: number = 7) {
+  async getAnalytics(organizationId: string, days: number = 7) {
     const to = new Date();
     const from = new Date(to.getTime() - days * 24 * 60 * 60 * 1000);
 
@@ -360,8 +360,8 @@ export class MonitoringService {
     const prevFrom = new Date(prevTo.getTime() - days * 24 * 60 * 60 * 1000);
 
     const [currentStats, previousStats] = await Promise.all([
-      this.monitoringRepository.getOverallStats(userId, from, to),
-      this.monitoringRepository.getOverallStats(userId, prevFrom, prevTo),
+      this.monitoringRepository.getOverallStats(organizationId, from, to),
+      this.monitoringRepository.getOverallStats(organizationId, prevFrom, prevTo),
     ]);
 
     // Calculate changes
@@ -394,29 +394,29 @@ export class MonitoringService {
     };
   }
 
-  async getTopEndpoints(userId: string, days: number = 7, limit: number = 5) {
+  async getTopEndpoints(organizationId: string, days: number = 7, limit: number = 5) {
     const to = new Date();
     const from = new Date(to.getTime() - days * 24 * 60 * 60 * 1000);
 
-    return this.monitoringRepository.getTopEndpoints(userId, from, to, limit);
+    return this.monitoringRepository.getTopEndpoints(organizationId, from, to, limit);
   }
 
-  async getResponseTimeChart(userId: string, days: number = 7) {
+  async getResponseTimeChart(organizationId: string, days: number = 7) {
     const to = new Date();
     const from = new Date(to.getTime() - days * 24 * 60 * 60 * 1000);
 
-    return this.monitoringRepository.getResponseTimeHistoryByUser(
-      userId,
+    return this.monitoringRepository.getResponseTimeHistoryByOrganization(
+      organizationId,
       from,
       to,
     );
   }
 
-  async getUptimeChart(userId: string, days: number = 7) {
+  async getUptimeChart(organizationId: string, days: number = 7) {
     const to = new Date();
     const from = new Date(to.getTime() - days * 24 * 60 * 60 * 1000);
 
-    return this.monitoringRepository.getUptimeHistory(userId, from, to);
+    return this.monitoringRepository.getUptimeHistory(organizationId, from, to);
   }
 
   async getRecentFailures(organizationId: string, limit: number = 50) {

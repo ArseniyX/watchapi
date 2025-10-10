@@ -6,12 +6,16 @@ import { CollectionRepository } from "../collection.repository";
 const mockRepository = {
   create: vi.fn(),
   findById: vi.fn(),
+  findByIdAndOrganization: vi.fn(),
   findByOrganizationId: vi.fn(),
   findMany: vi.fn(),
   update: vi.fn(),
   delete: vi.fn(),
   count: vi.fn(),
+  search: vi.fn(),
 };
+
+const TEST_ORG_ID = "org-test-123";
 
 describe("CollectionService", () => {
   let service: CollectionService;
@@ -112,36 +116,36 @@ describe("CollectionService", () => {
         apiEndpoints: [],
       };
 
-      mockRepository.findById.mockResolvedValue(mockCollection);
+      mockRepository.findByIdAndOrganization.mockResolvedValue(mockCollection);
 
-      const result = await service.getCollection("collection-1");
+      const result = await service.getCollection("collection-1", TEST_ORG_ID);
 
-      expect(mockRepository.findById).toHaveBeenCalledWith("collection-1");
+      expect(mockRepository.findByIdAndOrganization).toHaveBeenCalledWith("collection-1", TEST_ORG_ID);
       expect(result).toEqual(mockCollection);
     });
 
     it("should return null if collection not found", async () => {
-      mockRepository.findById.mockResolvedValue(null);
+      mockRepository.findByIdAndOrganization.mockResolvedValue(null);
 
-      const result = await service.getCollection("nonexistent");
+      const result = await service.getCollection("nonexistent", TEST_ORG_ID);
 
       expect(result).toBeNull();
     });
 
     it("should throw error if id is empty", async () => {
-      await expect(service.getCollection("")).rejects.toThrow(
+      await expect(service.getCollection("", TEST_ORG_ID)).rejects.toThrow(
         "Collection ID is required",
       );
 
-      expect(mockRepository.findById).not.toHaveBeenCalled();
+      expect(mockRepository.findByIdAndOrganization).not.toHaveBeenCalled();
     });
 
     it("should throw error if id is only whitespace", async () => {
-      await expect(service.getCollection("   ")).rejects.toThrow(
+      await expect(service.getCollection("   ", TEST_ORG_ID)).rejects.toThrow(
         "Collection ID is required",
       );
 
-      expect(mockRepository.findById).not.toHaveBeenCalled();
+      expect(mockRepository.findByIdAndOrganization).not.toHaveBeenCalled();
     });
   });
 
@@ -230,12 +234,12 @@ describe("CollectionService", () => {
         ...updateData,
       };
 
-      mockRepository.findById.mockResolvedValue(mockExisting);
+      mockRepository.findByIdAndOrganization.mockResolvedValue(mockExisting);
       mockRepository.update.mockResolvedValue(mockUpdated);
 
-      const result = await service.updateCollection("collection-1", updateData);
+      const result = await service.updateCollection("collection-1", TEST_ORG_ID, updateData);
 
-      expect(mockRepository.findById).toHaveBeenCalledWith("collection-1");
+      expect(mockRepository.findByIdAndOrganization).toHaveBeenCalledWith("collection-1", TEST_ORG_ID);
       expect(mockRepository.update).toHaveBeenCalledWith("collection-1", {
         name: "New Name",
         description: "New description",
@@ -244,10 +248,10 @@ describe("CollectionService", () => {
     });
 
     it("should update only name", async () => {
-      mockRepository.findById.mockResolvedValue({ id: "collection-1" });
+      mockRepository.findByIdAndOrganization.mockResolvedValue({ id: "collection-1" });
       mockRepository.update.mockResolvedValue({ id: "collection-1" });
 
-      await service.updateCollection("collection-1", {
+      await service.updateCollection("collection-1", TEST_ORG_ID, {
         name: "Updated Name",
       });
 
@@ -257,10 +261,10 @@ describe("CollectionService", () => {
     });
 
     it("should update only description", async () => {
-      mockRepository.findById.mockResolvedValue({ id: "collection-1" });
+      mockRepository.findByIdAndOrganization.mockResolvedValue({ id: "collection-1" });
       mockRepository.update.mockResolvedValue({ id: "collection-1" });
 
-      await service.updateCollection("collection-1", {
+      await service.updateCollection("collection-1", TEST_ORG_ID, {
         description: "Updated description",
       });
 
@@ -270,10 +274,10 @@ describe("CollectionService", () => {
     });
 
     it("should trim whitespace from updated values", async () => {
-      mockRepository.findById.mockResolvedValue({ id: "collection-1" });
+      mockRepository.findByIdAndOrganization.mockResolvedValue({ id: "collection-1" });
       mockRepository.update.mockResolvedValue({ id: "collection-1" });
 
-      await service.updateCollection("collection-1", {
+      await service.updateCollection("collection-1", TEST_ORG_ID, {
         name: "  Trimmed Name  ",
         description: "  Trimmed description  ",
       });
@@ -285,10 +289,10 @@ describe("CollectionService", () => {
     });
 
     it("should set description to null if empty string provided", async () => {
-      mockRepository.findById.mockResolvedValue({ id: "collection-1" });
+      mockRepository.findByIdAndOrganization.mockResolvedValue({ id: "collection-1" });
       mockRepository.update.mockResolvedValue({ id: "collection-1" });
 
-      await service.updateCollection("collection-1", { description: "" });
+      await service.updateCollection("collection-1", TEST_ORG_ID, { description: "" });
 
       expect(mockRepository.update).toHaveBeenCalledWith("collection-1", {
         description: null,
@@ -296,10 +300,10 @@ describe("CollectionService", () => {
     });
 
     it("should throw error if collection not found", async () => {
-      mockRepository.findById.mockResolvedValue(null);
+      mockRepository.findByIdAndOrganization.mockResolvedValue(null);
 
       await expect(
-        service.updateCollection("nonexistent", { name: "New Name" }),
+        service.updateCollection("nonexistent", TEST_ORG_ID, { name: "New Name" }),
       ).rejects.toThrow("Collection");
 
       expect(mockRepository.update).not.toHaveBeenCalled();
@@ -307,31 +311,31 @@ describe("CollectionService", () => {
 
     it("should throw error if id is empty", async () => {
       await expect(
-        service.updateCollection("", { name: "New Name" }),
+        service.updateCollection("", TEST_ORG_ID, { name: "New Name" }),
       ).rejects.toThrow("Collection ID is required");
 
-      expect(mockRepository.findById).not.toHaveBeenCalled();
+      expect(mockRepository.findByIdAndOrganization).not.toHaveBeenCalled();
     });
   });
 
   describe("deleteCollection", () => {
     it("should delete existing collection", async () => {
-      mockRepository.findById.mockResolvedValue({
+      mockRepository.findByIdAndOrganization.mockResolvedValue({
         id: "collection-1",
         name: "Test Collection",
       });
       mockRepository.delete.mockResolvedValue(undefined);
 
-      await service.deleteCollection("collection-1");
+      await service.deleteCollection("collection-1", TEST_ORG_ID);
 
-      expect(mockRepository.findById).toHaveBeenCalledWith("collection-1");
+      expect(mockRepository.findByIdAndOrganization).toHaveBeenCalledWith("collection-1", TEST_ORG_ID);
       expect(mockRepository.delete).toHaveBeenCalledWith("collection-1");
     });
 
     it("should throw error if collection not found", async () => {
-      mockRepository.findById.mockResolvedValue(null);
+      mockRepository.findByIdAndOrganization.mockResolvedValue(null);
 
-      await expect(service.deleteCollection("nonexistent")).rejects.toThrow(
+      await expect(service.deleteCollection("nonexistent", TEST_ORG_ID)).rejects.toThrow(
         "Collection",
       );
 
@@ -339,19 +343,19 @@ describe("CollectionService", () => {
     });
 
     it("should throw error if id is empty", async () => {
-      await expect(service.deleteCollection("")).rejects.toThrow(
+      await expect(service.deleteCollection("", TEST_ORG_ID)).rejects.toThrow(
         "Collection ID is required",
       );
 
-      expect(mockRepository.findById).not.toHaveBeenCalled();
+      expect(mockRepository.findByIdAndOrganization).not.toHaveBeenCalled();
     });
 
     it("should throw error if id is only whitespace", async () => {
-      await expect(service.deleteCollection("   ")).rejects.toThrow(
+      await expect(service.deleteCollection("   ", TEST_ORG_ID)).rejects.toThrow(
         "Collection ID is required",
       );
 
-      expect(mockRepository.findById).not.toHaveBeenCalled();
+      expect(mockRepository.findByIdAndOrganization).not.toHaveBeenCalled();
     });
   });
 

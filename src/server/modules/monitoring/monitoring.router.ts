@@ -90,14 +90,20 @@ export const createMonitoringRouter = (monitoringService: MonitoringService) =>
     getAnalytics: protectedProcedure
       .input(getAnalyticsSchema)
       .query(async ({ input, ctx }) => {
-        return monitoringService.getAnalytics(ctx.user.id, input.days);
+        if (!ctx.organizationId) {
+          throw new Error("No organization context");
+        }
+        return monitoringService.getAnalytics(ctx.organizationId, input.days);
       }),
 
     getTopEndpoints: protectedProcedure
       .input(getTopEndpointsSchema)
       .query(async ({ input, ctx }) => {
+        if (!ctx.organizationId) {
+          throw new Error("No organization context");
+        }
         return monitoringService.getTopEndpoints(
-          ctx.user.id,
+          ctx.organizationId,
           input.days,
           input.limit,
         );
@@ -106,13 +112,19 @@ export const createMonitoringRouter = (monitoringService: MonitoringService) =>
     getResponseTimeChart: protectedProcedure
       .input(getResponseTimeChartSchema)
       .query(async ({ input, ctx }) => {
-        return monitoringService.getResponseTimeChart(ctx.user.id, input.days);
+        if (!ctx.organizationId) {
+          throw new Error("No organization context");
+        }
+        return monitoringService.getResponseTimeChart(ctx.organizationId, input.days);
       }),
 
     getUptimeChart: protectedProcedure
       .input(getUptimeChartSchema)
       .query(async ({ input, ctx }) => {
-        return monitoringService.getUptimeChart(ctx.user.id, input.days);
+        if (!ctx.organizationId) {
+          throw new Error("No organization context");
+        }
+        return monitoringService.getUptimeChart(ctx.organizationId, input.days);
       }),
 
     getRecentFailures: protectedProcedure

@@ -132,24 +132,30 @@ export class MonitoringRepository {
   }
 
   // Analytics methods
-  async getOverallStats(userId: string, from: Date, to: Date) {
+  async getOverallStats(organizationId: string, from: Date, to: Date) {
     const [totalChecks, successfulChecks, avgResponse] = await Promise.all([
       this.prisma.monitoringCheck.count({
         where: {
-          userId,
+          apiEndpoint: {
+            organizationId,
+          },
           checkedAt: { gte: from, lte: to },
         },
       }),
       this.prisma.monitoringCheck.count({
         where: {
-          userId,
+          apiEndpoint: {
+            organizationId,
+          },
           status: CheckStatus.SUCCESS,
           checkedAt: { gte: from, lte: to },
         },
       }),
       this.prisma.monitoringCheck.aggregate({
         where: {
-          userId,
+          apiEndpoint: {
+            organizationId,
+          },
           status: CheckStatus.SUCCESS,
           responseTime: { not: null },
           checkedAt: { gte: from, lte: to },
@@ -176,13 +182,13 @@ export class MonitoringRepository {
   }
 
   async getTopEndpoints(
-    userId: string,
+    organizationId: string,
     from: Date,
     to: Date,
     limit: number = 5,
   ) {
     const endpoints = await this.prisma.apiEndpoint.findMany({
-      where: { userId },
+      where: { organizationId },
       include: {
         monitoringChecks: {
           where: {
@@ -220,10 +226,12 @@ export class MonitoringRepository {
       .slice(0, limit);
   }
 
-  async getResponseTimeHistoryByUser(userId: string, from: Date, to: Date) {
+  async getResponseTimeHistoryByOrganization(organizationId: string, from: Date, to: Date) {
     return this.prisma.monitoringCheck.findMany({
       where: {
-        userId,
+        apiEndpoint: {
+          organizationId,
+        },
         status: CheckStatus.SUCCESS,
         responseTime: { not: null },
         checkedAt: { gte: from, lte: to },
@@ -237,10 +245,12 @@ export class MonitoringRepository {
     });
   }
 
-  async getUptimeHistory(userId: string, from: Date, to: Date) {
+  async getUptimeHistory(organizationId: string, from: Date, to: Date) {
     return this.prisma.monitoringCheck.findMany({
       where: {
-        userId,
+        apiEndpoint: {
+          organizationId,
+        },
         checkedAt: { gte: from, lte: to },
       },
       select: {

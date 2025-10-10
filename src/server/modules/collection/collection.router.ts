@@ -25,8 +25,11 @@ export const createCollectionRouter = (collectionService: CollectionService) =>
 
     getCollection: protectedProcedure
       .input(getCollectionSchema)
-      .query(async ({ input }) => {
-        return collectionService.getCollection(input.id);
+      .query(async ({ input, ctx }) => {
+        if (!ctx.organizationId) {
+          throw new Error("No organization context");
+        }
+        return collectionService.getCollection(input.id, ctx.organizationId);
       }),
 
     getMyCollections: protectedProcedure.query(async ({ ctx }) => {
@@ -38,26 +41,39 @@ export const createCollectionRouter = (collectionService: CollectionService) =>
 
     updateCollection: protectedProcedure
       .input(getCollectionSchema.merge(updateCollectionSchema))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.organizationId) {
+          throw new Error("No organization context");
+        }
         const { id, ...updateData } = input;
-        return collectionService.updateCollection(id, updateData);
+        return collectionService.updateCollection(id, ctx.organizationId, updateData);
       }),
 
     deleteCollection: protectedProcedure
       .input(deleteCollectionSchema)
-      .mutation(async ({ input }) => {
-        return collectionService.deleteCollection(input.id);
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.organizationId) {
+          throw new Error("No organization context");
+        }
+        return collectionService.deleteCollection(input.id, ctx.organizationId);
       }),
 
-    getCollectionStats: protectedProcedure.query(async () => {
-      return collectionService.getCollectionStats();
+    getCollectionStats: protectedProcedure.query(async ({ ctx }) => {
+      if (!ctx.organizationId) {
+        throw new Error("No organization context");
+      }
+      return collectionService.getCollectionStats(ctx.organizationId);
     }),
 
     duplicateCollection: protectedProcedure
       .input(duplicateCollectionSchema)
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.organizationId) {
+          throw new Error("No organization context");
+        }
         const originalCollection = await collectionService.getCollection(
           input.id,
+          ctx.organizationId,
         );
         if (!originalCollection) {
           throw new Error("Collection not found");
@@ -72,7 +88,10 @@ export const createCollectionRouter = (collectionService: CollectionService) =>
 
     searchCollections: protectedProcedure
       .input(searchCollectionsSchema)
-      .query(async ({ input }) => {
-        return collectionService.searchCollections(input.query);
+      .query(async ({ input, ctx }) => {
+        if (!ctx.organizationId) {
+          throw new Error("No organization context");
+        }
+        return collectionService.searchCollections(input.query, ctx.organizationId);
       }),
   });

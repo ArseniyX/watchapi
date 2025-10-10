@@ -28,12 +28,12 @@ export class CollectionService {
     });
   }
 
-  async getCollection(id: string): Promise<Collection | null> {
+  async getCollection(id: string, organizationId: string): Promise<Collection | null> {
     if (!id || id.trim() === "") {
       throw new BadRequestError("Collection ID is required");
     }
 
-    return this.collectionRepository.findById(id);
+    return this.collectionRepository.findByIdAndOrganization(id, organizationId);
   }
 
   async getCollections(
@@ -57,14 +57,15 @@ export class CollectionService {
 
   async updateCollection(
     id: string,
+    organizationId: string,
     input: UpdateCollectionInput,
   ): Promise<Collection> {
     if (!id || id.trim() === "") {
       throw new BadRequestError("Collection ID is required");
     }
 
-    // Verify collection exists
-    const existing = await this.collectionRepository.findById(id);
+    // Verify collection exists and belongs to organization
+    const existing = await this.collectionRepository.findByIdAndOrganization(id, organizationId);
     if (!existing) {
       throw new NotFoundError("Collection", id);
     }
@@ -81,13 +82,13 @@ export class CollectionService {
     return this.collectionRepository.update(id, updateData);
   }
 
-  async deleteCollection(id: string): Promise<void> {
+  async deleteCollection(id: string, organizationId: string): Promise<void> {
     if (!id || id.trim() === "") {
       throw new BadRequestError("Collection ID is required");
     }
 
-    // Verify collection exists
-    const existing = await this.collectionRepository.findById(id);
+    // Verify collection exists and belongs to organization
+    const existing = await this.collectionRepository.findByIdAndOrganization(id, organizationId);
     if (!existing) {
       throw new NotFoundError("Collection", id);
     }
@@ -113,12 +114,12 @@ export class CollectionService {
     };
   }
 
-  async searchCollections(query: string): Promise<CollectionWithStats[]> {
+  async searchCollections(query: string, organizationId: string): Promise<CollectionWithStats[]> {
     if (!query || query.trim() === "") {
       return [];
     }
 
-    const collections = await this.collectionRepository.search(query.trim());
+    const collections = await this.collectionRepository.search(query.trim(), organizationId);
 
     return collections.map((collection) => {
       const collectionWithEndpoints = collection as Collection & {
