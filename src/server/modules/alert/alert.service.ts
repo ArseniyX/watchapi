@@ -180,6 +180,10 @@ export class AlertService {
     );
 
     if (alerts.length === 0) {
+      logInfo("No active alerts found for endpoint", {
+        endpointId: context.apiEndpointId,
+        checkStatus: context.status,
+      });
       return;
     }
 
@@ -187,11 +191,22 @@ export class AlertService {
       endpointId: context.apiEndpointId,
       alertCount: alerts.length,
       checkStatus: context.status,
+      responseTime: context.responseTime,
+      statusCode: context.statusCode,
     });
 
     for (const alert of alerts) {
       try {
         const shouldTrigger = await this.shouldTriggerAlert(alert, context);
+
+        logInfo(`Alert evaluation result`, {
+          alertId: alert.id,
+          alertName: alert.name,
+          condition: alert.condition,
+          threshold: alert.threshold,
+          shouldTrigger,
+          currentValue: this.getTriggerValue(alert.condition, context),
+        });
 
         if (shouldTrigger) {
           await this.triggerAlert(alert, context);
@@ -278,10 +293,14 @@ export class AlertService {
 
     // Check if we should throttle (skip alert if sent within throttle period)
     if (lastAlert && now - lastAlert < this.ALERT_THROTTLE_MS) {
-      logger.debug("Alert throttled", {
+      const minutesSinceLastAlert = Math.floor((now - lastAlert) / 60000);
+      const throttleMinutes = this.ALERT_THROTTLE_MS / 60000;
+      logInfo("Alert throttled - skipping notification", {
         alertId: alert.id,
         alertName: alert.name,
-        lastAlertMinutesAgo: Math.floor((now - lastAlert) / 60000),
+        lastAlertMinutesAgo: minutesSinceLastAlert,
+        throttlePeriodMinutes: throttleMinutes,
+        nextAllowedInMinutes: throttleMinutes - minutesSinceLastAlert,
       });
       return;
     }
@@ -294,6 +313,17 @@ export class AlertService {
     if (!endpoint) {
       throw new NotFoundError("API endpoint", context.apiEndpointId);
     }
+
+    logInfo("Triggering alert - preparing to send notifications", {
+      alertId: alert.id,
+      alertName: alert.name,
+      endpointId: context.apiEndpointId,
+      endpointName: endpoint.name,
+      organizationId: endpoint.organizationId,
+      condition: alert.condition,
+      threshold: alert.threshold,
+      triggerValue: this.getTriggerValue(alert.condition, context),
+    });
 
     // Record the alert trigger
     await this.alertRepository.createTrigger({
@@ -321,7 +351,7 @@ export class AlertService {
     };
 
     // Send notifications via organization's configured channels
-    await this.notificationChannelService.sendNotifications(
+    const notificationResult = await this.notificationChannelService.sendNotifications(
       endpoint.organizationId,
       notificationData,
     );
@@ -334,6 +364,9 @@ export class AlertService {
       organizationId: endpoint.organizationId,
       condition: alert.condition,
       triggerValue: this.getTriggerValue(alert.condition, context),
+      notificationsSent: notificationResult.success,
+      notificationsFailed: notificationResult.failed,
+      totalChannels: notificationResult.total,
     });
 
     // Mark alert as sent for throttling

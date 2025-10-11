@@ -12,9 +12,9 @@ const logFormat = printf(
       log += `\n${stack}`;
     }
 
-    // Add metadata if present
+    // Add metadata if present (single-line JSON for log aggregators)
     if (Object.keys(metadata).length > 0) {
-      log += `\n${JSON.stringify(metadata, null, 2)}`;
+      log += ` ${JSON.stringify(metadata)}`;
     }
 
     return log;

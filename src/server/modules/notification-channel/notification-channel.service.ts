@@ -125,9 +125,23 @@ export class NotificationChannelService {
         organizationId,
       );
 
+    if (channels.length === 0) {
+      logInfo("No active notification channels configured for organization", {
+        organizationId,
+        endpoint: alertData.endpointName,
+        message: "Alerts are triggered but no channels are set up to receive notifications",
+      });
+      return {
+        total: 0,
+        success: 0,
+        failed: 0,
+      };
+    }
+
     logInfo("Sending notifications", {
       organizationId,
       channelCount: channels.length,
+      channels: channels.map(c => ({ id: c.id, name: c.name, type: c.type })),
       endpoint: alertData.endpointName,
     });
 
@@ -140,10 +154,40 @@ export class NotificationChannelService {
     ).length;
     const failureCount = results.length - successCount;
 
-    logInfo("Notifications sent", {
+    // Log detailed results
+    results.forEach((result, index) => {
+      const channel = channels[index];
+      if (result.status === "fulfilled") {
+        if (result.value) {
+          logInfo("Notification sent successfully", {
+            channelId: channel.id,
+            channelName: channel.name,
+            channelType: channel.type,
+            organizationId,
+          });
+        } else {
+          logError("Notification failed to send", new Error("Send returned false"), {
+            channelId: channel.id,
+            channelName: channel.name,
+            channelType: channel.type,
+            organizationId,
+          });
+        }
+      } else {
+        logError("Notification promise rejected", result.reason, {
+          channelId: channel.id,
+          channelName: channel.name,
+          channelType: channel.type,
+          organizationId,
+        });
+      }
+    });
+
+    logInfo("Notifications sent - summary", {
       organizationId,
       success: successCount,
       failed: failureCount,
+      total: channels.length,
     });
 
     return {
@@ -171,26 +215,38 @@ export class NotificationChannelService {
     },
   ): Promise<boolean> {
     try {
+      logInfo("Attempting to send notification", {
+        channelId: channel.id,
+        channelName: channel.name,
+        channelType: channel.type,
+        endpoint: alertData.endpointName,
+      });
+
       const config = JSON.parse(channel.config);
 
+      let result = false;
       switch (channel.type) {
         case NotificationType.EMAIL:
-          return this.sendEmailNotification(config as EmailConfig, alertData);
+          result = await this.sendEmailNotification(config as EmailConfig, alertData);
+          break;
 
         case NotificationType.WEBHOOK:
-          return this.sendWebhookNotification(
+          result = await this.sendWebhookNotification(
             config as WebhookConfig,
             alertData,
           );
+          break;
 
         case NotificationType.SLACK:
-          return this.sendSlackNotification(config as SlackConfig, alertData);
+          result = await this.sendSlackNotification(config as SlackConfig, alertData);
+          break;
 
         case NotificationType.DISCORD:
-          return this.sendDiscordNotification(
+          result = await this.sendDiscordNotification(
             config as DiscordConfig,
             alertData,
           );
+          break;
 
         default:
           logger.warn("Unknown notification type", {
@@ -199,12 +255,22 @@ export class NotificationChannelService {
           });
           return false;
       }
+
+      logInfo(`Notification ${result ? 'succeeded' : 'failed'}`, {
+        channelId: channel.id,
+        channelName: channel.name,
+        channelType: channel.type,
+        result,
+      });
+
+      return result;
     } catch (error) {
       logError(
         `Failed to send notification via channel ${channel.name}`,
         error,
         {
           channelId: channel.id,
+          channelName: channel.name,
           type: channel.type,
         },
       );
@@ -216,6 +282,11 @@ export class NotificationChannelService {
     config: EmailConfig,
     alertData: any,
   ): Promise<boolean> {
+    logInfo("Sending email notifications", {
+      recipientCount: config.emails.length,
+      recipients: config.emails,
+    });
+
     const results = await Promise.allSettled(
       config.emails.map((email) =>
         emailService.sendAlertEmail({
@@ -225,6 +296,16 @@ export class NotificationChannelService {
       ),
     );
 
+    const successCount = results.filter(
+      (r) => r.status === "fulfilled" && r.value,
+    ).length;
+
+    logInfo("Email notifications completed", {
+      total: config.emails.length,
+      success: successCount,
+      failed: config.emails.length - successCount,
+    });
+
     return results.some((r) => r.status === "fulfilled" && r.value);
   }
 
@@ -233,6 +314,10 @@ export class NotificationChannelService {
     alertData: any,
   ): Promise<boolean> {
     try {
+      logInfo("Sending webhook notification", {
+        webhookUrl: config.url,
+      });
+
       const response = await fetch(config.url, {
         method: "POST",
         headers: {
@@ -253,6 +338,12 @@ export class NotificationChannelService {
         }),
       });
 
+      logInfo("Webhook notification response", {
+        webhookUrl: config.url,
+        statusCode: response.status,
+        ok: response.ok,
+      });
+
       return response.ok;
     } catch (error) {
       logError("Webhook notification failed", error, {
@@ -267,6 +358,10 @@ export class NotificationChannelService {
     alertData: any,
   ): Promise<boolean> {
     try {
+      logInfo("Sending Slack notification", {
+        webhookUrl: config.webhookUrl.substring(0, 50) + "...",
+      });
+
       const statusEmoji =
         alertData.status === "TIMEOUT"
           ? ":clock:"
@@ -334,6 +429,11 @@ export class NotificationChannelService {
         }),
       });
 
+      logInfo("Slack notification response", {
+        statusCode: response.status,
+        ok: response.ok,
+      });
+
       return response.ok;
     } catch (error) {
       logError("Slack notification failed", error);
@@ -346,6 +446,10 @@ export class NotificationChannelService {
     alertData: any,
   ): Promise<boolean> {
     try {
+      logInfo("Sending Discord notification", {
+        webhookUrl: config.webhookUrl.substring(0, 50) + "...",
+      });
+
       const color =
         alertData.status === "TIMEOUT"
           ? 0xffa500
@@ -403,6 +507,11 @@ export class NotificationChannelService {
             },
           ],
         }),
+      });
+
+      logInfo("Discord notification response", {
+        statusCode: response.status,
+        ok: response.ok,
       });
 
       return response.ok;

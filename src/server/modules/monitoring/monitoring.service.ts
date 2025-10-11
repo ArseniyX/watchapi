@@ -85,26 +85,14 @@ export class MonitoringService {
 
   async checkApiEndpoint(
     apiEndpointId: string,
-    organizationId?: string,
+    organizationId: string,
   ): Promise<MonitoringCheckResult> {
-    let endpoint: ApiEndpoint | null;
-
-    if (organizationId) {
-      // User-initiated check - verify organization access
-      endpoint = await this.apiEndpointRepository.findById(
-        apiEndpointId,
-        organizationId,
-      );
-      if (!endpoint) {
-        throw new ForbiddenError("API endpoint not found or access denied");
-      }
-    } else {
-      // System-initiated check (scheduler) - no org filtering
-      endpoint =
-        await this.apiEndpointRepository.findByIdInternal(apiEndpointId);
-      if (!endpoint) {
-        throw new NotFoundError("API endpoint", apiEndpointId);
-      }
+    const endpoint = await this.apiEndpointRepository.findById(
+      apiEndpointId,
+      organizationId,
+    );
+    if (!endpoint) {
+      throw new ForbiddenError("API endpoint not found or access denied");
     }
 
     logInfo("Starting API endpoint check", {
@@ -335,7 +323,7 @@ export class MonitoringService {
 
     for (const endpoint of activeEndpoints) {
       try {
-        await this.checkApiEndpoint(endpoint.id);
+        await this.checkApiEndpoint(endpoint.id, endpoint.organizationId);
       } catch (error) {
         logError(`Failed to check endpoint ${endpoint.id}`, error, {
           endpointId: endpoint.id,
@@ -361,7 +349,11 @@ export class MonitoringService {
 
     const [currentStats, previousStats] = await Promise.all([
       this.monitoringRepository.getOverallStats(organizationId, from, to),
-      this.monitoringRepository.getOverallStats(organizationId, prevFrom, prevTo),
+      this.monitoringRepository.getOverallStats(
+        organizationId,
+        prevFrom,
+        prevTo,
+      ),
     ]);
 
     // Calculate changes
@@ -394,11 +386,20 @@ export class MonitoringService {
     };
   }
 
-  async getTopEndpoints(organizationId: string, days: number = 7, limit: number = 5) {
+  async getTopEndpoints(
+    organizationId: string,
+    days: number = 7,
+    limit: number = 5,
+  ) {
     const to = new Date();
     const from = new Date(to.getTime() - days * 24 * 60 * 60 * 1000);
 
-    return this.monitoringRepository.getTopEndpoints(organizationId, from, to, limit);
+    return this.monitoringRepository.getTopEndpoints(
+      organizationId,
+      from,
+      to,
+      limit,
+    );
   }
 
   async getResponseTimeChart(organizationId: string, days: number = 7) {

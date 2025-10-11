@@ -1,0 +1,25 @@
+kind: "DatadogAgent"
+apiVersion: "datadoghq.com/v2alpha1"
+metadata:
+  name: "datadog"
+spec:
+  global:
+    site: "us5.datadoghq.com"
+    credentials:
+      apiSecret:
+        secretName: "datadog-secret"
+        keyName: "api-key"
+  features:
+    # Enable log collection
+    logCollection:
+      enabled: true
+      containerCollectAll: true
+    # Enable live processes
+    liveProcessCollection:
+      enabled: true
+  override:
+    nodeAgent:
+      env:
+        # Exclude auto-discovered integrations
+        - name: DD_IGNORE_AUTOCONF
+          value: "coredns cilium cms agent hubble-ui"
