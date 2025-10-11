@@ -43,7 +43,6 @@ jobs:
 
       - name: Run unit tests with coverage
         run: pnpm test:coverage
-        continue-on-error: true
 
   e2e-test:
     runs-on: ubuntu-latest

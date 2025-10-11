@@ -150,12 +150,19 @@ describe("AuthService", () => {
         role: "USER",
       };
 
-      (jwt.verify as any).mockReturnValue({ userId: "user-1" });
+      (jwt.verify as any).mockReturnValue({
+        userId: "user-1",
+        type: "access",
+      });
       mockUserService.getUserById = vi.fn().mockResolvedValue(mockUser);
 
       const result = await service.verifyToken("valid-token");
 
-      expect(jwt.verify).toHaveBeenCalledWith("valid-token", jwtSecret);
+      expect(jwt.verify).toHaveBeenCalledWith("valid-token", jwtSecret, {
+        algorithms: ["HS256"],
+        issuer: "watchapi",
+        audience: "watchapi-app",
+      });
       expect(result).toEqual(mockUser);
     });
 
@@ -414,24 +421,42 @@ describe("AuthService", () => {
         .mockReturnValueOnce("access-token")
         .mockReturnValueOnce("refresh-token");
 
-      const result = await service.register({
+      await service.register({
         email: "test@example.com",
         password: "password",
       });
 
       expect(jwt.sign).toHaveBeenCalledWith(
-        {
+        expect.objectContaining({
           userId: expect.any(String),
           email: expect.any(String),
           role: expect.any(String),
-        },
+          type: "access",
+          iss: "watchapi",
+          aud: "watchapi-app",
+          iat: expect.any(Number),
+          jti: expect.any(String),
+        }),
         jwtSecret,
-        { expiresIn: "7d" },
+        expect.objectContaining({
+          expiresIn: "7d",
+          algorithm: "HS256",
+        }),
       );
       expect(jwt.sign).toHaveBeenCalledWith(
-        { userId: expect.any(String), type: "refresh" },
+        expect.objectContaining({
+          userId: expect.any(String),
+          type: "refresh",
+          iss: "watchapi",
+          aud: "watchapi-app",
+          iat: expect.any(Number),
+          jti: expect.any(String),
+        }),
         jwtSecret,
-        { expiresIn: "30d" },
+        expect.objectContaining({
+          expiresIn: "30d",
+          algorithm: "HS256",
+        }),
       );
     });
   });
