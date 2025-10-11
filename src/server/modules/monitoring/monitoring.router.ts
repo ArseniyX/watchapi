@@ -129,9 +129,16 @@ export const createMonitoringRouter = (monitoringService: MonitoringService) =>
 
     getRecentFailures: protectedProcedure
       .input(getRecentFailuresSchema)
-      .query(async ({ input }) => {
+      .query(async ({ input, ctx }) => {
+        if (!ctx.organizationId) {
+          throw new Error("No organization context");
+        }
+        // Verify the requested org matches user's context for security
+        if (input.organizationId !== ctx.organizationId) {
+          throw new Error("Access denied to requested organization");
+        }
         return monitoringService.getRecentFailures(
-          input.organizationId,
+          ctx.organizationId,
           input.limit,
         );
       }),

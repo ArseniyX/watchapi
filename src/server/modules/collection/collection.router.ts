@@ -19,7 +19,7 @@ export const createCollectionRouter = (collectionService: CollectionService) =>
         }
         return collectionService.createCollection({
           ...input,
-          organizationId: input.organizationId || ctx.organizationId,
+          organizationId: ctx.organizationId,
         });
       }),
 
@@ -82,7 +82,7 @@ export const createCollectionRouter = (collectionService: CollectionService) =>
         return collectionService.createCollection({
           name: `${originalCollection.name} (Copy)`,
           description: originalCollection.description || undefined,
-          organizationId: originalCollection.organizationId || undefined,
+          organizationId: ctx.organizationId,
         });
       }),
 

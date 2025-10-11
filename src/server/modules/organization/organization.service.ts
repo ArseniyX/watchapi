@@ -44,7 +44,12 @@ export class OrganizationService {
     return organization;
   }
 
-  async getOrganization(id: string) {
+  async getOrganization(userId: string, id: string) {
+    // User must be a member of the organization to view it
+    const member = await this.organizationRepository.findMember(userId, id);
+    if (!member) {
+      throw new Error("You do not have access to this organization");
+    }
     return this.organizationRepository.findOrganizationById(id);
   }
 
@@ -80,7 +85,15 @@ export class OrganizationService {
     return this.organizationRepository.deleteOrganization(id);
   }
 
-  async getOrganizationMembers(organizationId: string) {
+  async getOrganizationMembers(userId: string, organizationId: string) {
+    // User must be a member of the organization to view members
+    const member = await this.organizationRepository.findMember(
+      userId,
+      organizationId,
+    );
+    if (!member) {
+      throw new Error("You do not have access to this organization");
+    }
     return this.organizationRepository.findOrganizationMembers(organizationId);
   }
 
@@ -271,7 +284,18 @@ export class OrganizationService {
     return this.organizationRepository.removeMember(userId, organizationId);
   }
 
-  async getOrganizationInvitations(organizationId: string) {
+  async getOrganizationInvitations(userId: string, organizationId: string) {
+    // Only admins and owners can view invitations
+    const hasPermission = await this.checkMemberPermission(
+      userId,
+      organizationId,
+      OrganizationRole.ADMIN,
+    );
+    if (!hasPermission) {
+      throw new Error(
+        "You do not have permission to view invitations for this organization",
+      );
+    }
     return this.organizationRepository.findOrganizationInvitations(
       organizationId,
     );

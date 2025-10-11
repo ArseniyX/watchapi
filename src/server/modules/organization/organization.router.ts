@@ -21,8 +21,8 @@ export const createOrganizationRouter = (
 
     getOrganization: protectedProcedure
       .input(z.object({ id: z.string() }))
-      .query(async ({ input }) => {
-        return organizationService.getOrganization(input.id);
+      .query(async ({ input, ctx }) => {
+        return organizationService.getOrganization(ctx.user.id, input.id);
       }),
 
     getMyOrganizations: protectedProcedure.query(async ({ ctx }) => {
@@ -50,8 +50,11 @@ export const createOrganizationRouter = (
 
     getMembers: protectedProcedure
       .input(z.object({ organizationId: z.string() }))
-      .query(async ({ input }) => {
-        return organizationService.getOrganizationMembers(input.organizationId);
+      .query(async ({ input, ctx }) => {
+        return organizationService.getOrganizationMembers(
+          ctx.user.id,
+          input.organizationId,
+        );
       }),
 
     inviteMember: protectedProcedure
@@ -98,8 +101,9 @@ export const createOrganizationRouter = (
 
     getInvitations: protectedProcedure
       .input(z.object({ organizationId: z.string() }))
-      .query(async ({ input }) => {
+      .query(async ({ input, ctx }) => {
         return organizationService.getOrganizationInvitations(
+          ctx.user.id,
           input.organizationId,
         );
       }),

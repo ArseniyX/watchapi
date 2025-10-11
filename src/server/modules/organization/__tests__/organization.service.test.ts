@@ -561,12 +561,27 @@ describe("OrganizationService", () => {
   describe("getOrganization", () => {
     it("should return organization by id", async () => {
       const mockOrg = { id: "org-1", name: "Test Org" };
+      const mockMember = {
+        userId: "user-1",
+        organizationId: "org-1",
+        role: OrganizationRole.MEMBER,
+      };
+      mockRepository.findMember.mockResolvedValue(mockMember);
       mockRepository.findOrganizationById.mockResolvedValue(mockOrg);
 
-      const result = await service.getOrganization("org-1");
+      const result = await service.getOrganization("user-1", "org-1");
 
+      expect(mockRepository.findMember).toHaveBeenCalledWith("user-1", "org-1");
       expect(mockRepository.findOrganizationById).toHaveBeenCalledWith("org-1");
       expect(result).toEqual(mockOrg);
+    });
+
+    it("should throw error if user is not a member", async () => {
+      mockRepository.findMember.mockResolvedValue(null);
+
+      await expect(service.getOrganization("user-1", "org-1")).rejects.toThrow(
+        "You do not have access to this organization",
+      );
     });
   });
 
@@ -589,37 +604,74 @@ describe("OrganizationService", () => {
 
   describe("getOrganizationMembers", () => {
     it("should return all members of organization", async () => {
+      const mockMember = {
+        userId: "user-1",
+        organizationId: "org-1",
+        role: OrganizationRole.MEMBER,
+      };
       const mockMembers = [
         { id: "member-1", userId: "user-1" },
         { id: "member-2", userId: "user-2" },
       ];
+      mockRepository.findMember.mockResolvedValue(mockMember);
       mockRepository.findOrganizationMembers.mockResolvedValue(mockMembers);
 
-      const result = await service.getOrganizationMembers("org-1");
+      const result = await service.getOrganizationMembers("user-1", "org-1");
 
+      expect(mockRepository.findMember).toHaveBeenCalledWith("user-1", "org-1");
       expect(mockRepository.findOrganizationMembers).toHaveBeenCalledWith(
         "org-1",
       );
       expect(result).toEqual(mockMembers);
     });
+
+    it("should throw error if user is not a member", async () => {
+      mockRepository.findMember.mockResolvedValue(null);
+
+      await expect(
+        service.getOrganizationMembers("user-1", "org-1"),
+      ).rejects.toThrow("You do not have access to this organization");
+    });
   });
 
   describe("getOrganizationInvitations", () => {
     it("should return all invitations for organization", async () => {
+      const mockMember = {
+        userId: "user-1",
+        organizationId: "org-1",
+        role: OrganizationRole.ADMIN,
+      };
       const mockInvitations = [
         { id: "invite-1", email: "test1@example.com" },
         { id: "invite-2", email: "test2@example.com" },
       ];
+      mockRepository.findMember.mockResolvedValue(mockMember);
       mockRepository.findOrganizationInvitations.mockResolvedValue(
         mockInvitations,
       );
 
-      const result = await service.getOrganizationInvitations("org-1");
+      const result = await service.getOrganizationInvitations("user-1", "org-1");
 
+      expect(mockRepository.findMember).toHaveBeenCalledWith("user-1", "org-1");
       expect(mockRepository.findOrganizationInvitations).toHaveBeenCalledWith(
         "org-1",
       );
       expect(result).toEqual(mockInvitations);
+    });
+
+    it("should throw error if user is not an admin", async () => {
+      const mockMember = {
+        userId: "user-1",
+        organizationId: "org-1",
+        role: OrganizationRole.MEMBER,
+      };
+      mockRepository.findMember.mockResolvedValue(mockMember);
+
+      await expect(
+        service.getOrganizationInvitations("user-1", "org-1"),
+      ).rejects.toThrow(
+        "You do not have permission to view invitations for this organization",
+      );
     });
   });
 });

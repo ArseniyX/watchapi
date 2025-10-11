@@ -4,7 +4,6 @@ import { z } from "zod";
 export const createCollectionSchema = z.object({
   name: z.string().min(1, "Collection name is required"),
   description: z.string().optional(),
-  organizationId: z.string().optional(),
 });
 
 // Collection update schemas
