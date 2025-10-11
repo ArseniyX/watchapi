@@ -109,6 +109,7 @@ describe("MonitoringService", () => {
       const mockEndpoint = {
         id: "endpoint-1",
         userId: "user-1",
+        organizationId: "org-1",
         url: "https://api.example.com",
         method: HttpMethod.GET,
         headers: null,
@@ -123,14 +124,12 @@ describe("MonitoringService", () => {
         headers: new Map(),
       };
 
-      mockApiEndpointRepository.findByIdInternal.mockResolvedValue(
-        mockEndpoint,
-      );
+      mockApiEndpointRepository.findById.mockResolvedValue(mockEndpoint);
       (global.fetch as any).mockResolvedValue(mockResponse);
       mockMonitoringRepository.createMonitoringCheck.mockResolvedValue({});
       mockMonitoringRepository.findUserById.mockResolvedValue({ email: null });
 
-      const result = await service.checkApiEndpoint("endpoint-1");
+      const result = await service.checkApiEndpoint("endpoint-1", "org-1");
 
       expect(result.status).toBe(CheckStatus.SUCCESS);
       expect(result.statusCode).toBe(200);
@@ -151,6 +150,7 @@ describe("MonitoringService", () => {
       const mockEndpoint = {
         id: "endpoint-1",
         userId: "user-1",
+        organizationId: "org-1",
         url: "https://api.example.com",
         method: HttpMethod.GET,
         headers: null,
@@ -165,9 +165,7 @@ describe("MonitoringService", () => {
         headers: new Map(),
       };
 
-      mockApiEndpointRepository.findByIdInternal.mockResolvedValue(
-        mockEndpoint,
-      );
+      mockApiEndpointRepository.findById.mockResolvedValue(mockEndpoint);
       (global.fetch as any).mockResolvedValue(mockResponse);
       mockMonitoringRepository.createMonitoringCheck.mockResolvedValue({});
       mockMonitoringRepository.findUserById.mockResolvedValue({
@@ -178,7 +176,7 @@ describe("MonitoringService", () => {
       // Add delay to ensure non-zero response time
       await new Promise((resolve) => setTimeout(resolve, 10));
 
-      const result = await service.checkApiEndpoint("endpoint-1");
+      const result = await service.checkApiEndpoint("endpoint-1", "org-1");
 
       expect(result.status).toBe(CheckStatus.FAILURE);
       expect(result.statusCode).toBe(404);
@@ -189,6 +187,7 @@ describe("MonitoringService", () => {
       const mockEndpoint = {
         id: "endpoint-1",
         userId: "user-1",
+        organizationId: "org-1",
         url: "https://api.example.com",
         method: HttpMethod.GET,
         headers: null,
@@ -197,9 +196,7 @@ describe("MonitoringService", () => {
         timeout: 100,
       };
 
-      mockApiEndpointRepository.findByIdInternal.mockResolvedValue(
-        mockEndpoint,
-      );
+      mockApiEndpointRepository.findById.mockResolvedValue(mockEndpoint);
       const error = new Error("Timeout");
       error.name = "AbortError";
       (global.fetch as any).mockRejectedValue(error);
@@ -209,7 +206,7 @@ describe("MonitoringService", () => {
         email: "user@example.com",
       });
 
-      const result = await service.checkApiEndpoint("endpoint-1");
+      const result = await service.checkApiEndpoint("endpoint-1", "org-1");
 
       expect(result.status).toBe(CheckStatus.TIMEOUT);
       expect(result.responseTime).toBe(100);
@@ -219,6 +216,7 @@ describe("MonitoringService", () => {
       const mockEndpoint = {
         id: "endpoint-1",
         userId: "user-1",
+        organizationId: "org-1",
         url: "https://api.example.com",
         method: HttpMethod.GET,
         headers: null,
@@ -227,9 +225,7 @@ describe("MonitoringService", () => {
         timeout: 5000,
       };
 
-      mockApiEndpointRepository.findByIdInternal.mockResolvedValue(
-        mockEndpoint,
-      );
+      mockApiEndpointRepository.findById.mockResolvedValue(mockEndpoint);
       (global.fetch as any).mockRejectedValue(new Error("Network failure"));
       mockMonitoringRepository.createMonitoringCheck.mockResolvedValue({});
       mockMonitoringRepository.findUserById.mockResolvedValue({
@@ -237,18 +233,18 @@ describe("MonitoringService", () => {
         email: "user@example.com",
       });
 
-      const result = await service.checkApiEndpoint("endpoint-1");
+      const result = await service.checkApiEndpoint("endpoint-1", "org-1");
 
       expect(result.status).toBe(CheckStatus.ERROR);
       expect(result.errorMessage).toBe("Network failure");
     });
 
     it("should throw error if endpoint not found", async () => {
-      mockApiEndpointRepository.findByIdInternal.mockResolvedValue(null);
+      mockApiEndpointRepository.findById.mockResolvedValue(null);
 
-      await expect(service.checkApiEndpoint("nonexistent")).rejects.toThrow(
-        "API endpoint",
-      );
+      await expect(
+        service.checkApiEndpoint("nonexistent", "org-1"),
+      ).rejects.toThrow("API endpoint");
     });
   });
 
@@ -393,48 +389,27 @@ describe("MonitoringService", () => {
   describe("runActiveChecks", () => {
     it("should check all active endpoints", async () => {
       const mockEndpoints = [
-        { id: "endpoint-1", name: "API 1" },
-        { id: "endpoint-2", name: "API 2" },
+        { id: "endpoint-1", name: "API 1", organizationId: "org-1" },
+        { id: "endpoint-2", name: "API 2", organizationId: "org-1" },
       ];
 
       mockApiEndpointRepository.findActive.mockResolvedValue(mockEndpoints);
-      mockApiEndpointRepository.findByIdInternal.mockResolvedValue({
-        id: "endpoint-1",
-        userId: "user-1",
-        url: "https://api.example.com",
-        method: HttpMethod.GET,
-        headers: null,
-        body: null,
-        expectedStatus: 200,
-        timeout: 5000,
-      });
-      mockMonitoringRepository.findUserById.mockResolvedValue({ email: null });
-      (global.fetch as any).mockResolvedValue({
-        status: 200,
-        text: vi.fn().mockResolvedValue("OK"),
-      });
-      mockMonitoringRepository.createMonitoringCheck.mockResolvedValue({});
-
-      await service.runActiveChecks();
-
-      expect(mockApiEndpointRepository.findActive).toHaveBeenCalled();
-      expect(mockApiEndpointRepository.findByIdInternal).toHaveBeenCalledTimes(
-        2,
-      );
-    });
-
-    it("should continue checking other endpoints if one fails", async () => {
-      const mockEndpoints = [
-        { id: "endpoint-1", name: "API 1" },
-        { id: "endpoint-2", name: "API 2" },
-      ];
-
-      mockApiEndpointRepository.findActive.mockResolvedValue(mockEndpoints);
-      mockApiEndpointRepository.findByIdInternal
-        .mockRejectedValueOnce(new Error("Endpoint 1 error"))
+      mockApiEndpointRepository.findById
+        .mockResolvedValueOnce({
+          id: "endpoint-1",
+          userId: "user-1",
+          organizationId: "org-1",
+          url: "https://api.example.com",
+          method: HttpMethod.GET,
+          headers: null,
+          body: null,
+          expectedStatus: 200,
+          timeout: 5000,
+        })
         .mockResolvedValueOnce({
           id: "endpoint-2",
           userId: "user-1",
+          organizationId: "org-1",
           url: "https://api.example.com",
           method: HttpMethod.GET,
           headers: null,
@@ -446,14 +421,47 @@ describe("MonitoringService", () => {
       (global.fetch as any).mockResolvedValue({
         status: 200,
         text: vi.fn().mockResolvedValue("OK"),
+        headers: new Map(),
       });
       mockMonitoringRepository.createMonitoringCheck.mockResolvedValue({});
 
       await service.runActiveChecks();
 
-      expect(mockApiEndpointRepository.findByIdInternal).toHaveBeenCalledTimes(
-        2,
-      );
+      expect(mockApiEndpointRepository.findActive).toHaveBeenCalled();
+      expect(mockApiEndpointRepository.findById).toHaveBeenCalledTimes(2);
+    });
+
+    it("should continue checking other endpoints if one fails", async () => {
+      const mockEndpoints = [
+        { id: "endpoint-1", name: "API 1", organizationId: "org-1" },
+        { id: "endpoint-2", name: "API 2", organizationId: "org-1" },
+      ];
+
+      mockApiEndpointRepository.findActive.mockResolvedValue(mockEndpoints);
+      mockApiEndpointRepository.findById
+        .mockRejectedValueOnce(new Error("Endpoint 1 error"))
+        .mockResolvedValueOnce({
+          id: "endpoint-2",
+          userId: "user-1",
+          organizationId: "org-1",
+          url: "https://api.example.com",
+          method: HttpMethod.GET,
+          headers: null,
+          body: null,
+          expectedStatus: 200,
+          timeout: 5000,
+        });
+      mockMonitoringRepository.findUserById.mockResolvedValue({ email: null });
+      (global.fetch as any).mockResolvedValue({
+        status: 200,
+        text: vi.fn().mockResolvedValue("OK"),
+        headers: new Map(),
+      });
+      mockMonitoringRepository.createMonitoringCheck.mockResolvedValue({});
+
+      await service.runActiveChecks();
+
+      expect(mockApiEndpointRepository.findById).toHaveBeenCalledTimes(2);
     });
   });
 });
