@@ -19,7 +19,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
-import Image from "next/image";
 import { Logo } from "@/components/logo";
 import { Google } from "@/components/icons/Google";
 

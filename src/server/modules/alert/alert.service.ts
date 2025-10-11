@@ -243,8 +243,15 @@ export class AlertService {
 
       case AlertCondition.ERROR_RATE_ABOVE:
         // Calculate error rate for the endpoint
+        // Fetch endpoint to get organizationId
+        const endpoint = await this.apiEndpointRepository.findByIdInternal(
+          context.apiEndpointId,
+        );
+        if (!endpoint) {
+          return false;
+        }
         const stats = await this.monitoringRepository.getOverallStats(
-          alert.userId,
+          endpoint.organizationId,
           new Date(Date.now() - 24 * 60 * 60 * 1000), // Last 24 hours
           new Date(),
         );

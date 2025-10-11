@@ -17,31 +17,66 @@ const notificationChannelService = new NotificationChannelService(
 export const notificationChannelRouter = router({
   create: protectedProcedure
     .input(createNotificationChannelSchema)
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.organizationId) {
+        throw new Error("No organization context");
+      }
+      // Verify the requested org matches user's context for security
+      if (input.organizationId !== ctx.organizationId) {
+        throw new Error("Access denied to requested organization");
+      }
       return notificationChannelService.createNotificationChannel(input);
     }),
 
   update: protectedProcedure
     .input(updateNotificationChannelSchema)
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.organizationId) {
+        throw new Error("No organization context");
+      }
+      // Verify the requested org matches user's context for security
+      if (input.organizationId !== ctx.organizationId) {
+        throw new Error("Access denied to requested organization");
+      }
       return notificationChannelService.updateNotificationChannel(input);
     }),
 
   delete: protectedProcedure
     .input(deleteNotificationChannelSchema)
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.organizationId) {
+        throw new Error("No organization context");
+      }
+      // Verify the requested org matches user's context for security
+      if (input.organizationId !== ctx.organizationId) {
+        throw new Error("Access denied to requested organization");
+      }
       return notificationChannelService.deleteNotificationChannel(input);
     }),
 
   getAll: protectedProcedure
     .input(getNotificationChannelsSchema)
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
+      if (!ctx.organizationId) {
+        throw new Error("No organization context");
+      }
+      // Verify the requested org matches user's context for security
+      if (input.organizationId !== ctx.organizationId) {
+        throw new Error("Access denied to requested organization");
+      }
       return notificationChannelService.getNotificationChannels(input);
     }),
 
   getById: protectedProcedure
     .input(getNotificationChannelSchema)
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
+      if (!ctx.organizationId) {
+        throw new Error("No organization context");
+      }
+      // Verify the requested org matches user's context for security
+      if (input.organizationId !== ctx.organizationId) {
+        throw new Error("Access denied to requested organization");
+      }
       return notificationChannelService.getNotificationChannel(input);
     }),
 });

@@ -94,11 +94,12 @@ const StatusBadge = ({ status }: { status: string }) => {
 export default function MonitoringPage() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
+  const [refreshInterval, setRefreshInterval] = useState<number>(60000); // Default 1 minute
   const { data: endpoints, isLoading } =
     trpc.apiEndpoint.getMyEndpoints.useQuery(undefined, {
       refetchOnWindowFocus: true,
-      refetchInterval: false, // Let the scheduler handle updates
-      staleTime: 60000, // Consider fresh for 1 minute
+      refetchInterval: refreshInterval,
+      staleTime: refreshInterval,
     });
 
   const filteredEndpoints = useMemo(() => {
@@ -147,9 +148,20 @@ export default function MonitoringPage() {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <Select defaultValue="1min">
+        <Select
+          defaultValue="1min"
+          onValueChange={(value) => {
+            const intervals: Record<string, number> = {
+              "30s": 30000,
+              "1min": 60000,
+              "5min": 300000,
+              "15min": 900000,
+            };
+            setRefreshInterval(intervals[value]);
+          }}
+        >
           <SelectTrigger className="w-48">
-            <SelectValue placeholder="Monitoring interval" />
+            <SelectValue placeholder="Refresh interval" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="30s">Every 30 seconds</SelectItem>
@@ -202,6 +214,7 @@ export default function MonitoringPage() {
                   <EndpointRow
                     key={`${endpoint.id}-${endpoint.name}-${endpoint.method}-${endpoint.url}`}
                     endpoint={endpoint}
+                    refreshInterval={refreshInterval}
                   />
                 ))}
               </TableBody>
@@ -213,24 +226,20 @@ export default function MonitoringPage() {
   );
 }
 
-function EndpointRow({ endpoint }: { endpoint: any }) {
-  const { data: history } = trpc.monitoring.getHistory.useQuery(
-    { endpointId: endpoint.id, take: 1 },
-    {
-      refetchInterval: false, // Disable auto-refetch to reduce DB load
-      refetchOnWindowFocus: true,
-      staleTime: 30000, // Consider data fresh for 30 seconds
-    },
-  );
+function EndpointRow({ endpoint, refreshInterval }: { endpoint: any; refreshInterval: number }) {
+  // Use the already-loaded monitoring checks from the parent query
+  // endpoint.monitoringChecks is already populated with the last 5 checks
+  const lastCheck = endpoint.monitoringChecks?.[0];
+
   const { data: uptimeStats } = trpc.monitoring.getUptimeStats.useQuery(
     { endpointId: endpoint.id, days: 30 },
     {
+      refetchInterval: refreshInterval,
       refetchOnWindowFocus: true,
-      staleTime: 60000, // Stats don't change as frequently
+      staleTime: refreshInterval,
     },
   );
 
-  const lastCheck = history?.[0];
   const uptime = uptimeStats
     ? `${uptimeStats.uptimePercentage.toFixed(1)}%`
     : "N/A";

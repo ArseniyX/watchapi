@@ -8,6 +8,7 @@ import Script from "next/script";
 import { TRPCProvider } from "../components/providers/trpc-provider";
 import { AuthInitializer } from "../components/providers/auth-initializer";
 import { ThemeProvider } from "../components/providers/theme-provider";
+import { PostHogProvider } from "../components/providers/PostHogProvider";
 import { Toaster } from "@/components/ui/toast";
 import { StructuredData } from "@/components/structured-data";
 import "./globals.css";
@@ -140,25 +141,26 @@ export default function RootLayout({
         className={`font-sans ${GeistSans.variable} ${GeistMono.variable} antialiased`}
         suppressHydrationWarning
       >
-        <TRPCProvider>
-          <ThemeProvider>
-            <AuthInitializer />
-            <Suspense fallback={null}>{children}</Suspense>
-            <Toaster />
-          </ThemeProvider>
-        </TRPCProvider>
-        <Analytics />
-        <Script
-          defer
-          src="https://cloud.umami.is/script.js"
-          data-website-id="b5d3961e-dfe3-4d62-9c70-c1a3103033db"
-          strategy="afterInteractive"
-        />
-        <Script
-          id="crisp-chat"
-          strategy="afterInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `
+        <PostHogProvider>
+          <TRPCProvider>
+            <ThemeProvider>
+              <AuthInitializer />
+              <Suspense fallback={null}>{children}</Suspense>
+              <Toaster />
+            </ThemeProvider>
+          </TRPCProvider>
+          <Analytics />
+          <Script
+            defer
+            src="https://cloud.umami.is/script.js"
+            data-website-id="b5d3961e-dfe3-4d62-9c70-c1a3103033db"
+            strategy="afterInteractive"
+          />
+          <Script
+            id="crisp-chat"
+            strategy="afterInteractive"
+            dangerouslySetInnerHTML={{
+              __html: `
                             window.$crisp=[];
                             window.CRISP_WEBSITE_ID="f0ba5698-e1de-49cb-bbf9-d4b61a7d71eb";
                             (function(){
@@ -169,8 +171,9 @@ export default function RootLayout({
                                 d.getElementsByTagName("head")[0].appendChild(s);
                             })();
                         `,
-          }}
-        />
+            }}
+          />
+        </PostHogProvider>
       </body>
     </html>
   );
