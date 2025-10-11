@@ -102,3 +102,8 @@ oauth:
 # Email configuration
 resend:
   apiKey: ""
+
+# PostHog Analytics (optional)
+posthog:
+  key: ""
+  host: ""

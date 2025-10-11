@@ -160,6 +160,8 @@ jobs:
           NEXT_PUBLIC_DOMAIN=${{ vars.NEXT_PUBLIC_DOMAIN }}
           NEXT_PUBLIC_GITHUB_CLIENT_ID=${{ vars.GH_CLIENT_ID }}
           NEXT_PUBLIC_GOOGLE_CLIENT_ID=${{ vars.GOOGLE_CLIENT_ID }}
+          NEXT_PUBLIC_POSTHOG_KEY=${{ vars.NEXT_PUBLIC_POSTHOG_KEY }}
+          NEXT_PUBLIC_POSTHOG_HOST=${{ vars.NEXT_PUBLIC_POSTHOG_HOST }}
           NODE_ENV=production
           
     - name: Setup Helm
@@ -190,5 +192,7 @@ jobs:
           --set oauth.github.clientId="${{ vars.GH_CLIENT_ID }}" \
           --set oauth.github.clientSecret="${{ secrets.GH_CLIENT_SECRET }}" \
           --set resend.apiKey="${{ secrets.RESEND_API_KEY }}" \
+          --set posthog.key="${{ vars.NEXT_PUBLIC_POSTHOG_KEY }}" \
+          --set posthog.host="${{ vars.NEXT_PUBLIC_POSTHOG_HOST }}" \
           --set enableCron="${{ vars.ENABLE_CRON || 'true' }}" \
           --wait --timeout=10m

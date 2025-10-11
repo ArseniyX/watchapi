@@ -6,3 +6,9 @@ metadata:
     {{- include "watchapi.labels" . | nindent 4 }}
 data:
   next-public-domain: {{ .Values.nextPublicDomain | quote }}
+  {{- if .Values.posthog.key }}
+  posthog-key: {{ .Values.posthog.key | quote }}
+  {{- end }}
+  {{- if .Values.posthog.host }}
+  posthog-host: {{ .Values.posthog.host | quote }}
+  {{- end }}

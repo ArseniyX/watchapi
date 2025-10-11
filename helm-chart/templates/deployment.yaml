@@ -67,6 +67,20 @@ spec:
                 configMapKeyRef:
                   name: {{ include "watchapi.fullname" . }}-config
                   key: next-public-domain
+            {{- if .Values.posthog.key }}
+            - name: NEXT_PUBLIC_POSTHOG_KEY
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "watchapi.fullname" . }}-config
+                  key: posthog-key
+            {{- end }}
+            {{- if .Values.posthog.host }}
+            - name: NEXT_PUBLIC_POSTHOG_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "watchapi.fullname" . }}-config
+                  key: posthog-host
+            {{- end }}
             {{- if .Values.oauth.google.clientId }}
             - name: GOOGLE_CLIENT_ID
               valueFrom:
