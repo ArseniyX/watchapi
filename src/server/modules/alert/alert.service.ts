@@ -134,7 +134,7 @@ export class AlertService {
     input,
     ctx,
   }: {
-    input: UpdateAlertPayload;
+    input: UpdateAlertPayload & GetAlertInput;
     ctx: Context;
   }) {
     const { id, ...updateData } = input;
@@ -146,8 +146,6 @@ export class AlertService {
   }
 
   async deleteAlert({ input, ctx }: { input: DeleteAlertInput; ctx: Context }) {
-    const organizationId = ctx.organizationId;
-
     // Verify alert exists and user has access
     await this.getAlert({ input: { id: input.id }, ctx });
 
