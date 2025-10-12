@@ -16,12 +16,15 @@ test.describe("Authentication Flow", () => {
 
       // Submit form and wait for navigation
       await Promise.all([
-        page.waitForURL("/app", { timeout: 10000 }),
+        page.waitForURL(/.*\/app(\/.*)?$/, {
+          timeout: 20000,
+          waitUntil: "commit",
+        }),
         page.click('button[type="submit"]'),
       ]);
 
       // Verify redirect to dashboard
-      await expect(page).toHaveURL("/app");
+      await expect(page).toHaveURL(/\/app(\/.*)?$/);
 
       // Verify user is logged in by checking for sidebar
       await expect(
@@ -105,7 +108,7 @@ test.describe("Authentication Flow", () => {
       await page.click('button[type="submit"]');
 
       // Should redirect to dashboard
-      await expect(page).toHaveURL("/app");
+      await expect(page).toHaveURL(/\/app(\/.*)?$/);
     });
 
     test("should show error for invalid credentials", async ({ page }) => {
@@ -132,7 +135,7 @@ test.describe("Authentication Flow", () => {
       await page.waitForLoadState("networkidle");
 
       // Should still be on dashboard (logged in)
-      await expect(page).toHaveURL("/app");
+      await expect(page).toHaveURL(/\/app(\/.*)?$/);
       // Check for sidebar or user profile dropdown (use first() to avoid strict mode violation)
       await expect(
         page

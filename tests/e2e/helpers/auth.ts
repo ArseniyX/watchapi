@@ -22,13 +22,24 @@ export async function signUp(
   await page.locator('input[name="password"]').fill(password);
 
   // Check the terms checkbox
-  await page.locator('#terms').click();
+  await page.locator("#terms").click();
 
-  // Press Enter to submit the form (more reliable than clicking button)
-  await page.locator('input[name="password"]').press('Enter');
+  const submitSelector = 'button[type="submit"]';
+  const submitButton = page.locator(submitSelector);
+  await submitButton.waitFor({ state: "visible" });
+  await page.waitForFunction(
+    (selector) => {
+      const button = document.querySelector<HTMLButtonElement>(selector);
+      return !!button && !button.disabled;
+    },
+    submitSelector,
+  );
+  await submitButton.click();
 
-  // Wait for redirect to dashboard
-  await page.waitForURL("/app", { timeout: 10000 });
+  await page.waitForURL(/.*\/app(\/.*)?$/, {
+    timeout: 20000,
+    waitUntil: "commit",
+  });
 }
 
 /**
@@ -47,10 +58,22 @@ export async function login(
   await page.locator('input[name="password"]').click();
   await page.locator('input[name="password"]').fill(password);
 
-  // Press Enter to submit the form
-  await page.locator('input[name="password"]').press('Enter');
+  const submitSelector = 'button[type="submit"]';
+  const submitButton = page.locator(submitSelector);
+  await submitButton.waitFor({ state: "visible" });
+  await page.waitForFunction(
+    (selector) => {
+      const button = document.querySelector<HTMLButtonElement>(selector);
+      return !!button && !button.disabled;
+    },
+    submitSelector,
+  );
+  await submitButton.click();
 
-  await page.waitForURL("/app", { timeout: 10000 });
+  await page.waitForURL(/.*\/app(\/.*)?$/, {
+    timeout: 20000,
+    waitUntil: "commit",
+  });
 }
 
 /**

@@ -1,5 +1,9 @@
 import { defineConfig, devices } from "@playwright/test";
 
+const E2E_HOST = process.env.E2E_HOST ?? "127.0.0.1";
+const E2E_PORT = process.env.E2E_PORT ?? "3100";
+const BASE_URL = `http://${E2E_HOST}:${E2E_PORT}`;
+
 /**
  * Read environment variables from file.
  * https://github.com/motdotla/dotenv
@@ -26,7 +30,7 @@ export default defineConfig({
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: "http://localhost:3000",
+    baseURL: BASE_URL,
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: "on-first-retry",
     /* Screenshot on failure */
@@ -72,14 +76,17 @@ export default defineConfig({
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: "pnpm dev",
-    url: "http://localhost:3000",
+    command: "node ./scripts/start-next-dev.js",
+    url: BASE_URL,
     reuseExistingServer: !process.env.CI,
     stdout: "ignore",
     stderr: "pipe",
     env: {
       DATABASE_URL: process.env.DATABASE_URL_E2E || process.env.DATABASE_URL,
       NODE_ENV: "test",
+      HOSTNAME: E2E_HOST,
+      HOST: E2E_HOST,
+      PORT: E2E_PORT,
     },
   },
 });
