@@ -36,7 +36,7 @@ export const createAlertRouter = (alertService: AlertService) =>
     }),
 
     update: orgProcedure
-      .input(getAlertSchema.merge(updateAlertSchema))
+      .input(getAlertSchema.and(updateAlertSchema))
       .mutation(async ({ input, ctx }) => {
         return alertService.updateAlert({ input, ctx });
       }),

@@ -36,7 +36,7 @@ export const createApiEndpointRouter = (
       }),
 
     update: orgProcedure
-      .input(getApiEndpointSchema.merge(updateApiEndpointSchema))
+      .input(getApiEndpointSchema.and(updateApiEndpointSchema))
       .mutation(async ({ ctx, input }) => {
         return apiEndpointService.updateApiEndpoint({ ctx, input });
       }),
