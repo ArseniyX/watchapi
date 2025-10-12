@@ -34,7 +34,7 @@ export const createCollectionRouter = (collectionService: CollectionService) =>
     }),
 
     updateCollection: orgProcedure
-      .input(getCollectionSchema.merge(updateCollectionSchema))
+      .input(getCollectionSchema.and(updateCollectionSchema))
       .mutation(async ({ ctx, input }) => {
         return collectionService.updateCollection({
           ctx,
