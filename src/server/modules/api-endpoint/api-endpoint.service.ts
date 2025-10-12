@@ -67,6 +67,7 @@ export class ApiEndpointService {
       userId,
       organizationId,
       collectionId: input.collectionId || null,
+      lastCheckedAt: null,
       isActive: input.isActive,
     });
   }
@@ -161,7 +162,9 @@ export class ApiEndpointService {
       // Check minimum check interval for plan
       if (input.interval < limits.minCheckInterval) {
         throw new Error(
-          `Check interval cannot be less than ${limits.minCheckInterval / 1000} seconds for ${userPlan} plan. Upgrade to reduce check interval.`,
+          `Check interval cannot be less than ${
+            limits.minCheckInterval / 1000
+          } seconds for ${userPlan} plan. Upgrade to reduce check interval.`,
         );
       }
       updateData.interval = input.interval;
@@ -186,7 +189,11 @@ export class ApiEndpointService {
       updateData.isActive = input.isActive;
     }
 
-    return this.apiEndpointRepository.update(input.id, organizationId, updateData);
+    return this.apiEndpointRepository.update(
+      input.id,
+      organizationId,
+      updateData,
+    );
   }
 
   async deleteApiEndpoint({
@@ -228,6 +235,9 @@ export class ApiEndpointService {
     if (!input.query || input.query.trim() === "") {
       return [];
     }
-    return this.apiEndpointRepository.search(input.query.trim(), organizationId);
+    return this.apiEndpointRepository.search(
+      input.query.trim(),
+      organizationId,
+    );
   }
 }

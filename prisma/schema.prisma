@@ -144,6 +144,7 @@ model ApiEndpoint {
   expectedStatus Int        @default(200)
   timeout        Int        @default(30000)
   interval       Int        @default(300000) // 5 minutes
+  lastCheckedAt  DateTime?
   isActive       Boolean    @default(true)
   userId         String // Creator/owner (for audit trail)
   organizationId String // Required - all endpoints belong to an organization
