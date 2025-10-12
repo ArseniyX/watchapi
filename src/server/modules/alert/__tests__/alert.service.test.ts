@@ -68,6 +68,12 @@ const mockNotificationChannelService = {
   getNotificationChannel: vi.fn(),
 };
 
+const TEST_CTX = {
+  user: { id: "user-1", email: "user@example.com", role: "USER" as const },
+  organizationId: "org-1",
+  organizationPlan: PlanType.FREE,
+} as const;
+
 describe("AlertService", () => {
   let service: AlertService;
 
@@ -104,18 +110,16 @@ describe("AlertService", () => {
       mockAlertRepository.findByOrganization.mockResolvedValue([]);
       mockAlertRepository.create.mockResolvedValue(mockAlert);
 
-      const result = await service.createAlert(
-        {
+      const result = await service.createAlert({
+        input: {
           name: "High Response Time",
           apiEndpointId: "endpoint-1",
           condition: AlertCondition.RESPONSE_TIME_ABOVE,
           threshold: 1000,
           isActive: true,
         },
-        "user-1",
-        "org-1",
-        PlanType.FREE,
-      );
+        ctx: TEST_CTX,
+      });
 
       expect(mockApiEndpointRepository.findById).toHaveBeenCalledWith(
         "endpoint-1",
@@ -132,18 +136,16 @@ describe("AlertService", () => {
       mockApiEndpointRepository.findById.mockResolvedValue(null);
 
       await expect(
-        service.createAlert(
-          {
+        service.createAlert({
+          input: {
             name: "Test Alert",
             apiEndpointId: "endpoint-1",
             condition: AlertCondition.RESPONSE_TIME_ABOVE,
             threshold: 1000,
             isActive: true,
           },
-          "user-1",
-          "org-1",
-          PlanType.FREE,
-        ),
+          ctx: TEST_CTX,
+        }),
       ).rejects.toThrow(ForbiddenError);
     });
 
@@ -162,18 +164,16 @@ describe("AlertService", () => {
       mockAlertRepository.findByOrganization.mockResolvedValue(existingAlerts);
 
       await expect(
-        service.createAlert(
-          {
+        service.createAlert({
+          input: {
             name: "Test Alert",
             apiEndpointId: "endpoint-1",
             condition: AlertCondition.RESPONSE_TIME_ABOVE,
             threshold: 1000,
             isActive: true,
           },
-          "user-1",
-          "org-1",
-          PlanType.FREE,
-        ),
+          ctx: TEST_CTX,
+        }),
       ).rejects.toThrow(TooManyRequestsError);
     });
   });
@@ -191,7 +191,10 @@ describe("AlertService", () => {
 
       mockAlertRepository.findById.mockResolvedValue(mockAlert);
 
-      const result = await service.getAlert("alert-1", "org-1");
+      const result = await service.getAlert({
+        input: { id: "alert-1" },
+        ctx: TEST_CTX,
+      });
 
       expect(result).toEqual(mockAlert);
     });
@@ -199,9 +202,12 @@ describe("AlertService", () => {
     it("should throw NotFoundError if alert does not exist", async () => {
       mockAlertRepository.findById.mockResolvedValue(null);
 
-      await expect(service.getAlert("alert-1", "org-1")).rejects.toThrow(
-        NotFoundError,
-      );
+      await expect(
+        service.getAlert({
+          input: { id: "alert-1" },
+          ctx: TEST_CTX,
+        }),
+      ).rejects.toThrow(NotFoundError);
     });
 
     it("should throw ForbiddenError if organization mismatch", async () => {
@@ -214,9 +220,12 @@ describe("AlertService", () => {
 
       mockAlertRepository.findById.mockResolvedValue(mockAlert);
 
-      await expect(service.getAlert("alert-1", "org-1")).rejects.toThrow(
-        ForbiddenError,
-      );
+      await expect(
+        service.getAlert({
+          input: { id: "alert-1" },
+          ctx: TEST_CTX,
+        }),
+      ).rejects.toThrow(ForbiddenError);
     });
   });
 
@@ -451,7 +460,10 @@ describe("AlertService", () => {
       mockAlertRepository.findById.mockResolvedValue(mockAlert);
       mockAlertRepository.delete.mockResolvedValue(mockAlert);
 
-      await service.deleteAlert("alert-1", "org-1");
+      await service.deleteAlert({
+        input: { id: "alert-1" },
+        ctx: TEST_CTX,
+      });
 
       expect(mockAlertRepository.delete).toHaveBeenCalledWith("alert-1");
     });
@@ -475,11 +487,10 @@ describe("AlertService", () => {
       mockAlertRepository.findById.mockResolvedValue(mockAlert);
       mockAlertRepository.update.mockResolvedValue(updatedAlert);
 
-      const result = await service.updateAlert(
-        "alert-1",
-        { name: "New Name" },
-        "org-1",
-      );
+      const result = await service.updateAlert({
+        input: { id: "alert-1", name: "New Name" },
+        ctx: TEST_CTX,
+      });
 
       expect(mockAlertRepository.update).toHaveBeenCalledWith("alert-1", {
         name: "New Name",
@@ -511,7 +522,10 @@ describe("AlertService", () => {
       mockApiEndpointRepository.findById.mockResolvedValue(mockEndpoint);
       mockAlertRepository.findByApiEndpoint.mockResolvedValue(mockAlerts);
 
-      const result = await service.getAlertsByEndpoint("endpoint-1", "org-1");
+      const result = await service.getAlertsByEndpoint({
+        input: { apiEndpointId: "endpoint-1" },
+        ctx: TEST_CTX,
+      });
 
       expect(result).toEqual(mockAlerts);
     });
@@ -520,7 +534,10 @@ describe("AlertService", () => {
       mockApiEndpointRepository.findById.mockResolvedValue(null);
 
       await expect(
-        service.getAlertsByEndpoint("endpoint-1", "org-1"),
+        service.getAlertsByEndpoint({
+          input: { apiEndpointId: "endpoint-1" },
+          ctx: TEST_CTX,
+        }),
       ).rejects.toThrow(ForbiddenError);
     });
   });

@@ -31,6 +31,7 @@ vi.mock("jsonwebtoken", () => ({
 describe("AuthService", () => {
   let service: AuthService;
   const jwtSecret = "test-secret";
+  const TEST_CTX = {}; // Public procedures have empty context
 
   beforeEach(() => {
     service = new AuthService(
@@ -58,7 +59,7 @@ describe("AuthService", () => {
 
       mockUserService.createUser.mockResolvedValue(mockUser);
 
-      const result = await service.register(input);
+      const result = await service.register({ ctx: TEST_CTX, input });
 
       expect(mockUserService.createUser).toHaveBeenCalledWith({
         ...input,
@@ -76,8 +77,11 @@ describe("AuthService", () => {
 
       await expect(
         service.register({
-          email: "existing@example.com",
-          password: "password123",
+          ctx: TEST_CTX,
+          input: {
+            email: "existing@example.com",
+            password: "password123",
+          },
         }),
       ).rejects.toThrow("User with this email already exists");
     });
@@ -100,7 +104,7 @@ describe("AuthService", () => {
       mockUserService.getUserByEmail.mockResolvedValue(mockUser);
       mockUserService.verifyPassword.mockResolvedValue(true);
 
-      const result = await service.login(input);
+      const result = await service.login({ ctx: TEST_CTX, input });
 
       expect(mockUserService.getUserByEmail).toHaveBeenCalledWith(input.email);
       expect(mockUserService.verifyPassword).toHaveBeenCalledWith(
@@ -117,8 +121,11 @@ describe("AuthService", () => {
 
       await expect(
         service.login({
-          email: "nonexistent@example.com",
-          password: "password123",
+          ctx: TEST_CTX,
+          input: {
+            email: "nonexistent@example.com",
+            password: "password123",
+          },
         }),
       ).rejects.toThrow("Invalid email or password");
     });
@@ -134,8 +141,11 @@ describe("AuthService", () => {
 
       await expect(
         service.login({
-          email: "test@example.com",
-          password: "wrongpassword",
+          ctx: TEST_CTX,
+          input: {
+            email: "test@example.com",
+            password: "wrongpassword",
+          },
         }),
       ).rejects.toThrow("Invalid email or password");
     });
@@ -156,7 +166,10 @@ describe("AuthService", () => {
       });
       mockUserService.getUserById = vi.fn().mockResolvedValue(mockUser);
 
-      const result = await service.verifyToken("valid-token");
+      const result = await service.verifyToken({
+        ctx: TEST_CTX,
+        input: { token: "valid-token" },
+      });
 
       expect(jwt.verify).toHaveBeenCalledWith("valid-token", jwtSecret, {
         algorithms: ["HS256"],
@@ -171,7 +184,10 @@ describe("AuthService", () => {
         throw new Error("Invalid token");
       });
 
-      const result = await service.verifyToken("invalid-token");
+      const result = await service.verifyToken({
+        ctx: TEST_CTX,
+        input: { token: "invalid-token" },
+      });
 
       expect(result).toBeNull();
     });
@@ -191,7 +207,10 @@ describe("AuthService", () => {
       });
       mockUserService.getUserById = vi.fn().mockResolvedValue(mockUser);
 
-      const result = await service.refreshToken("valid-refresh-token");
+      const result = await service.refreshToken({
+        ctx: TEST_CTX,
+        input: { refreshToken: "valid-refresh-token" },
+      });
 
       expect(result).toHaveProperty("accessToken");
       expect(result).toHaveProperty("refreshToken");
@@ -200,9 +219,12 @@ describe("AuthService", () => {
     it("should throw error for invalid token type", async () => {
       (jwt.verify as any).mockReturnValue({ userId: "user-1", type: "access" });
 
-      await expect(service.refreshToken("invalid-type-token")).rejects.toThrow(
-        "Invalid",
-      );
+      await expect(
+        service.refreshToken({
+          ctx: TEST_CTX,
+          input: { refreshToken: "invalid-type-token" },
+        }),
+      ).rejects.toThrow("Invalid");
     });
 
     it("should throw error if user not found", async () => {
@@ -212,9 +234,12 @@ describe("AuthService", () => {
       });
       mockUserService.getUserById = vi.fn().mockResolvedValue(null);
 
-      await expect(service.refreshToken("valid-refresh-token")).rejects.toThrow(
-        "User",
-      );
+      await expect(
+        service.refreshToken({
+          ctx: TEST_CTX,
+          input: { refreshToken: "valid-refresh-token" },
+        }),
+      ).rejects.toThrow("User");
     });
 
     it("should throw error for expired token", async () => {
@@ -222,9 +247,12 @@ describe("AuthService", () => {
         throw new Error("Token expired");
       });
 
-      await expect(service.refreshToken("expired-token")).rejects.toThrow(
-        "Invalid refresh token",
-      );
+      await expect(
+        service.refreshToken({
+          ctx: TEST_CTX,
+          input: { refreshToken: "expired-token" },
+        }),
+      ).rejects.toThrow("Invalid refresh token");
     });
   });
 
@@ -252,7 +280,10 @@ describe("AuthService", () => {
       mockUserService.getUserByEmail.mockResolvedValue(null);
       mockUserService.createOAuthUser.mockResolvedValue(mockUser);
 
-      const result = await service.authenticateWithOAuth(profile);
+      const result = await service.authenticateWithOAuth({
+        ctx: TEST_CTX,
+        input: { provider: profile.provider, profile },
+      });
 
       expect(mockUserService.createOAuthUser).toHaveBeenCalledWith({
         email: profile.email,
@@ -294,7 +325,10 @@ describe("AuthService", () => {
       mockUserService.getUserByEmail.mockResolvedValue(existingUser);
       mockUserService.updateUser.mockResolvedValue(updatedUser);
 
-      const result = await service.authenticateWithOAuth(profile);
+      const result = await service.authenticateWithOAuth({
+        ctx: TEST_CTX,
+        input: { provider: profile.provider, profile },
+      });
 
       expect(mockUserService.updateUser).toHaveBeenCalledWith("user-1", {
         provider: profile.provider,
@@ -332,7 +366,10 @@ describe("AuthService", () => {
       mockUserService.getUserByProvider.mockResolvedValue(existingUser);
       mockUserService.updateUser.mockResolvedValue(updatedUser);
 
-      const result = await service.authenticateWithOAuth(profile);
+      const result = await service.authenticateWithOAuth({
+        ctx: TEST_CTX,
+        input: { provider: profile.provider, profile },
+      });
 
       expect(mockUserService.updateUser).toHaveBeenCalledWith("user-1", {
         name: profile.name,
@@ -361,7 +398,10 @@ describe("AuthService", () => {
       mockUserService.getUserByEmail.mockResolvedValue(null);
       mockUserService.createOAuthUser.mockResolvedValue(mockUser);
 
-      const result = await service.authenticateWithOAuth(profile);
+      const result = await service.authenticateWithOAuth({
+        ctx: TEST_CTX,
+        input: { provider: profile.provider, profile },
+      });
 
       expect(mockUserService.createOAuthUser).toHaveBeenCalledWith({
         email: profile.email,
@@ -397,7 +437,10 @@ describe("AuthService", () => {
         providerId: profile.id,
       });
 
-      const result = await service.authenticateWithOAuth(profile);
+      const result = await service.authenticateWithOAuth({
+        ctx: TEST_CTX,
+        input: { provider: profile.provider, profile },
+      });
 
       expect(mockUserService.updateUser).toHaveBeenCalledWith("user-1", {
         provider: profile.provider,
@@ -422,8 +465,11 @@ describe("AuthService", () => {
         .mockReturnValueOnce("refresh-token");
 
       await service.register({
-        email: "test@example.com",
-        password: "password",
+        ctx: TEST_CTX,
+        input: {
+          email: "test@example.com",
+          password: "password",
+        },
       });
 
       expect(jwt.sign).toHaveBeenCalledWith(

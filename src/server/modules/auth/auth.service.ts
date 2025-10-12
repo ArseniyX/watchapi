@@ -7,8 +7,10 @@ import {
   RegisterInput,
   OAuthProfile,
   AuthTokens,
+  OAuthCallbackInput,
 } from "./auth.schema";
 import { UnauthorizedError, NotFoundError } from "../../errors/custom-errors";
+import type { Context } from "../../trpc";
 
 export class AuthService {
   constructor(
@@ -17,9 +19,13 @@ export class AuthService {
     private readonly jwtSecret: string,
   ) {}
 
-  async register(
-    input: RegisterInput,
-  ): Promise<{ user: User; tokens: AuthTokens }> {
+  async register({
+    ctx,
+    input,
+  }: {
+    ctx: Context;
+    input: RegisterInput;
+  }): Promise<{ user: User; tokens: AuthTokens }> {
     // Create user without personal org (handled by setupNewUser)
     const user = await this.userService.createUser({
       email: input.email,
@@ -36,7 +42,13 @@ export class AuthService {
     return { user, tokens };
   }
 
-  async login(input: LoginInput): Promise<{ user: User; tokens: AuthTokens }> {
+  async login({
+    ctx,
+    input,
+  }: {
+    ctx: Context;
+    input: LoginInput;
+  }): Promise<{ user: User; tokens: AuthTokens }> {
     const user = await this.userService.getUserByEmail(input.email);
     if (!user) {
       throw new UnauthorizedError("Invalid email or password");
@@ -52,9 +64,15 @@ export class AuthService {
     return { user, tokens };
   }
 
-  async verifyToken(token: string): Promise<User | null> {
+  async verifyToken({
+    ctx,
+    input,
+  }: {
+    ctx: Context;
+    input: { token: string };
+  }): Promise<User | null> {
     try {
-      const payload = jwt.verify(token, this.jwtSecret, {
+      const payload = jwt.verify(input.token, this.jwtSecret, {
         algorithms: ["HS256"],
         issuer: "watchapi",
         audience: "watchapi-app",
@@ -74,9 +92,15 @@ export class AuthService {
     }
   }
 
-  async refreshToken(refreshToken: string): Promise<AuthTokens> {
+  async refreshToken({
+    ctx,
+    input,
+  }: {
+    ctx: Context;
+    input: { refreshToken: string };
+  }): Promise<AuthTokens> {
     try {
-      const payload = jwt.verify(refreshToken, this.jwtSecret, {
+      const payload = jwt.verify(input.refreshToken, this.jwtSecret, {
         algorithms: ["HS256"],
         issuer: "watchapi",
         audience: "watchapi-app",
@@ -106,50 +130,53 @@ export class AuthService {
     }
   }
 
-  async authenticateWithOAuth(
-    profile: OAuthProfile,
-    invitationToken?: string,
-  ): Promise<{ user: User; tokens: AuthTokens; isNewUser: boolean }> {
-    // Check if user exists with this provider
+  async authenticateWithOAuth({
+    ctx,
+    input,
+  }: {
+    ctx: Context;
+    input: OAuthCallbackInput;
+  }): Promise<{ user: User; tokens: AuthTokens; isNewUser: boolean }> {
     let user = await this.userService.getUserByProvider(
-      profile.provider,
-      profile.id,
+      input.provider,
+      input.profile.id,
     );
 
     let isNewUser = false;
 
     if (!user) {
       // Check if user exists with this email (from different provider or local)
-      const existingUser = await this.userService.getUserByEmail(profile.email);
+      const existingUser = await this.userService.getUserByEmail(
+        input.profile.email,
+      );
 
       if (existingUser) {
         // Link OAuth to existing account
         user = await this.userService.updateUser(existingUser.id, {
-          provider: profile.provider,
-          providerId: profile.id,
-          avatar: profile.avatar,
+          provider: input.provider,
+          providerId: input.profile.id,
+          avatar: input.profile.avatar,
         });
       } else {
         // Create new user without personal org (handled by setupNewUser)
         user = await this.userService.createOAuthUser({
-          email: profile.email,
-          name: profile.name,
-          provider: profile.provider,
-          providerId: profile.id,
-          avatar: profile.avatar,
+          email: input.profile.email,
+          name: input.profile.name,
+          provider: input.provider,
+          providerId: input.profile.id,
+          avatar: input.profile.avatar,
           skipPersonalOrg: true,
         });
 
         // Handle invitation or create personal org
-        await this.setupNewUser(user, invitationToken);
+        await this.setupNewUser(user, input.invitationToken);
 
         isNewUser = true;
       }
     } else {
-      // Update user info from OAuth profile
       user = await this.userService.updateUser(user.id, {
-        name: profile.name || user.name,
-        avatar: profile.avatar || user.avatar,
+        name: input.profile.name || user.name,
+        avatar: input.profile.avatar || user.avatar,
       });
     }
 

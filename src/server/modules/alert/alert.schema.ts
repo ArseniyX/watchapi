@@ -50,9 +50,16 @@ export const getAlertTriggersSchema = z.object({
 // Type exports
 export type CreateAlertInput = z.infer<typeof createAlertSchema>;
 export type UpdateAlertInput = z.infer<typeof updateAlertSchema>;
+export type UpdateAlertPayload = z.infer<typeof updateAlertSchema>;
 export type GetAlertInput = z.infer<typeof getAlertSchema>;
 export type DeleteAlertInput = z.infer<typeof deleteAlertSchema>;
-export type GetAlertsByEndpointInput = z.infer<typeof getAlertsByEndpointSchema>;
-export type CreateAlertNotificationInput = z.infer<typeof createAlertNotificationSchema>;
-export type DeleteAlertNotificationInput = z.infer<typeof deleteAlertNotificationSchema>;
+export type GetAlertsByEndpointInput = z.infer<
+  typeof getAlertsByEndpointSchema
+>;
+export type CreateAlertNotificationInput = z.infer<
+  typeof createAlertNotificationSchema
+>;
+export type DeleteAlertNotificationInput = z.infer<
+  typeof deleteAlertNotificationSchema
+>;
 export type GetAlertTriggersInput = z.infer<typeof getAlertTriggersSchema>;

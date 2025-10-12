@@ -10,17 +10,32 @@ import {
   SlackConfig,
   DiscordConfig,
 } from "./notification-channel.schema";
-import { NotFoundError } from "../../errors/custom-errors";
+import { ForbiddenError, NotFoundError } from "../../errors/custom-errors";
 import { NotificationType } from "@/generated/prisma";
 import { emailService } from "../shared/email.service";
 import { logger, logInfo, logError } from "@/lib/logger";
+import { Context } from "@/server/trpc";
 
 export class NotificationChannelService {
   constructor(
     private readonly notificationChannelRepository: NotificationChannelRepository,
   ) {}
 
-  async createNotificationChannel(input: CreateNotificationChannelInput) {
+  async createNotificationChannel({
+    input,
+    ctx,
+  }: {
+    input: CreateNotificationChannelInput;
+    ctx: Context;
+  }) {
+    const { organizationId } = ctx;
+    if (!organizationId) {
+      throw new ForbiddenError("Organization context is required");
+    }
+    if (input.organizationId !== organizationId) {
+      throw new ForbiddenError("Organization access denied");
+    }
+
     // Validate config JSON
     try {
       JSON.parse(input.config);
@@ -29,17 +44,31 @@ export class NotificationChannelService {
     }
 
     return this.notificationChannelRepository.create({
-      organizationId: input.organizationId,
+      organizationId,
       name: input.name,
       type: input.type,
       config: input.config,
     });
   }
 
-  async updateNotificationChannel(input: UpdateNotificationChannelInput) {
+  async updateNotificationChannel({
+    input,
+    ctx,
+  }: {
+    input: UpdateNotificationChannelInput;
+    ctx: Context;
+  }) {
+    const { organizationId } = ctx;
+    if (!organizationId) {
+      throw new ForbiddenError("Organization context is required");
+    }
+    if (input.organizationId !== organizationId) {
+      throw new ForbiddenError("Organization access denied");
+    }
+
     const existing = await this.notificationChannelRepository.findById(
       input.id,
-      input.organizationId,
+      organizationId,
     );
 
     if (!existing) {
@@ -57,7 +86,7 @@ export class NotificationChannelService {
 
     await this.notificationChannelRepository.update(
       input.id,
-      input.organizationId,
+      organizationId,
       {
         name: input.name,
         config: input.config,
@@ -67,14 +96,28 @@ export class NotificationChannelService {
 
     return this.notificationChannelRepository.findById(
       input.id,
-      input.organizationId,
+      organizationId,
     );
   }
 
-  async deleteNotificationChannel(input: DeleteNotificationChannelInput) {
+  async deleteNotificationChannel({
+    input,
+    ctx,
+  }: {
+    input: DeleteNotificationChannelInput;
+    ctx: Context;
+  }) {
+    const { organizationId } = ctx;
+    if (!organizationId) {
+      throw new ForbiddenError("Organization context is required");
+    }
+    if (input.organizationId !== organizationId) {
+      throw new ForbiddenError("Organization access denied");
+    }
+
     const existing = await this.notificationChannelRepository.findById(
       input.id,
-      input.organizationId,
+      organizationId,
     );
 
     if (!existing) {
@@ -83,22 +126,50 @@ export class NotificationChannelService {
 
     await this.notificationChannelRepository.delete(
       input.id,
-      input.organizationId,
+      organizationId,
     );
 
     return { success: true };
   }
 
-  async getNotificationChannels(input: GetNotificationChannelsInput) {
+  async getNotificationChannels({
+    input,
+    ctx,
+  }: {
+    input: GetNotificationChannelsInput;
+    ctx: Context;
+  }) {
+    const { organizationId } = ctx;
+    if (!organizationId) {
+      throw new ForbiddenError("Organization context is required");
+    }
+    if (input.organizationId !== organizationId) {
+      throw new ForbiddenError("Organization access denied");
+    }
+
     return this.notificationChannelRepository.findByOrganizationId(
-      input.organizationId,
+      organizationId,
     );
   }
 
-  async getNotificationChannel(input: GetNotificationChannelInput) {
+  async getNotificationChannel({
+    input,
+    ctx,
+  }: {
+    input: GetNotificationChannelInput;
+    ctx: Context;
+  }) {
+    const { organizationId } = ctx;
+    if (!organizationId) {
+      throw new ForbiddenError("Organization context is required");
+    }
+    if (input.organizationId !== organizationId) {
+      throw new ForbiddenError("Organization access denied");
+    }
+
     const channel = await this.notificationChannelRepository.findById(
       input.id,
-      input.organizationId,
+      organizationId,
     );
 
     if (!channel) {

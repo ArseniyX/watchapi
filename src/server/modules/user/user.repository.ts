@@ -1,4 +1,4 @@
-import { PrismaClient, User, Prisma } from "../../../generated/prisma";
+import { PrismaClient, User, Prisma } from "@/generated/prisma";
 
 export interface IUserRepository {
   findById(id: string): Promise<User | null>;

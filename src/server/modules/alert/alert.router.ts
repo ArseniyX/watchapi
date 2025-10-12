@@ -1,4 +1,4 @@
-import { router, protectedProcedure } from "../../trpc";
+import { router, orgProcedure } from "../../trpc";
 import { AlertService } from "./alert.service";
 import {
   createAlertSchema,
@@ -13,97 +13,57 @@ import {
 
 export const createAlertRouter = (alertService: AlertService) =>
   router({
-    create: protectedProcedure
+    create: orgProcedure
       .input(createAlertSchema)
       .mutation(async ({ input, ctx }) => {
-        if (!ctx.organizationId) {
-          throw new Error("No organization context");
-        }
-        return alertService.createAlert(
-          input,
-          ctx.user.id,
-          ctx.organizationId,
-          ctx.organizationPlan || "FREE",
-        );
+        return alertService.createAlert({ input, ctx });
       }),
 
-    getById: protectedProcedure
+    getById: orgProcedure
       .input(getAlertSchema)
       .query(async ({ input, ctx }) => {
-        if (!ctx.organizationId) {
-          throw new Error("No organization context");
-        }
-        return alertService.getAlert(input.id, ctx.organizationId);
+        return alertService.getAlert({ input, ctx });
       }),
 
-    getByEndpoint: protectedProcedure
+    getByEndpoint: orgProcedure
       .input(getAlertsByEndpointSchema)
       .query(async ({ input, ctx }) => {
-        if (!ctx.organizationId) {
-          throw new Error("No organization context");
-        }
-        return alertService.getAlertsByEndpoint(
-          input.apiEndpointId,
-          ctx.organizationId,
-        );
+        return alertService.getAlertsByEndpoint({ input, ctx });
       }),
 
-    getByOrganization: protectedProcedure.query(async ({ ctx }) => {
-      if (!ctx.organizationId) {
-        throw new Error("No organization context");
-      }
-      return alertService.getAlertsByOrganization(ctx.organizationId);
+    getByOrganization: orgProcedure.query(async ({ ctx }) => {
+      return alertService.getAlertsByOrganization({ ctx });
     }),
 
-    update: protectedProcedure
+    update: orgProcedure
       .input(getAlertSchema.merge(updateAlertSchema))
       .mutation(async ({ input, ctx }) => {
-        if (!ctx.organizationId) {
-          throw new Error("No organization context");
-        }
-        const { id, ...updateData } = input;
-        return alertService.updateAlert(id, updateData, ctx.organizationId);
+        return alertService.updateAlert({ input, ctx });
       }),
 
-    delete: protectedProcedure
+    delete: orgProcedure
       .input(deleteAlertSchema)
       .mutation(async ({ input, ctx }) => {
-        if (!ctx.organizationId) {
-          throw new Error("No organization context");
-        }
-        return alertService.deleteAlert(input.id, ctx.organizationId);
+        return alertService.deleteAlert({ input, ctx });
       }),
 
     // Alert Notification management
-    createNotification: protectedProcedure
+    createNotification: orgProcedure
       .input(createAlertNotificationSchema)
       .mutation(async ({ input, ctx }) => {
-        if (!ctx.organizationId) {
-          throw new Error("No organization context");
-        }
-        return alertService.createAlertNotification(input, ctx.organizationId);
+        return alertService.createAlertNotification({ input, ctx });
       }),
 
-    deleteNotification: protectedProcedure
+    deleteNotification: orgProcedure
       .input(deleteAlertNotificationSchema)
       .mutation(async ({ input, ctx }) => {
-        if (!ctx.organizationId) {
-          throw new Error("No organization context");
-        }
-        return alertService.deleteAlertNotification(input.id, ctx.organizationId);
+        return alertService.deleteAlertNotification({ input, ctx });
       }),
 
     // Alert Triggers (history)
-    getTriggers: protectedProcedure
+    getTriggers: orgProcedure
       .input(getAlertTriggersSchema)
       .query(async ({ input, ctx }) => {
-        if (!ctx.organizationId) {
-          throw new Error("No organization context");
-        }
-        return alertService.getAlertTriggers(
-          input.alertId,
-          ctx.organizationId,
-          input.limit,
-        );
+        return alertService.getAlertTriggers({ input, ctx });
       }),
   });

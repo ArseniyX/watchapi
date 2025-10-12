@@ -5,6 +5,7 @@ import {
   UpdateCollectionInput,
 } from "./collection.schema";
 import { BadRequestError, NotFoundError } from "../../errors/custom-errors";
+import type { Context } from "../../trpc";
 
 export interface CollectionWithStats extends Collection {
   apiEndpoints: ApiEndpoint[];
@@ -15,33 +16,45 @@ export interface CollectionWithStats extends Collection {
 export class CollectionService {
   constructor(private readonly collectionRepository: CollectionRepository) {}
 
-  async createCollection(input: CreateCollectionInput): Promise<Collection> {
-    // Validate organizationId is provided
-    if (!input.organizationId) {
-      throw new BadRequestError("Organization ID is required");
-    }
-
+  async createCollection({
+    ctx,
+    input,
+  }: {
+    ctx: Context;
+    input: CreateCollectionInput;
+  }): Promise<Collection> {
     return this.collectionRepository.create({
       name: input.name.trim(),
       description: input.description?.trim() || null,
-      organizationId: input.organizationId,
+      organizationId: ctx.organizationId,
     });
   }
 
-  async getCollection(id: string, organizationId: string): Promise<Collection | null> {
-    if (!id || id.trim() === "") {
+  async getCollection({
+    ctx,
+    input,
+  }: {
+    ctx: Context;
+    input: { id: string };
+  }): Promise<Collection | null> {
+    if (!input.id || input.id.trim() === "") {
       throw new BadRequestError("Collection ID is required");
     }
 
-    return this.collectionRepository.findByIdAndOrganization(id, organizationId);
+    return this.collectionRepository.findByIdAndOrganization(
+      input.id,
+      ctx.organizationId,
+    );
   }
 
-  async getCollections(
-    organizationId?: string,
-  ): Promise<CollectionWithStats[]> {
-    const collections = organizationId
-      ? await this.collectionRepository.findByOrganizationId(organizationId)
-      : await this.collectionRepository.findMany();
+  async getCollections({
+    ctx,
+  }: {
+    ctx: Context;
+  }): Promise<CollectionWithStats[]> {
+    const collections = await this.collectionRepository.findByOrganizationId(
+      ctx.organizationId,
+    );
 
     return collections.map((collection) => {
       const collectionWithEndpoints = collection as Collection & {
@@ -55,19 +68,24 @@ export class CollectionService {
     });
   }
 
-  async updateCollection(
-    id: string,
-    organizationId: string,
-    input: UpdateCollectionInput,
-  ): Promise<Collection> {
-    if (!id || id.trim() === "") {
+  async updateCollection({
+    ctx,
+    input,
+  }: {
+    ctx: Context;
+    input: UpdateCollectionInput & { id: string };
+  }): Promise<Collection> {
+    if (!input.id || input.id.trim() === "") {
       throw new BadRequestError("Collection ID is required");
     }
 
     // Verify collection exists and belongs to organization
-    const existing = await this.collectionRepository.findByIdAndOrganization(id, organizationId);
+    const existing = await this.collectionRepository.findByIdAndOrganization(
+      input.id,
+      ctx.organizationId,
+    );
     if (!existing) {
-      throw new NotFoundError("Collection", id);
+      throw new NotFoundError("Collection", input.id);
     }
 
     const updateData: any = {};
@@ -79,26 +97,39 @@ export class CollectionService {
       updateData.description = input.description?.trim() || null;
     }
 
-    return this.collectionRepository.update(id, updateData);
+    return this.collectionRepository.update(input.id, updateData);
   }
 
-  async deleteCollection(id: string, organizationId: string): Promise<void> {
-    if (!id || id.trim() === "") {
+  async deleteCollection({
+    ctx,
+    input,
+  }: {
+    ctx: Context;
+    input: { id: string };
+  }): Promise<void> {
+    if (!input.id || input.id.trim() === "") {
       throw new BadRequestError("Collection ID is required");
     }
 
     // Verify collection exists and belongs to organization
-    const existing = await this.collectionRepository.findByIdAndOrganization(id, organizationId);
+    const existing = await this.collectionRepository.findByIdAndOrganization(
+      input.id,
+      ctx.organizationId,
+    );
     if (!existing) {
-      throw new NotFoundError("Collection", id);
+      throw new NotFoundError("Collection", input.id);
     }
 
-    return this.collectionRepository.delete(id);
+    return this.collectionRepository.delete(input.id);
   }
 
-  async getCollectionStats(organizationId?: string) {
-    const total = await this.collectionRepository.count(organizationId);
-    const collections = await this.getCollections(organizationId);
+  async getCollectionStats({
+    ctx,
+  }: {
+    ctx: Context;
+  }) {
+    const total = await this.collectionRepository.count(ctx.organizationId);
+    const collections = await this.getCollections({ ctx });
 
     const totalRequests = collections.reduce(
       (sum, collection) => sum + collection.requestCount,
@@ -114,12 +145,21 @@ export class CollectionService {
     };
   }
 
-  async searchCollections(query: string, organizationId: string): Promise<CollectionWithStats[]> {
-    if (!query || query.trim() === "") {
+  async searchCollections({
+    ctx,
+    input,
+  }: {
+    ctx: Context;
+    input: { query: string };
+  }): Promise<CollectionWithStats[]> {
+    if (!input.query || input.query.trim() === "") {
       return [];
     }
 
-    const collections = await this.collectionRepository.search(query.trim(), organizationId);
+    const collections = await this.collectionRepository.search(
+      input.query.trim(),
+      ctx.organizationId,
+    );
 
     return collections.map((collection) => {
       const collectionWithEndpoints = collection as Collection & {

@@ -1,4 +1,4 @@
-import { router, protectedProcedure } from "../../trpc";
+import { router, orgProcedure } from "../../trpc";
 import { NotificationChannelService } from "./notification-channel.service";
 import { NotificationChannelRepository } from "./notification-channel.repository";
 import { prisma } from "../../database";
@@ -15,68 +15,33 @@ const notificationChannelService = new NotificationChannelService(
 );
 
 export const notificationChannelRouter = router({
-  create: protectedProcedure
+  create: orgProcedure
     .input(createNotificationChannelSchema)
     .mutation(async ({ input, ctx }) => {
-      if (!ctx.organizationId) {
-        throw new Error("No organization context");
-      }
-      // Verify the requested org matches user's context for security
-      if (input.organizationId !== ctx.organizationId) {
-        throw new Error("Access denied to requested organization");
-      }
-      return notificationChannelService.createNotificationChannel(input);
+      return notificationChannelService.createNotificationChannel({ input, ctx });
     }),
 
-  update: protectedProcedure
+  update: orgProcedure
     .input(updateNotificationChannelSchema)
     .mutation(async ({ input, ctx }) => {
-      if (!ctx.organizationId) {
-        throw new Error("No organization context");
-      }
-      // Verify the requested org matches user's context for security
-      if (input.organizationId !== ctx.organizationId) {
-        throw new Error("Access denied to requested organization");
-      }
-      return notificationChannelService.updateNotificationChannel(input);
+      return notificationChannelService.updateNotificationChannel({ input, ctx });
     }),
 
-  delete: protectedProcedure
+  delete: orgProcedure
     .input(deleteNotificationChannelSchema)
     .mutation(async ({ input, ctx }) => {
-      if (!ctx.organizationId) {
-        throw new Error("No organization context");
-      }
-      // Verify the requested org matches user's context for security
-      if (input.organizationId !== ctx.organizationId) {
-        throw new Error("Access denied to requested organization");
-      }
-      return notificationChannelService.deleteNotificationChannel(input);
+      return notificationChannelService.deleteNotificationChannel({ input, ctx });
     }),
 
-  getAll: protectedProcedure
+  getAll: orgProcedure
     .input(getNotificationChannelsSchema)
     .query(async ({ input, ctx }) => {
-      if (!ctx.organizationId) {
-        throw new Error("No organization context");
-      }
-      // Verify the requested org matches user's context for security
-      if (input.organizationId !== ctx.organizationId) {
-        throw new Error("Access denied to requested organization");
-      }
-      return notificationChannelService.getNotificationChannels(input);
+      return notificationChannelService.getNotificationChannels({ input, ctx });
     }),
 
-  getById: protectedProcedure
+  getById: orgProcedure
     .input(getNotificationChannelSchema)
     .query(async ({ input, ctx }) => {
-      if (!ctx.organizationId) {
-        throw new Error("No organization context");
-      }
-      // Verify the requested org matches user's context for security
-      if (input.organizationId !== ctx.organizationId) {
-        throw new Error("Access denied to requested organization");
-      }
-      return notificationChannelService.getNotificationChannel(input);
+      return notificationChannelService.getNotificationChannel({ input, ctx });
     }),
 });

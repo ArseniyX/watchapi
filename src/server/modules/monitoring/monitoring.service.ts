@@ -1,10 +1,23 @@
-import { ApiEndpoint, CheckStatus } from "../../../generated/prisma";
+import { CheckStatus } from "../../../generated/prisma";
 import { MonitoringRepository } from "./monitoring.repository";
 import { ApiEndpointRepository } from "../api-endpoint/api-endpoint.repository";
-import { SendRequestInput } from "./monitoring.schema";
-import { NotFoundError, ForbiddenError } from "../../errors/custom-errors";
+import {
+  CheckEndpointInput,
+  GetAnalyticsInput,
+  GetAverageResponseTimeInput,
+  GetRecentFailuresInput,
+  GetResponseTimeChartInput,
+  GetResponseTimeHistoryInput,
+  GetTopEndpointsInput,
+  GetUptimeChartInput,
+  GetUptimeStatsInput,
+  SendRequestInput,
+  GetHistoryInput,
+} from "./monitoring.schema";
+import { ForbiddenError } from "../../errors/custom-errors";
 import { logger, logError, logInfo } from "@/lib/logger";
 import { AlertService } from "../alert/alert.service";
+import { Context } from "@/server/trpc";
 
 export interface MonitoringCheckResult {
   status: CheckStatus;
@@ -21,7 +34,7 @@ export class MonitoringService {
     private readonly alertService: AlertService,
   ) {}
 
-  async sendRequest(input: SendRequestInput): Promise<{
+  async sendRequest({ input }: { input: SendRequestInput }): Promise<{
     status: number;
     statusText: string;
     headers: Record<string, string>;
@@ -83,20 +96,23 @@ export class MonitoringService {
     }
   }
 
-  async checkApiEndpoint(
-    apiEndpointId: string,
-    organizationId: string,
-  ): Promise<MonitoringCheckResult> {
+  async checkApiEndpoint({
+    input,
+    ctx,
+  }: {
+    input: CheckEndpointInput;
+    ctx: Context;
+  }): Promise<MonitoringCheckResult> {
     const endpoint = await this.apiEndpointRepository.findById(
-      apiEndpointId,
-      organizationId,
+      input.id,
+      ctx.organizationId,
     );
     if (!endpoint) {
       throw new ForbiddenError("API endpoint not found or access denied");
     }
 
     logInfo("Starting API endpoint check", {
-      endpointId: apiEndpointId,
+      endpointId: input.id,
       url: endpoint.url,
       method: endpoint.method,
     });
@@ -136,7 +152,7 @@ export class MonitoringService {
       if (response.status !== endpoint.expectedStatus) {
         result.errorMessage = `Expected status ${endpoint.expectedStatus}, got ${response.status}`;
         logger.warn("API check status mismatch", {
-          endpointId: apiEndpointId,
+          endpointId: input.id,
           expected: endpoint.expectedStatus,
           actual: response.status,
         });
@@ -144,7 +160,7 @@ export class MonitoringService {
 
       // Save the check result
       await this.monitoringRepository.createMonitoringCheck({
-        apiEndpointId,
+        apiEndpointId: input.id,
         userId: endpoint.userId,
         status: result.status,
         responseTime: result.responseTime || null,
@@ -154,7 +170,7 @@ export class MonitoringService {
       });
 
       logInfo("API endpoint check completed", {
-        endpointId: apiEndpointId,
+        endpointId: input.id,
         status: result.status,
         responseTime: result.responseTime,
         statusCode: result.statusCode,
@@ -162,7 +178,7 @@ export class MonitoringService {
 
       // Evaluate alerts for this check
       await this.alertService.evaluateAlerts({
-        apiEndpointId,
+        apiEndpointId: input.id,
         status: result.status,
         responseTime: result.responseTime,
         statusCode: result.statusCode,
@@ -196,7 +212,7 @@ export class MonitoringService {
       };
 
       logError("API endpoint check failed", error, {
-        endpointId: apiEndpointId,
+        endpointId: input.id,
         url: endpoint.url,
         status: result.status,
         responseTime: result.responseTime,
@@ -204,7 +220,7 @@ export class MonitoringService {
 
       // Save the error result
       await this.monitoringRepository.createMonitoringCheck({
-        apiEndpointId,
+        apiEndpointId: input.id,
         userId: endpoint.userId,
         status: result.status,
         responseTime: result.responseTime || null,
@@ -215,7 +231,7 @@ export class MonitoringService {
 
       // Evaluate alerts for errors/timeouts
       await this.alertService.evaluateAlerts({
-        apiEndpointId,
+        apiEndpointId: input.id,
         status: result.status,
         responseTime: result.responseTime,
         statusCode: result.statusCode,
@@ -226,89 +242,101 @@ export class MonitoringService {
     }
   }
 
-  async getMonitoringHistory(
-    apiEndpointId: string,
-    organizationId: string,
-    options: { skip?: number; take?: number } = {},
-  ) {
+  async getMonitoringHistory({
+    input,
+    ctx,
+  }: {
+    input: GetHistoryInput;
+    ctx: Context;
+  }) {
     // Verify organization access
     const endpoint = await this.apiEndpointRepository.findById(
-      apiEndpointId,
-      organizationId,
+      input.endpointId,
+      ctx.organizationId,
     );
     if (!endpoint) {
       throw new ForbiddenError("API endpoint not found or access denied");
     }
 
-    return this.monitoringRepository.findChecksByApiEndpointId(apiEndpointId, {
-      ...options,
-      orderBy: { checkedAt: "desc" },
-    });
+    return this.monitoringRepository.findChecksByApiEndpointId(
+      input.endpointId,
+      {
+        skip: input.skip,
+        take: input.take,
+        orderBy: { checkedAt: "desc" },
+      },
+    );
   }
 
-  async getUptimeStats(
-    apiEndpointId: string,
-    organizationId: string,
-    days: number = 30,
-  ) {
+  async getUptimeStats({
+    input,
+    ctx,
+  }: {
+    input: GetUptimeStatsInput;
+    ctx: Context;
+  }) {
     // Verify organization access
     const endpoint = await this.apiEndpointRepository.findById(
-      apiEndpointId,
-      organizationId,
+      input.endpointId,
+      ctx.organizationId,
     );
     if (!endpoint) {
       throw new ForbiddenError("API endpoint not found or access denied");
     }
 
     const to = new Date();
-    const from = new Date(to.getTime() - days * 24 * 60 * 60 * 1000);
+    const from = new Date(to.getTime() - input.days * 24 * 60 * 60 * 1000);
 
-    return this.monitoringRepository.getUptimeStats(apiEndpointId, from, to);
+    return this.monitoringRepository.getUptimeStats(input.endpointId, from, to);
   }
 
-  async getAverageResponseTime(
-    apiEndpointId: string,
-    organizationId: string,
-    days: number = 30,
-  ) {
+  async getAverageResponseTime({
+    input,
+    ctx,
+  }: {
+    input: GetAverageResponseTimeInput;
+    ctx: Context;
+  }) {
     // Verify organization access
     const endpoint = await this.apiEndpointRepository.findById(
-      apiEndpointId,
-      organizationId,
+      input.endpointId,
+      ctx.organizationId,
     );
     if (!endpoint) {
       throw new ForbiddenError("API endpoint not found or access denied");
     }
 
     const to = new Date();
-    const from = new Date(to.getTime() - days * 24 * 60 * 60 * 1000);
+    const from = new Date(to.getTime() - input.days * 24 * 60 * 60 * 1000);
 
     return this.monitoringRepository.getAverageResponseTime(
-      apiEndpointId,
+      input.endpointId,
       from,
       to,
     );
   }
 
-  async getResponseTimeHistory(
-    apiEndpointId: string,
-    organizationId: string,
-    days: number = 7,
-  ) {
+  async getResponseTimeHistory({
+    input,
+    ctx,
+  }: {
+    input: GetResponseTimeHistoryInput;
+    ctx: Context;
+  }) {
     // Verify organization access
     const endpoint = await this.apiEndpointRepository.findById(
-      apiEndpointId,
-      organizationId,
+      input.endpointId,
+      ctx.organizationId,
     );
     if (!endpoint) {
       throw new ForbiddenError("API endpoint not found or access denied");
     }
 
     const to = new Date();
-    const from = new Date(to.getTime() - days * 24 * 60 * 60 * 1000);
+    const from = new Date(to.getTime() - input.days * 24 * 60 * 60 * 1000);
 
     return this.monitoringRepository.getResponseTimeHistoryByEndpoint(
-      apiEndpointId,
+      input.endpointId,
       from,
       to,
     );
@@ -323,7 +351,12 @@ export class MonitoringService {
 
     for (const endpoint of activeEndpoints) {
       try {
-        await this.checkApiEndpoint(endpoint.id, endpoint.organizationId);
+        await this.checkApiEndpoint({
+          input: { id: endpoint.id },
+          ctx: {
+            organizationId: endpoint.organizationId,
+          },
+        });
       } catch (error) {
         logError(`Failed to check endpoint ${endpoint.id}`, error, {
           endpointId: endpoint.id,
@@ -339,18 +372,26 @@ export class MonitoringService {
   }
 
   // Analytics methods
-  async getAnalytics(organizationId: string, days: number = 7) {
+  async getAnalytics({
+    ctx,
+    input,
+  }: {
+    ctx: Context;
+    input: GetAnalyticsInput;
+  }) {
     const to = new Date();
-    const from = new Date(to.getTime() - days * 24 * 60 * 60 * 1000);
+    const from = new Date(to.getTime() - input.days * 24 * 60 * 60 * 1000);
 
     // Get previous period for comparison
     const prevTo = from;
-    const prevFrom = new Date(prevTo.getTime() - days * 24 * 60 * 60 * 1000);
+    const prevFrom = new Date(
+      prevTo.getTime() - input.days * 24 * 60 * 60 * 1000,
+    );
 
     const [currentStats, previousStats] = await Promise.all([
-      this.monitoringRepository.getOverallStats(organizationId, from, to),
+      this.monitoringRepository.getOverallStats(ctx.organizationId, from, to),
       this.monitoringRepository.getOverallStats(
-        organizationId,
+        ctx.organizationId,
         prevFrom,
         prevTo,
       ),
@@ -386,44 +427,68 @@ export class MonitoringService {
     };
   }
 
-  async getTopEndpoints(
-    organizationId: string,
-    days: number = 7,
-    limit: number = 5,
-  ) {
+  async getTopEndpoints({
+    input,
+    ctx,
+  }: {
+    input: GetTopEndpointsInput;
+    ctx: Context;
+  }) {
     const to = new Date();
-    const from = new Date(to.getTime() - days * 24 * 60 * 60 * 1000);
+    const from = new Date(to.getTime() - input.days * 24 * 60 * 60 * 1000);
 
     return this.monitoringRepository.getTopEndpoints(
-      organizationId,
+      ctx.organizationId,
       from,
       to,
-      limit,
+      input.limit,
     );
   }
 
-  async getResponseTimeChart(organizationId: string, days: number = 7) {
+  async getResponseTimeChart({
+    input,
+    ctx,
+  }: {
+    input: GetResponseTimeChartInput;
+    ctx: Context;
+  }) {
     const to = new Date();
-    const from = new Date(to.getTime() - days * 24 * 60 * 60 * 1000);
+    const from = new Date(to.getTime() - input.days * 24 * 60 * 60 * 1000);
 
     return this.monitoringRepository.getResponseTimeHistoryByOrganization(
-      organizationId,
+      ctx.organizationId,
       from,
       to,
     );
   }
 
-  async getUptimeChart(organizationId: string, days: number = 7) {
+  async getUptimeChart({
+    input,
+    ctx,
+  }: {
+    input: GetUptimeChartInput;
+    ctx: Context;
+  }) {
     const to = new Date();
-    const from = new Date(to.getTime() - days * 24 * 60 * 60 * 1000);
+    const from = new Date(to.getTime() - input.days * 24 * 60 * 60 * 1000);
 
-    return this.monitoringRepository.getUptimeHistory(organizationId, from, to);
+    return this.monitoringRepository.getUptimeHistory(
+      ctx.organizationId,
+      from,
+      to,
+    );
   }
 
-  async getRecentFailures(organizationId: string, limit: number = 50) {
+  async getRecentFailures({
+    ctx,
+    input,
+  }: {
+    ctx: Context;
+    input: GetRecentFailuresInput;
+  }) {
     return this.monitoringRepository.findRecentFailuresByOrganization(
-      organizationId,
-      limit,
+      ctx.organizationId,
+      input.limit,
     );
   }
 }

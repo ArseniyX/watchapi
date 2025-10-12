@@ -66,10 +66,7 @@ export class ApiEndpointRepository
    * Find endpoint by ID within an organization.
    * Returns null if endpoint doesn't exist or doesn't belong to the organization.
    */
-  async findById(
-    id: string,
-    organizationId: string,
-  ): Promise<ApiEndpointWithRelations | null> {
+  async findById(id: string, organizationId: string) {
     return this.prisma.apiEndpoint.findFirst({
       where: {
         id,
@@ -93,7 +90,7 @@ export class ApiEndpointRepository
    * Only use for scheduler/system operations.
    * @internal
    */
-  async findByIdInternal(id: string): Promise<ApiEndpointWithRelations | null> {
+  async findByIdInternal(id: string) {
     return this.prisma.apiEndpoint.findUnique({
       where: { id },
       include: {

@@ -16,18 +16,15 @@ export interface Context {
   organizationPlan?: PlanType;
 }
 
-export const createTRPCContext = async (
-  opts: CreateNextContextOptions,
-): Promise<Context> => {
+export const createTRPCContext = async (opts: CreateNextContextOptions) => {
   const { req } = opts;
 
-  // Get token from Authorization header
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith("Bearer ")) {
     return {};
   }
 
-  const token = authHeader.substring(7);
+  const token = authHeader.replace("Bearer ", "");
 
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET!) as {
@@ -36,7 +33,6 @@ export const createTRPCContext = async (
       role: string;
     };
 
-    // Verify user exists
     const user = await prisma.user.findUnique({
       where: { id: payload.userId },
       select: { id: true, email: true, role: true },
@@ -46,53 +42,40 @@ export const createTRPCContext = async (
       return {};
     }
 
-    // Get organization from header or use user's personal organization
-    const orgHeader = req.headers["x-organization-id"] as string | undefined;
-    let organizationId = orgHeader;
+    const organizationId = req.headers["x-organization-id"];
 
-    if (!organizationId) {
-      // Get user's personal organization (or first organization they're a member of)
-      const membership = await prisma.organizationMember.findFirst({
-        where: { userId: user.id, status: "ACTIVE" },
-        select: { organizationId: true },
-        orderBy: { joinedAt: "asc" }, // Use earliest joined (personal org)
+    if (typeof organizationId !== "string") {
+      logger.warn("Missing organization ID header", {
+        userId: user.id,
+        email: user.email,
+        role: user.role,
       });
-
-      organizationId = membership?.organizationId;
+      return {};
     }
 
-    // Verify user has access to the organization and get org plan
-    let organizationPlan: PlanType | undefined;
-    if (organizationId) {
-      const hasAccess = await prisma.organizationMember.findUnique({
-        where: {
-          userId_organizationId: {
-            userId: user.id,
-            organizationId: organizationId,
-          },
+    const membership = await prisma.organizationMember.findUnique({
+      where: {
+        userId_organizationId: {
+          userId: user.id,
+          organizationId: organizationId,
         },
+      },
+      select: { status: true },
+    });
+
+    if (!membership) {
+      logger.warn("Unauthorized organization access attempt", {
+        userId: user.id,
+        organizationId: organizationId,
+        membershipStatus: membership?.status,
       });
-
-      if (!hasAccess) {
-        // User doesn't have access to requested org, fall back to personal
-        const membership = await prisma.organizationMember.findFirst({
-          where: { userId: user.id, status: "ACTIVE" },
-          select: { organizationId: true },
-          orderBy: { joinedAt: "asc" },
-        });
-        organizationId = membership?.organizationId;
-      }
-
-      // Fetch organization plan
-      if (organizationId) {
-        const org = await prisma.organization.findUnique({
-          where: { id: organizationId },
-          select: { plan: true },
-        });
-        organizationPlan = org?.plan;
-      }
+      return {};
     }
 
+    const org = await prisma.organization.findUnique({
+      where: { id: organizationId },
+      select: { plan: true },
+    });
     return {
       user: {
         id: user.id,
@@ -100,7 +83,7 @@ export const createTRPCContext = async (
         role: user.role,
       },
       organizationId,
-      organizationPlan,
+      organizationPlan: org?.plan,
     };
   } catch (error) {
     logError("JWT verification failed", error, {
@@ -113,8 +96,6 @@ export const createTRPCContext = async (
 
 const t = initTRPC.context<Context>().create({
   errorFormatter({ shape, error }) {
-    // Convert custom AppError to proper tRPC error
-    // tRPC wraps thrown errors in error.cause, so check there first
     if (error.cause && isAppError(error.cause)) {
       const appError = error.cause;
       return {
@@ -145,6 +126,8 @@ const t = initTRPC.context<Context>().create({
 
 export const router = t.router;
 export const publicProcedure = t.procedure;
+
+// User authenticated, no organization context required
 export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
   if (!ctx.user) {
     logger.warn("Unauthorized access attempt");
@@ -162,6 +145,22 @@ export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
       organizationPlan: ctx.organizationPlan,
     },
   });
+});
+
+// User authenticated + organization context required
+// Use this for most operations (API endpoints, collections, monitoring, etc.)
+export const orgProcedure = protectedProcedure.use(({ ctx, next }) => {
+  if (!ctx.organizationId) {
+    logger.warn("Missing organization context", {
+      userId: ctx.user.id,
+      email: ctx.user.email,
+    });
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Organization context is required",
+    });
+  }
+  return next({ ctx });
 });
 
 export const adminProcedure = protectedProcedure.use(({ ctx, next }) => {

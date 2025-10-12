@@ -1,4 +1,4 @@
-import { router, protectedProcedure } from "../../trpc";
+import { router, orgProcedure } from "../../trpc";
 import { ApiEndpointService } from "./api-endpoint.service";
 import {
   createApiEndpointSchema,
@@ -13,88 +13,43 @@ export const createApiEndpointRouter = (
   apiEndpointService: ApiEndpointService,
 ) =>
   router({
-    create: protectedProcedure
+    create: orgProcedure
       .input(createApiEndpointSchema)
-      .mutation(async ({ input, ctx }) => {
-        if (!ctx.organizationId) {
-          throw new Error("No organization context");
-        }
-        return await apiEndpointService.createApiEndpoint(
-          ctx.user.id,
-          ctx.organizationPlan,
-          ctx.organizationId,
-          input,
-        );
+      .mutation(async ({ ctx, input }) => {
+        return await apiEndpointService.createApiEndpoint({ ctx, input });
       }),
 
-    get: protectedProcedure
+    get: orgProcedure
       .input(getApiEndpointSchema)
-      .query(async ({ input, ctx }) => {
-        if (!ctx.organizationId) {
-          throw new Error("No organization context");
-        }
-        return apiEndpointService.getApiEndpoint(input.id, ctx.organizationId);
+      .query(async ({ ctx, input }) => {
+        return apiEndpointService.getApiEndpoint({ ctx, input });
       }),
 
-    getMyEndpoints: protectedProcedure.query(async ({ ctx }) => {
-      if (!ctx.organizationId) {
-        throw new Error("No organization context");
-      }
-      return apiEndpointService.getOrganizationApiEndpoints(ctx.organizationId);
+    getMyEndpoints: orgProcedure.query(async ({ ctx }) => {
+      return apiEndpointService.getOrganizationApiEndpoints({ ctx });
     }),
 
-    getOrganizationEndpoints: protectedProcedure
+    getOrganizationEndpoints: orgProcedure
       .input(getOrganizationEndpointsSchema)
-      .query(async ({ input, ctx }) => {
-        if (!ctx.organizationId) {
-          throw new Error("No organization context");
-        }
-        // Verify the requested org matches user's context for security
-        if (input.organizationId !== ctx.organizationId) {
-          throw new Error("Access denied to requested organization");
-        }
-        return apiEndpointService.getOrganizationApiEndpoints(
-          ctx.organizationId,
-        );
+      .query(async ({ ctx, input }) => {
+        return apiEndpointService.getOrganizationApiEndpoints({ ctx });
       }),
 
-    update: protectedProcedure
+    update: orgProcedure
       .input(getApiEndpointSchema.merge(updateApiEndpointSchema))
-      .mutation(async ({ input, ctx }) => {
-        if (!ctx.organizationId) {
-          throw new Error("No organization context");
-        }
-        const { id, ...updateData } = input;
-        return apiEndpointService.updateApiEndpoint(
-          ctx.user.id,
-          ctx.organizationPlan,
-          ctx.organizationId,
-          id,
-          updateData,
-        );
+      .mutation(async ({ ctx, input }) => {
+        return apiEndpointService.updateApiEndpoint({ ctx, input });
       }),
 
-    delete: protectedProcedure
+    delete: orgProcedure
       .input(deleteApiEndpointSchema)
-      .mutation(async ({ input, ctx }) => {
-        if (!ctx.organizationId) {
-          throw new Error("No organization context");
-        }
-        return apiEndpointService.deleteApiEndpoint(
-          ctx.organizationId,
-          input.id,
-        );
+      .mutation(async ({ ctx, input }) => {
+        return apiEndpointService.deleteApiEndpoint({ ctx, input });
       }),
 
-    search: protectedProcedure
+    search: orgProcedure
       .input(searchEndpointsSchema)
-      .query(async ({ input, ctx }) => {
-        if (!ctx.organizationId) {
-          throw new Error("No organization context");
-        }
-        return apiEndpointService.searchEndpoints(
-          ctx.organizationId,
-          input.query,
-        );
+      .query(async ({ ctx, input }) => {
+        return apiEndpointService.searchEndpoints({ ctx, input });
       }),
   });

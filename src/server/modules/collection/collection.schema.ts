@@ -30,9 +30,7 @@ export const searchCollectionsSchema = z.object({
 });
 
 // Infer types from schemas
-export type CreateCollectionInput = z.infer<typeof createCollectionSchema> & {
-  organizationId: string; // Make required in the service layer
-};
+export type CreateCollectionInput = z.infer<typeof createCollectionSchema>;
 export type UpdateCollectionInput = z.infer<typeof updateCollectionSchema>;
 export type GetCollectionInput = z.infer<typeof getCollectionSchema>;
 export type DeleteCollectionInput = z.infer<typeof deleteCollectionSchema>;

@@ -6,6 +6,12 @@ import {
   CreateAlertInput,
   UpdateAlertInput,
   CreateAlertNotificationInput,
+  UpdateAlertPayload,
+  GetAlertInput,
+  GetAlertsByEndpointInput,
+  DeleteAlertInput,
+  DeleteAlertNotificationInput,
+  GetAlertTriggersInput,
 } from "./alert.schema";
 import {
   NotFoundError,
@@ -15,6 +21,7 @@ import {
 import { AlertCondition, CheckStatus, PlanType } from "@/generated/prisma";
 import { logger, logInfo, logError } from "@/lib/logger";
 import { getPlanLimits, isUnlimited } from "../../config/plan-limits";
+import { Context } from "@/server/trpc";
 
 export interface AlertEvaluationContext {
   apiEndpointId: string;
@@ -36,12 +43,11 @@ export class AlertService {
     private readonly notificationChannelService: NotificationChannelService,
   ) {}
 
-  async createAlert(
-    input: CreateAlertInput,
-    userId: string,
-    organizationId: string,
-    userPlan: PlanType,
-  ) {
+  async createAlert({ input, ctx }: { input: CreateAlertInput; ctx: Context }) {
+    const organizationId = ctx.organizationId;
+    const userId = ctx.user?.id;
+    const userPlan = ctx.organizationPlan || PlanType.FREE;
+
     // Verify endpoint exists and user has access
     const endpoint = await this.apiEndpointRepository.findById(
       input.apiEndpointId,
@@ -53,8 +59,9 @@ export class AlertService {
 
     // Check plan limits for alerts
     const limits = getPlanLimits(userPlan);
-    const currentAlerts =
-      await this.alertRepository.findByOrganization(organizationId);
+    const currentAlerts = await this.alertRepository.findByOrganization(
+      organizationId,
+    );
 
     if (
       !isUnlimited(limits.maxAlerts) &&
@@ -80,10 +87,12 @@ export class AlertService {
     });
   }
 
-  async getAlert(id: string, organizationId: string) {
-    const alert = await this.alertRepository.findById(id);
+  async getAlert({ input, ctx }: { input: GetAlertInput; ctx: Context }) {
+    const organizationId = ctx.organizationId;
+
+    const alert = await this.alertRepository.findById(input.id);
     if (!alert) {
-      throw new NotFoundError("Alert", id);
+      throw new NotFoundError("Alert", input.id);
     }
 
     // Verify organization access via endpoint
@@ -94,48 +103,69 @@ export class AlertService {
     return alert;
   }
 
-  async getAlertsByEndpoint(apiEndpointId: string, organizationId: string) {
+  async getAlertsByEndpoint({
+    input,
+    ctx,
+  }: {
+    input: GetAlertsByEndpointInput;
+    ctx: Context;
+  }) {
+    const organizationId = ctx.organizationId;
+
     // Verify endpoint access
     const endpoint = await this.apiEndpointRepository.findById(
-      apiEndpointId,
+      input.apiEndpointId,
       organizationId,
     );
     if (!endpoint) {
       throw new ForbiddenError("API endpoint not found or access denied");
     }
 
-    return this.alertRepository.findByApiEndpoint(apiEndpointId);
+    return this.alertRepository.findByApiEndpoint(input.apiEndpointId);
   }
 
-  async getAlertsByOrganization(organizationId: string) {
+  async getAlertsByOrganization({ ctx }: { input?: void; ctx: Context }) {
+    const organizationId = ctx.organizationId;
+
     return this.alertRepository.findByOrganization(organizationId);
   }
 
-  async updateAlert(
-    id: string,
-    input: UpdateAlertInput,
-    organizationId: string,
-  ) {
-    // Verify alert exists and user has access
-    await this.getAlert(id, organizationId);
+  async updateAlert({
+    input,
+    ctx,
+  }: {
+    input: UpdateAlertPayload;
+    ctx: Context;
+  }) {
+    const { id, ...updateData } = input;
 
-    return this.alertRepository.update(id, input);
+    // Verify alert exists and user has access
+    await this.getAlert({ input, ctx });
+
+    return this.alertRepository.update(id, updateData as UpdateAlertInput);
   }
 
-  async deleteAlert(id: string, organizationId: string) {
-    // Verify alert exists and user has access
-    await this.getAlert(id, organizationId);
+  async deleteAlert({ input, ctx }: { input: DeleteAlertInput; ctx: Context }) {
+    const organizationId = ctx.organizationId;
 
-    return this.alertRepository.delete(id);
+    // Verify alert exists and user has access
+    await this.getAlert({ input: { id: input.id }, ctx });
+
+    return this.alertRepository.delete(input.id);
   }
 
   // Alert Notification management
-  async createAlertNotification(
-    input: CreateAlertNotificationInput,
-    organizationId: string,
-  ) {
+  async createAlertNotification({
+    input,
+    ctx,
+  }: {
+    input: CreateAlertNotificationInput;
+    ctx: Context;
+  }) {
+    const organizationId = ctx.organizationId;
+
     // Verify alert exists and user has access
-    await this.getAlert(input.alertId, organizationId);
+    await this.getAlert({ input: { id: input.alertId }, ctx });
 
     return this.alertRepository.createNotification({
       type: input.type,
@@ -147,12 +177,22 @@ export class AlertService {
     });
   }
 
-  async deleteAlertNotification(id: string, organizationId: string) {
+  async deleteAlertNotification({
+    input,
+    ctx,
+  }: {
+    input: DeleteAlertNotificationInput;
+    ctx: Context;
+  }) {
+    const organizationId = ctx.organizationId;
+
     // Fetch notification to get alertId, then verify org access
-    const notification = await this.alertRepository.findNotificationById(id);
+    const notification = await this.alertRepository.findNotificationById(
+      input.id,
+    );
 
     if (!notification) {
-      throw new NotFoundError("Alert notification", id);
+      throw new NotFoundError("Alert notification", input.id);
     }
 
     // Verify organization access via alert -> endpoint
@@ -160,14 +200,22 @@ export class AlertService {
       throw new ForbiddenError("Alert notification not found or access denied");
     }
 
-    return this.alertRepository.deleteNotification(id);
+    return this.alertRepository.deleteNotification(input.id);
   }
 
-  async getAlertTriggers(alertId: string, organizationId: string, limit = 50) {
-    // Verify alert exists and user has access
-    await this.getAlert(alertId, organizationId);
+  async getAlertTriggers({
+    input,
+    ctx,
+  }: {
+    input: GetAlertTriggersInput;
+    ctx: Context;
+  }) {
+    const organizationId = ctx.organizationId;
 
-    return this.alertRepository.findTriggersByAlert(alertId, limit);
+    // Verify alert exists and user has access
+    await this.getAlert({ input: { id: input.alertId }, ctx });
+
+    return this.alertRepository.findTriggersByAlert(input.alertId, input.limit);
   }
 
   /**
@@ -351,10 +399,11 @@ export class AlertService {
     };
 
     // Send notifications via organization's configured channels
-    const notificationResult = await this.notificationChannelService.sendNotifications(
-      endpoint.organizationId,
-      notificationData,
-    );
+    const notificationResult =
+      await this.notificationChannelService.sendNotifications(
+        endpoint.organizationId,
+        notificationData,
+      );
 
     logInfo("Alert triggered and notifications sent", {
       alertId: alert.id,

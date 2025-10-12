@@ -28,13 +28,11 @@ export const createTabsSlice: StateCreator<TabsSlice> = (set, get) => ({
 
   addTab: (tab) =>
     set((state) => {
-      // Check if tab already exists
       const existingTab = state.tabs.find((t) => t.id === tab.id);
+
       if (existingTab) {
-        // Just set it as active
         return { activeTabId: tab.id };
       }
-      // Add new tab and set as active
       return {
         tabs: [...state.tabs, tab],
         activeTabId: tab.id,
@@ -46,11 +44,9 @@ export const createTabsSlice: StateCreator<TabsSlice> = (set, get) => ({
       const newTabs = state.tabs.filter((t) => t.id !== tabId);
       let newActiveTabId = state.activeTabId;
 
-      // If removing active tab, switch to adjacent tab
       if (state.activeTabId === tabId) {
         const currentIndex = state.tabs.findIndex((t) => t.id === tabId);
         if (newTabs.length > 0) {
-          // Try next tab, otherwise previous
           const nextIndex = Math.min(currentIndex, newTabs.length - 1);
           newActiveTabId = newTabs[nextIndex]?.id || null;
         } else {

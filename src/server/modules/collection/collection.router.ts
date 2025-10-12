@@ -1,4 +1,4 @@
-import { router, protectedProcedure } from "../../trpc";
+import { router, orgProcedure } from "../../trpc";
 import { CollectionService } from "./collection.service";
 import {
   createCollectionSchema,
@@ -11,87 +11,77 @@ import {
 
 export const createCollectionRouter = (collectionService: CollectionService) =>
   router({
-    createCollection: protectedProcedure
+    createCollection: orgProcedure
       .input(createCollectionSchema)
-      .mutation(async ({ input, ctx }) => {
-        if (!ctx.organizationId) {
-          throw new Error("No organization context");
-        }
+      .mutation(async ({ ctx, input }) => {
         return collectionService.createCollection({
-          ...input,
-          organizationId: ctx.organizationId,
+          ctx,
+          input,
         });
       }),
 
-    getCollection: protectedProcedure
+    getCollection: orgProcedure
       .input(getCollectionSchema)
-      .query(async ({ input, ctx }) => {
-        if (!ctx.organizationId) {
-          throw new Error("No organization context");
-        }
-        return collectionService.getCollection(input.id, ctx.organizationId);
+      .query(async ({ ctx, input }) => {
+        return collectionService.getCollection({
+          ctx,
+          input,
+        });
       }),
 
-    getMyCollections: protectedProcedure.query(async ({ ctx }) => {
-      if (!ctx.organizationId) {
-        throw new Error("No organization context");
-      }
-      return collectionService.getCollections(ctx.organizationId);
+    getMyCollections: orgProcedure.query(async ({ ctx }) => {
+      return collectionService.getCollections({ ctx });
     }),
 
-    updateCollection: protectedProcedure
+    updateCollection: orgProcedure
       .input(getCollectionSchema.merge(updateCollectionSchema))
-      .mutation(async ({ input, ctx }) => {
-        if (!ctx.organizationId) {
-          throw new Error("No organization context");
-        }
-        const { id, ...updateData } = input;
-        return collectionService.updateCollection(id, ctx.organizationId, updateData);
+      .mutation(async ({ ctx, input }) => {
+        return collectionService.updateCollection({
+          ctx,
+          input,
+        });
       }),
 
-    deleteCollection: protectedProcedure
+    deleteCollection: orgProcedure
       .input(deleteCollectionSchema)
-      .mutation(async ({ input, ctx }) => {
-        if (!ctx.organizationId) {
-          throw new Error("No organization context");
-        }
-        return collectionService.deleteCollection(input.id, ctx.organizationId);
+      .mutation(async ({ ctx, input }) => {
+        return collectionService.deleteCollection({
+          ctx,
+          input,
+        });
       }),
-
-    getCollectionStats: protectedProcedure.query(async ({ ctx }) => {
-      if (!ctx.organizationId) {
-        throw new Error("No organization context");
-      }
-      return collectionService.getCollectionStats(ctx.organizationId);
+    getCollectionStats: orgProcedure.query(async ({ ctx }) => {
+      return collectionService.getCollectionStats({
+        ctx,
+      });
     }),
 
-    duplicateCollection: protectedProcedure
+    duplicateCollection: orgProcedure
       .input(duplicateCollectionSchema)
-      .mutation(async ({ input, ctx }) => {
-        if (!ctx.organizationId) {
-          throw new Error("No organization context");
-        }
-        const originalCollection = await collectionService.getCollection(
-          input.id,
-          ctx.organizationId,
-        );
+      .mutation(async ({ ctx, input }) => {
+        const originalCollection = await collectionService.getCollection({
+          ctx,
+          input,
+        });
         if (!originalCollection) {
           throw new Error("Collection not found");
         }
 
         return collectionService.createCollection({
-          name: `${originalCollection.name} (Copy)`,
-          description: originalCollection.description || undefined,
-          organizationId: ctx.organizationId,
+          ctx,
+          input: {
+            name: `${originalCollection.name} (Copy)`,
+            description: originalCollection.description || undefined,
+          },
         });
       }),
 
-    searchCollections: protectedProcedure
+    searchCollections: orgProcedure
       .input(searchCollectionsSchema)
-      .query(async ({ input, ctx }) => {
-        if (!ctx.organizationId) {
-          throw new Error("No organization context");
-        }
-        return collectionService.searchCollections(input.query, ctx.organizationId);
+      .query(async ({ ctx, input }) => {
+        return collectionService.searchCollections({
+          ctx,
+          input,
+        });
       }),
   });

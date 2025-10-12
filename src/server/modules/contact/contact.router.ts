@@ -7,7 +7,7 @@ export const contactRouter = router({
   sendMessage: publicProcedure
     .input(sendContactMessageSchema)
     .mutation(async ({ input }) => {
-      const success = await contactService.sendContactMessage(input);
+      const success = await contactService.sendContactMessage({ input });
 
       if (!success) {
         throw new TRPCError({

@@ -47,6 +47,11 @@ global.fetch = vi.fn();
 
 describe("MonitoringService", () => {
   let service: MonitoringService;
+  const TEST_CTX = {
+    user: { id: "user-1", email: "test@example.com", role: "USER" as const },
+    organizationId: "org-1",
+    organizationPlan: "FREE" as const,
+  };
 
   beforeEach(() => {
     service = new MonitoringService(
@@ -72,9 +77,11 @@ describe("MonitoringService", () => {
       (global.fetch as any).mockResolvedValue(mockResponse);
 
       const result = await service.sendRequest({
-        url: "https://api.example.com",
-        method: HttpMethod.GET,
-        headers: { Authorization: "Bearer token" },
+        input: {
+          url: "https://api.example.com",
+          method: HttpMethod.GET,
+          headers: { Authorization: "Bearer token" },
+        },
       });
 
       expect(global.fetch).toHaveBeenCalledWith(
@@ -94,8 +101,10 @@ describe("MonitoringService", () => {
       (global.fetch as any).mockRejectedValue(new Error("Network error"));
 
       const result = await service.sendRequest({
-        url: "https://api.example.com",
-        method: HttpMethod.GET,
+        input: {
+          url: "https://api.example.com",
+          method: HttpMethod.GET,
+        },
       });
 
       expect(result.status).toBe(0);
@@ -129,7 +138,10 @@ describe("MonitoringService", () => {
       mockMonitoringRepository.createMonitoringCheck.mockResolvedValue({});
       mockMonitoringRepository.findUserById.mockResolvedValue({ email: null });
 
-      const result = await service.checkApiEndpoint("endpoint-1", "org-1");
+      const result = await service.checkApiEndpoint({
+        input: { id: "endpoint-1" },
+        ctx: TEST_CTX,
+      });
 
       expect(result.status).toBe(CheckStatus.SUCCESS);
       expect(result.statusCode).toBe(200);
@@ -176,7 +188,10 @@ describe("MonitoringService", () => {
       // Add delay to ensure non-zero response time
       await new Promise((resolve) => setTimeout(resolve, 10));
 
-      const result = await service.checkApiEndpoint("endpoint-1", "org-1");
+      const result = await service.checkApiEndpoint({
+        input: { id: "endpoint-1" },
+        ctx: TEST_CTX,
+      });
 
       expect(result.status).toBe(CheckStatus.FAILURE);
       expect(result.statusCode).toBe(404);
@@ -206,7 +221,10 @@ describe("MonitoringService", () => {
         email: "user@example.com",
       });
 
-      const result = await service.checkApiEndpoint("endpoint-1", "org-1");
+      const result = await service.checkApiEndpoint({
+        input: { id: "endpoint-1" },
+        ctx: TEST_CTX,
+      });
 
       expect(result.status).toBe(CheckStatus.TIMEOUT);
       expect(result.responseTime).toBe(100);
@@ -233,7 +251,10 @@ describe("MonitoringService", () => {
         email: "user@example.com",
       });
 
-      const result = await service.checkApiEndpoint("endpoint-1", "org-1");
+      const result = await service.checkApiEndpoint({
+        input: { id: "endpoint-1" },
+        ctx: TEST_CTX,
+      });
 
       expect(result.status).toBe(CheckStatus.ERROR);
       expect(result.errorMessage).toBe("Network failure");
@@ -243,7 +264,10 @@ describe("MonitoringService", () => {
       mockApiEndpointRepository.findById.mockResolvedValue(null);
 
       await expect(
-        service.checkApiEndpoint("nonexistent", "org-1"),
+        service.checkApiEndpoint({
+          input: { id: "nonexistent" },
+          ctx: TEST_CTX,
+        }),
       ).rejects.toThrow("API endpoint");
     });
   });
@@ -261,9 +285,13 @@ describe("MonitoringService", () => {
         mockHistory,
       );
 
-      const result = await service.getMonitoringHistory("endpoint-1", "org-1", {
-        skip: 0,
-        take: 10,
+      const result = await service.getMonitoringHistory({
+        input: {
+          endpointId: "endpoint-1",
+          skip: 0,
+          take: 10,
+        },
+        ctx: TEST_CTX,
       });
 
       expect(
@@ -292,7 +320,10 @@ describe("MonitoringService", () => {
       mockApiEndpointRepository.findById.mockResolvedValue(mockEndpoint);
       mockMonitoringRepository.getUptimeStats.mockResolvedValue(mockStats);
 
-      const result = await service.getUptimeStats("endpoint-1", "org-1", 7);
+      const result = await service.getUptimeStats({
+        input: { endpointId: "endpoint-1", days: 7 },
+        ctx: TEST_CTX,
+      });
 
       expect(mockMonitoringRepository.getUptimeStats).toHaveBeenCalledWith(
         "endpoint-1",
@@ -327,7 +358,10 @@ describe("MonitoringService", () => {
         .mockResolvedValueOnce(currentStats)
         .mockResolvedValueOnce(previousStats);
 
-      const result = await service.getAnalytics("user-1", 7);
+      const result = await service.getAnalytics({
+        input: { days: 7 },
+        ctx: TEST_CTX,
+      });
 
       expect(result.current).toEqual(currentStats);
       expect(result.previous).toEqual(previousStats);
@@ -358,7 +392,10 @@ describe("MonitoringService", () => {
         .mockResolvedValueOnce(currentStats)
         .mockResolvedValueOnce(previousStats);
 
-      const result = await service.getAnalytics("user-1", 7);
+      const result = await service.getAnalytics({
+        input: { days: 7 },
+        ctx: TEST_CTX,
+      });
 
       expect(result.changes.totalChecks).toBe(100);
       expect(result.changes.avgResponseTime).toBe(100);
@@ -374,10 +411,13 @@ describe("MonitoringService", () => {
 
       mockMonitoringRepository.getTopEndpoints.mockResolvedValue(mockEndpoints);
 
-      const result = await service.getTopEndpoints("user-1", 7, 5);
+      const result = await service.getTopEndpoints({
+        input: { days: 7, limit: 5 },
+        ctx: TEST_CTX,
+      });
 
       expect(mockMonitoringRepository.getTopEndpoints).toHaveBeenCalledWith(
-        "user-1",
+        "org-1",
         expect.any(Date),
         expect.any(Date),
         5,

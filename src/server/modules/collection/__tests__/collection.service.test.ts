@@ -16,6 +16,7 @@ const mockRepository = {
 };
 
 const TEST_ORG_ID = "org-test-123";
+const TEST_CTX = { organizationId: TEST_ORG_ID };
 
 describe("CollectionService", () => {
   let service: CollectionService;
@@ -30,12 +31,13 @@ describe("CollectionService", () => {
       const input = {
         name: "My Collection",
         description: "Test description",
-        organizationId: "org-1",
       };
 
       const mockCollection = {
         id: "collection-1",
-        ...input,
+        name: input.name,
+        description: input.description,
+        organizationId: TEST_ORG_ID,
         apiEndpoints: [],
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -43,27 +45,26 @@ describe("CollectionService", () => {
 
       mockRepository.create.mockResolvedValue(mockCollection);
 
-      const result = await service.createCollection(input);
+      const result = await service.createCollection({ ctx: TEST_CTX, input });
 
       expect(mockRepository.create).toHaveBeenCalledWith({
         name: "My Collection",
         description: "Test description",
-        organizationId: "org-1",
+        organizationId: TEST_ORG_ID,
       });
       expect(result).toEqual(mockCollection);
     });
 
-    it("should create collection with required organizationId", async () => {
+    it("should create collection without description", async () => {
       const input = {
         name: "Simple Collection",
-        organizationId: "org-1",
       };
 
       const mockCollection = {
         id: "collection-1",
         name: "Simple Collection",
         description: null,
-        organizationId: "org-1",
+        organizationId: TEST_ORG_ID,
         apiEndpoints: [],
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -71,12 +72,12 @@ describe("CollectionService", () => {
 
       mockRepository.create.mockResolvedValue(mockCollection);
 
-      const result = await service.createCollection(input);
+      const result = await service.createCollection({ ctx: TEST_CTX, input });
 
       expect(mockRepository.create).toHaveBeenCalledWith({
         name: "Simple Collection",
         description: null,
-        organizationId: "org-1",
+        organizationId: TEST_ORG_ID,
       });
       expect(result).toEqual(mockCollection);
     });
@@ -85,26 +86,17 @@ describe("CollectionService", () => {
       const input = {
         name: "  Test Collection  ",
         description: "  Test description  ",
-        organizationId: "org-1",
       };
 
       mockRepository.create.mockResolvedValue({ id: "collection-1" });
 
-      await service.createCollection(input);
+      await service.createCollection({ ctx: TEST_CTX, input });
 
       expect(mockRepository.create).toHaveBeenCalledWith({
         name: "Test Collection",
         description: "Test description",
-        organizationId: "org-1",
+        organizationId: TEST_ORG_ID,
       });
-    });
-
-    it("should throw error if organizationId is missing", async () => {
-      await expect(
-        service.createCollection({ name: "Test", organizationId: "" }),
-      ).rejects.toThrow("Organization ID is required");
-
-      expect(mockRepository.create).not.toHaveBeenCalled();
     });
   });
 
@@ -118,32 +110,41 @@ describe("CollectionService", () => {
 
       mockRepository.findByIdAndOrganization.mockResolvedValue(mockCollection);
 
-      const result = await service.getCollection("collection-1", TEST_ORG_ID);
+      const result = await service.getCollection({
+        ctx: TEST_CTX,
+        input: { id: "collection-1" },
+      });
 
-      expect(mockRepository.findByIdAndOrganization).toHaveBeenCalledWith("collection-1", TEST_ORG_ID);
+      expect(mockRepository.findByIdAndOrganization).toHaveBeenCalledWith(
+        "collection-1",
+        TEST_ORG_ID,
+      );
       expect(result).toEqual(mockCollection);
     });
 
     it("should return null if collection not found", async () => {
       mockRepository.findByIdAndOrganization.mockResolvedValue(null);
 
-      const result = await service.getCollection("nonexistent", TEST_ORG_ID);
+      const result = await service.getCollection({
+        ctx: TEST_CTX,
+        input: { id: "nonexistent" },
+      });
 
       expect(result).toBeNull();
     });
 
     it("should throw error if id is empty", async () => {
-      await expect(service.getCollection("", TEST_ORG_ID)).rejects.toThrow(
-        "Collection ID is required",
-      );
+      await expect(
+        service.getCollection({ ctx: TEST_CTX, input: { id: "" } }),
+      ).rejects.toThrow("Collection ID is required");
 
       expect(mockRepository.findByIdAndOrganization).not.toHaveBeenCalled();
     });
 
     it("should throw error if id is only whitespace", async () => {
-      await expect(service.getCollection("   ", TEST_ORG_ID)).rejects.toThrow(
-        "Collection ID is required",
-      );
+      await expect(
+        service.getCollection({ ctx: TEST_CTX, input: { id: "   " } }),
+      ).rejects.toThrow("Collection ID is required");
 
       expect(mockRepository.findByIdAndOrganization).not.toHaveBeenCalled();
     });
@@ -167,34 +168,15 @@ describe("CollectionService", () => {
         },
       ];
 
-      mockRepository.findMany.mockResolvedValue(mockCollections);
+      mockRepository.findByOrganizationId.mockResolvedValue(mockCollections);
 
-      const result = await service.getCollections();
+      const result = await service.getCollections({ ctx: TEST_CTX });
 
-      expect(mockRepository.findMany).toHaveBeenCalled();
+      expect(mockRepository.findByOrganizationId).toHaveBeenCalledWith(TEST_ORG_ID);
       expect(result).toHaveLength(2);
       expect(result[0]).toHaveProperty("requestCount", 2);
       expect(result[0]).toHaveProperty("lastModified");
       expect(result[1]).toHaveProperty("requestCount", 1);
-    });
-
-    it("should filter by organization id", async () => {
-      const mockCollections = [
-        {
-          id: "collection-1",
-          name: "Org Collection",
-          organizationId: "org-1",
-          updatedAt: new Date(),
-          apiEndpoints: [],
-        },
-      ];
-
-      mockRepository.findByOrganizationId.mockResolvedValue(mockCollections);
-
-      const result = await service.getCollections("org-1");
-
-      expect(mockRepository.findByOrganizationId).toHaveBeenCalledWith("org-1");
-      expect(result).toHaveLength(1);
     });
 
     it("should calculate correct stats for empty collections", async () => {
@@ -207,9 +189,9 @@ describe("CollectionService", () => {
         },
       ];
 
-      mockRepository.findMany.mockResolvedValue(mockCollections);
+      mockRepository.findByOrganizationId.mockResolvedValue(mockCollections);
 
-      const result = await service.getCollections();
+      const result = await service.getCollections({ ctx: TEST_CTX });
 
       expect(result[0].requestCount).toBe(0);
     });
@@ -224,22 +206,27 @@ describe("CollectionService", () => {
         apiEndpoints: [],
       };
 
-      const updateData = {
+      const input = {
+        id: "collection-1",
         name: "New Name",
         description: "New description",
       };
 
       const mockUpdated = {
         ...mockExisting,
-        ...updateData,
+        name: input.name,
+        description: input.description,
       };
 
       mockRepository.findByIdAndOrganization.mockResolvedValue(mockExisting);
       mockRepository.update.mockResolvedValue(mockUpdated);
 
-      const result = await service.updateCollection("collection-1", TEST_ORG_ID, updateData);
+      const result = await service.updateCollection({ ctx: TEST_CTX, input });
 
-      expect(mockRepository.findByIdAndOrganization).toHaveBeenCalledWith("collection-1", TEST_ORG_ID);
+      expect(mockRepository.findByIdAndOrganization).toHaveBeenCalledWith(
+        "collection-1",
+        TEST_ORG_ID,
+      );
       expect(mockRepository.update).toHaveBeenCalledWith("collection-1", {
         name: "New Name",
         description: "New description",
@@ -251,8 +238,9 @@ describe("CollectionService", () => {
       mockRepository.findByIdAndOrganization.mockResolvedValue({ id: "collection-1" });
       mockRepository.update.mockResolvedValue({ id: "collection-1" });
 
-      await service.updateCollection("collection-1", TEST_ORG_ID, {
-        name: "Updated Name",
+      await service.updateCollection({
+        ctx: TEST_CTX,
+        input: { id: "collection-1", name: "Updated Name" },
       });
 
       expect(mockRepository.update).toHaveBeenCalledWith("collection-1", {
@@ -264,8 +252,9 @@ describe("CollectionService", () => {
       mockRepository.findByIdAndOrganization.mockResolvedValue({ id: "collection-1" });
       mockRepository.update.mockResolvedValue({ id: "collection-1" });
 
-      await service.updateCollection("collection-1", TEST_ORG_ID, {
-        description: "Updated description",
+      await service.updateCollection({
+        ctx: TEST_CTX,
+        input: { id: "collection-1", description: "Updated description" },
       });
 
       expect(mockRepository.update).toHaveBeenCalledWith("collection-1", {
@@ -277,9 +266,13 @@ describe("CollectionService", () => {
       mockRepository.findByIdAndOrganization.mockResolvedValue({ id: "collection-1" });
       mockRepository.update.mockResolvedValue({ id: "collection-1" });
 
-      await service.updateCollection("collection-1", TEST_ORG_ID, {
-        name: "  Trimmed Name  ",
-        description: "  Trimmed description  ",
+      await service.updateCollection({
+        ctx: TEST_CTX,
+        input: {
+          id: "collection-1",
+          name: "  Trimmed Name  ",
+          description: "  Trimmed description  ",
+        },
       });
 
       expect(mockRepository.update).toHaveBeenCalledWith("collection-1", {
@@ -292,7 +285,10 @@ describe("CollectionService", () => {
       mockRepository.findByIdAndOrganization.mockResolvedValue({ id: "collection-1" });
       mockRepository.update.mockResolvedValue({ id: "collection-1" });
 
-      await service.updateCollection("collection-1", TEST_ORG_ID, { description: "" });
+      await service.updateCollection({
+        ctx: TEST_CTX,
+        input: { id: "collection-1", description: "" },
+      });
 
       expect(mockRepository.update).toHaveBeenCalledWith("collection-1", {
         description: null,
@@ -303,7 +299,10 @@ describe("CollectionService", () => {
       mockRepository.findByIdAndOrganization.mockResolvedValue(null);
 
       await expect(
-        service.updateCollection("nonexistent", TEST_ORG_ID, { name: "New Name" }),
+        service.updateCollection({
+          ctx: TEST_CTX,
+          input: { id: "nonexistent", name: "New Name" },
+        }),
       ).rejects.toThrow("Collection");
 
       expect(mockRepository.update).not.toHaveBeenCalled();
@@ -311,7 +310,10 @@ describe("CollectionService", () => {
 
     it("should throw error if id is empty", async () => {
       await expect(
-        service.updateCollection("", TEST_ORG_ID, { name: "New Name" }),
+        service.updateCollection({
+          ctx: TEST_CTX,
+          input: { id: "", name: "New Name" },
+        }),
       ).rejects.toThrow("Collection ID is required");
 
       expect(mockRepository.findByIdAndOrganization).not.toHaveBeenCalled();
@@ -326,34 +328,40 @@ describe("CollectionService", () => {
       });
       mockRepository.delete.mockResolvedValue(undefined);
 
-      await service.deleteCollection("collection-1", TEST_ORG_ID);
+      await service.deleteCollection({
+        ctx: TEST_CTX,
+        input: { id: "collection-1" },
+      });
 
-      expect(mockRepository.findByIdAndOrganization).toHaveBeenCalledWith("collection-1", TEST_ORG_ID);
+      expect(mockRepository.findByIdAndOrganization).toHaveBeenCalledWith(
+        "collection-1",
+        TEST_ORG_ID,
+      );
       expect(mockRepository.delete).toHaveBeenCalledWith("collection-1");
     });
 
     it("should throw error if collection not found", async () => {
       mockRepository.findByIdAndOrganization.mockResolvedValue(null);
 
-      await expect(service.deleteCollection("nonexistent", TEST_ORG_ID)).rejects.toThrow(
-        "Collection",
-      );
+      await expect(
+        service.deleteCollection({ ctx: TEST_CTX, input: { id: "nonexistent" } }),
+      ).rejects.toThrow("Collection");
 
       expect(mockRepository.delete).not.toHaveBeenCalled();
     });
 
     it("should throw error if id is empty", async () => {
-      await expect(service.deleteCollection("", TEST_ORG_ID)).rejects.toThrow(
-        "Collection ID is required",
-      );
+      await expect(
+        service.deleteCollection({ ctx: TEST_CTX, input: { id: "" } }),
+      ).rejects.toThrow("Collection ID is required");
 
       expect(mockRepository.findByIdAndOrganization).not.toHaveBeenCalled();
     });
 
     it("should throw error if id is only whitespace", async () => {
-      await expect(service.deleteCollection("   ", TEST_ORG_ID)).rejects.toThrow(
-        "Collection ID is required",
-      );
+      await expect(
+        service.deleteCollection({ ctx: TEST_CTX, input: { id: "   " } }),
+      ).rejects.toThrow("Collection ID is required");
 
       expect(mockRepository.findByIdAndOrganization).not.toHaveBeenCalled();
     });
@@ -377,9 +385,9 @@ describe("CollectionService", () => {
       ];
 
       mockRepository.count.mockResolvedValue(2);
-      mockRepository.findMany.mockResolvedValue(mockCollections);
+      mockRepository.findByOrganizationId.mockResolvedValue(mockCollections);
 
-      const result = await service.getCollectionStats();
+      const result = await service.getCollectionStats({ ctx: TEST_CTX });
 
       expect(result).toEqual({
         total: 2,
@@ -390,36 +398,15 @@ describe("CollectionService", () => {
 
     it("should handle empty collections list", async () => {
       mockRepository.count.mockResolvedValue(0);
-      mockRepository.findMany.mockResolvedValue([]);
+      mockRepository.findByOrganizationId.mockResolvedValue([]);
 
-      const result = await service.getCollectionStats();
+      const result = await service.getCollectionStats({ ctx: TEST_CTX });
 
       expect(result).toEqual({
         total: 0,
         totalRequests: 0,
         averageRequestsPerCollection: 0,
       });
-    });
-
-    it("should filter stats by organization", async () => {
-      const mockCollections = [
-        {
-          id: "collection-1",
-          name: "Org Collection",
-          organizationId: "org-1",
-          updatedAt: new Date(),
-          apiEndpoints: [{ id: "e1" }],
-        },
-      ];
-
-      mockRepository.count.mockResolvedValue(1);
-      mockRepository.findByOrganizationId.mockResolvedValue(mockCollections);
-
-      const result = await service.getCollectionStats("org-1");
-
-      expect(mockRepository.count).toHaveBeenCalledWith("org-1");
-      expect(result.total).toBe(1);
-      expect(result.totalRequests).toBe(1);
     });
   });
 
@@ -435,9 +422,9 @@ describe("CollectionService", () => {
         },
       ];
 
-      mockRepository.findMany.mockResolvedValue(mockCollections);
+      mockRepository.findByOrganizationId.mockResolvedValue(mockCollections);
 
-      const result = await service.getCollections();
+      const result = await service.getCollections({ ctx: TEST_CTX });
 
       expect(result[0].lastModified).toBe("just now");
     });
@@ -453,9 +440,9 @@ describe("CollectionService", () => {
         },
       ];
 
-      mockRepository.findMany.mockResolvedValue(mockCollections);
+      mockRepository.findByOrganizationId.mockResolvedValue(mockCollections);
 
-      const result = await service.getCollections();
+      const result = await service.getCollections({ ctx: TEST_CTX });
 
       expect(result[0].lastModified).toMatch(/\d+m ago/);
     });
@@ -471,9 +458,9 @@ describe("CollectionService", () => {
         },
       ];
 
-      mockRepository.findMany.mockResolvedValue(mockCollections);
+      mockRepository.findByOrganizationId.mockResolvedValue(mockCollections);
 
-      const result = await service.getCollections();
+      const result = await service.getCollections({ ctx: TEST_CTX });
 
       expect(result[0].lastModified).toMatch(/\d+h ago/);
     });
@@ -489,9 +476,9 @@ describe("CollectionService", () => {
         },
       ];
 
-      mockRepository.findMany.mockResolvedValue(mockCollections);
+      mockRepository.findByOrganizationId.mockResolvedValue(mockCollections);
 
-      const result = await service.getCollections();
+      const result = await service.getCollections({ ctx: TEST_CTX });
 
       expect(result[0].lastModified).toMatch(/\d+d ago/);
     });
@@ -507,9 +494,9 @@ describe("CollectionService", () => {
         },
       ];
 
-      mockRepository.findMany.mockResolvedValue(mockCollections);
+      mockRepository.findByOrganizationId.mockResolvedValue(mockCollections);
 
-      const result = await service.getCollections();
+      const result = await service.getCollections({ ctx: TEST_CTX });
 
       expect(result[0].lastModified).toMatch(/\d+w ago/);
     });
@@ -525,9 +512,9 @@ describe("CollectionService", () => {
         },
       ];
 
-      mockRepository.findMany.mockResolvedValue(mockCollections);
+      mockRepository.findByOrganizationId.mockResolvedValue(mockCollections);
 
-      const result = await service.getCollections();
+      const result = await service.getCollections({ ctx: TEST_CTX });
 
       expect(result[0].lastModified).toMatch(/\d+mo ago/);
     });

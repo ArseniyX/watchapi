@@ -15,16 +15,22 @@ import {
   TooManyRequestsError,
   ForbiddenError,
 } from "../../errors/custom-errors";
+import type { Context } from "../../trpc";
 
 export class ApiEndpointService {
   constructor(private readonly apiEndpointRepository: ApiEndpointRepository) {}
 
-  async createApiEndpoint(
-    userId: string,
-    userPlan: PlanType,
-    organizationId: string,
-    input: CreateApiEndpointInput,
-  ): Promise<ApiEndpoint> {
+  async createApiEndpoint({
+    ctx,
+    input,
+  }: {
+    ctx: Context;
+    input: CreateApiEndpointInput;
+  }): Promise<ApiEndpoint> {
+    const userPlan = ctx.organizationPlan || PlanType.FREE;
+    const userId = ctx.user!.id;
+    const organizationId = ctx.organizationId!;
+
     // Check plan limits only if enabling monitoring
     if (input.isActive) {
       const limits = getPlanLimits(userPlan);
@@ -65,38 +71,48 @@ export class ApiEndpointService {
     });
   }
 
-  async getApiEndpoint(
-    id: string,
-    organizationId: string,
-  ): Promise<ApiEndpointWithRelations | null> {
-    if (!id || id.trim() === "") {
+  async getApiEndpoint({
+    ctx,
+    input,
+  }: {
+    ctx: Context;
+    input: { id: string };
+  }): Promise<ApiEndpointWithRelations | null> {
+    if (!input.id || input.id.trim() === "") {
       throw new BadRequestError("Endpoint ID is required");
     }
+    const organizationId = ctx.organizationId!;
     if (!organizationId || organizationId.trim() === "") {
       throw new BadRequestError("Organization ID is required");
     }
 
-    return this.apiEndpointRepository.findById(id, organizationId);
+    return this.apiEndpointRepository.findById(input.id, organizationId);
   }
 
-  async getOrganizationApiEndpoints(
-    organizationId: string,
-  ): Promise<ApiEndpointWithBasicRelations[]> {
+  async getOrganizationApiEndpoints({
+    ctx,
+  }: {
+    ctx: Context;
+  }): Promise<ApiEndpointWithBasicRelations[]> {
+    const organizationId = ctx.organizationId!;
     if (!organizationId || organizationId.trim() === "") {
       throw new BadRequestError("Organization ID is required");
     }
     return this.apiEndpointRepository.findByOrganizationId(organizationId);
   }
 
-  async updateApiEndpoint(
-    userId: string,
-    userPlan: PlanType,
-    organizationId: string,
-    id: string,
-    input: UpdateApiEndpointInput,
-  ): Promise<ApiEndpoint> {
+  async updateApiEndpoint({
+    ctx,
+    input,
+  }: {
+    ctx: Context;
+    input: UpdateApiEndpointInput & { id: string };
+  }): Promise<ApiEndpoint> {
+    const userPlan = ctx.organizationPlan || PlanType.FREE;
+    const organizationId = ctx.organizationId!;
+
     // Validate IDs
-    if (!id || id.trim() === "") {
+    if (!input.id || input.id.trim() === "") {
       throw new BadRequestError("Endpoint ID is required");
     }
     if (!organizationId || organizationId.trim() === "") {
@@ -105,11 +121,11 @@ export class ApiEndpointService {
 
     // Verify endpoint exists in organization
     const endpoint = await this.apiEndpointRepository.findById(
-      id,
+      input.id,
       organizationId,
     );
     if (!endpoint) {
-      throw new NotFoundError("API endpoint", id);
+      throw new NotFoundError("API endpoint", input.id);
     }
 
     const updateData: Record<string, any> = {};
@@ -170,35 +186,48 @@ export class ApiEndpointService {
       updateData.isActive = input.isActive;
     }
 
-    return this.apiEndpointRepository.update(id, organizationId, updateData);
+    return this.apiEndpointRepository.update(input.id, organizationId, updateData);
   }
 
-  async deleteApiEndpoint(organizationId: string, id: string): Promise<void> {
+  async deleteApiEndpoint({
+    ctx,
+    input,
+  }: {
+    ctx: Context;
+    input: { id: string };
+  }): Promise<void> {
+    const organizationId = ctx.organizationId!;
+
     // Validate IDs
-    if (!id || id.trim() === "") {
+    if (!input.id || input.id.trim() === "") {
       throw new BadRequestError("Endpoint ID is required");
     }
     if (!organizationId || organizationId.trim() === "") {
       throw new BadRequestError("Organization ID is required");
     }
 
-    return this.apiEndpointRepository.delete(id, organizationId);
+    return this.apiEndpointRepository.delete(input.id, organizationId);
   }
 
   async getActiveEndpoints(): Promise<ApiEndpoint[]> {
     return this.apiEndpointRepository.findActive();
   }
 
-  async searchEndpoints(
-    organizationId: string,
-    query: string,
-  ): Promise<ApiEndpointWithBasicRelations[]> {
+  async searchEndpoints({
+    ctx,
+    input,
+  }: {
+    ctx: Context;
+    input: { query: string };
+  }): Promise<ApiEndpointWithBasicRelations[]> {
+    const organizationId = ctx.organizationId!;
+
     if (!organizationId || organizationId.trim() === "") {
       throw new BadRequestError("Organization ID is required");
     }
-    if (!query || query.trim() === "") {
+    if (!input.query || input.query.trim() === "") {
       return [];
     }
-    return this.apiEndpointRepository.search(query.trim(), organizationId);
+    return this.apiEndpointRepository.search(input.query.trim(), organizationId);
   }
 }
