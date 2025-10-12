@@ -38,6 +38,10 @@ export const refreshTokenSchema = z.object({
   refreshToken: z.string().min(1, "Refresh token is required"),
 });
 
+export const switchOrganizationSchema = z.object({
+  organizationId: z.string().min(1, "Organization ID is required"),
+});
+
 // Response schemas (for type safety)
 export const authTokensSchema = z.object({
   accessToken: z.string(),
@@ -54,4 +58,5 @@ export type OAuthProfile = z.infer<typeof oauthProfileSchema> & {
 export type OAuthCallbackInput = z.infer<typeof oauthCallbackSchema>;
 export type VerifyTokenInput = z.infer<typeof verifyTokenSchema>;
 export type RefreshTokenInput = z.infer<typeof refreshTokenSchema>;
+export type SwitchOrganizationInput = z.infer<typeof switchOrganizationSchema>;
 export type AuthTokens = z.infer<typeof authTokensSchema>;

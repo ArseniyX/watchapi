@@ -77,7 +77,7 @@ const RoleBadge = ({ role }: { role: string }) => {
 };
 
 export default function TeamPage() {
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, switchOrganization } = useAuth();
   const { selectedOrgId, setSelectedOrgId } = useOrganizationStore();
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<OrganizationRole>(OrganizationRole.MEMBER);
@@ -87,6 +87,8 @@ export default function TeamPage() {
     email: string;
   } | null>(null);
 
+  const utils = trpc.useUtils();
+
   const { data: organizations } =
     trpc.organization.getMyOrganizations.useQuery();
   const { data: members, refetch: refetchMembers } =
@@ -94,10 +96,20 @@ export default function TeamPage() {
       { organizationId: selectedOrgId! },
       { enabled: !!selectedOrgId },
     );
+
+  // Get current user's role to determine if they can view invitations
+  const currentUserMember = members?.find((m) => m.user.id === currentUser?.id);
+  const currentUserRole = currentUserMember?.role;
+  const isAdminOrOwner =
+    currentUserRole === "ADMIN" || currentUserRole === "OWNER";
+
   const { data: invitations, refetch: refetchInvitations } =
     trpc.organization.getInvitations.useQuery(
       { organizationId: selectedOrgId! },
-      { enabled: !!selectedOrgId },
+      {
+        enabled: !!selectedOrgId && isAdminOrOwner,
+        retry: false, // Don't retry on permission errors
+      },
     );
 
   const inviteMember = trpc.organization.inviteMember.useMutation({
@@ -159,11 +171,6 @@ export default function TeamPage() {
     });
   };
 
-  const currentUserMember = members?.find((m) => m.user.id === currentUser?.id);
-  const currentUserRole = currentUserMember?.role;
-  const isAdminOrOwner =
-    currentUserRole === "ADMIN" || currentUserRole === "OWNER";
-
   const activeMembers =
     members?.filter((m) => m.status === "ACTIVE").length || 0;
   const pendingInvitations =
@@ -185,7 +192,19 @@ export default function TeamPage() {
         {organizations && organizations.length > 0 && (
           <Select
             value={selectedOrgId || undefined}
-            onValueChange={setSelectedOrgId}
+            onValueChange={async (orgId) => {
+              try {
+                await switchOrganization(orgId);
+
+                // Invalidate all queries to refetch with new context
+                await utils.invalidate();
+
+                toast.success("Organization switched successfully");
+              } catch (error) {
+                toast.error("Failed to switch organization");
+                console.error("Organization switch error:", error);
+              }
+            }}
           >
             <SelectTrigger className="w-[200px]">
               <SelectValue placeholder="Select organization" />

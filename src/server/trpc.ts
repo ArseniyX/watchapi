@@ -31,58 +31,35 @@ export const createTRPCContext = async (opts: CreateNextContextOptions) => {
       userId: string;
       email: string;
       role: string;
+      activeOrganizationId: string;
     };
 
-    const user = await prisma.user.findUnique({
-      where: { id: payload.userId },
-      select: { id: true, email: true, role: true },
-    });
+    const organizationId = payload.activeOrganizationId;
 
-    if (!user) {
+    if (!organizationId) {
+      console.log("No organization ID found in token");
       return {};
     }
 
-    const organizationId = req.headers["x-organization-id"];
-
-    if (typeof organizationId !== "string") {
-      logger.warn("Missing organization ID header", {
-        userId: user.id,
-        email: user.email,
-        role: user.role,
-      });
-      return {};
-    }
-
-    const membership = await prisma.organizationMember.findUnique({
-      where: {
-        userId_organizationId: {
-          userId: user.id,
-          organizationId: organizationId,
-        },
-      },
-      select: { status: true },
-    });
-
-    if (!membership) {
-      logger.warn("Unauthorized organization access attempt", {
-        userId: user.id,
-        organizationId: organizationId,
-        membershipStatus: membership?.status,
-      });
-      return {};
-    }
-
-    const org = await prisma.organization.findUnique({
-      where: { id: organizationId },
-      select: { plan: true },
-    });
+    const [user, org] = await prisma.$transaction([
+      prisma.user.findUnique({
+        where: { id: payload.userId },
+        select: { id: true, email: true, role: true },
+      }),
+      prisma.organization.findUnique({
+        where: { id: organizationId },
+        select: { plan: true },
+      }),
+    ]);
+    if (!user) return {};
+    if (!org) return {};
     return {
       user: {
         id: user.id,
         email: user.email,
         role: user.role,
       },
-      organizationId,
+      organizationId: organizationId,
       organizationPlan: org?.plan,
     };
   } catch (error) {

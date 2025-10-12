@@ -22,7 +22,9 @@ export interface IUserRepository {
 export class UserRepository implements IUserRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
-  async findById(id: string): Promise<User | null> {
+  async findById(id: string): Promise<Prisma.UserGetPayload<{
+    include: { organizations: true; apiEndpoints: true };
+  }> | null> {
     return this.prisma.user.findUnique({
       where: { id },
       include: {
@@ -32,7 +34,9 @@ export class UserRepository implements IUserRepository {
     });
   }
 
-  async findByEmail(email: string): Promise<User | null> {
+  async findByEmail(email: string): Promise<Prisma.UserGetPayload<{
+    include: { organizations: true };
+  }> | null> {
     return this.prisma.user.findUnique({
       where: { email },
       include: {
@@ -44,13 +48,18 @@ export class UserRepository implements IUserRepository {
   async findByProvider(
     provider: string,
     providerId: string,
-  ): Promise<User | null> {
+  ): Promise<Prisma.UserGetPayload<{
+    include: { organizations: true };
+  }> | null> {
     return this.prisma.user.findUnique({
       where: {
         provider_providerId: {
           provider,
           providerId,
         },
+      },
+      include: {
+        organizations: true,
       },
     });
   }
@@ -66,10 +75,17 @@ export class UserRepository implements IUserRepository {
   async update(
     id: string,
     data: Partial<Omit<User, "id" | "createdAt" | "updatedAt">>,
-  ): Promise<User> {
+  ): Promise<
+    Prisma.UserGetPayload<{
+      include: { organizations: true };
+    }>
+  > {
     return this.prisma.user.update({
       where: { id },
       data,
+      include: {
+        organizations: true,
+      },
     });
   }
 

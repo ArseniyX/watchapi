@@ -65,6 +65,7 @@ describe("ApiEndpointService", () => {
         userId: "user-1",
         organizationId: "org-1",
         collectionId: null,
+        lastCheckedAt: null,
         isActive: false,
       });
       expect(result).toEqual(mockEndpoint);
@@ -128,6 +129,7 @@ describe("ApiEndpointService", () => {
         userId: "user-1",
         organizationId: "org-1",
         collectionId: null,
+        lastCheckedAt: null,
         isActive: false,
       });
     });

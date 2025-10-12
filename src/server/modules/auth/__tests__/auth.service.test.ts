@@ -57,15 +57,32 @@ describe("AuthService", () => {
         role: "USER",
       };
 
-      mockUserService.createUser.mockResolvedValue(mockUser);
+      const mockUserWithOrgs = {
+        ...mockUser,
+        organizations: [
+          {
+            id: "member-1",
+            organizationId: "org-1",
+            userId: "user-1",
+            role: "OWNER",
+          },
+        ],
+      };
 
-      const result = await service.register({ ctx: TEST_CTX, input });
+      mockUserService.createUser.mockResolvedValue(mockUser);
+      mockUserService.createPersonalOrganizationForUser.mockResolvedValue(undefined);
+      mockUserService.getUserById.mockResolvedValue(mockUserWithOrgs);
+
+      const result = await service.register({ input });
 
       expect(mockUserService.createUser).toHaveBeenCalledWith({
-        ...input,
-        skipPersonalOrg: true,
+        email: input.email,
+        name: input.name,
+        password: input.password,
       });
-      expect(result.user).toEqual(mockUser);
+      expect(mockUserService.createPersonalOrganizationForUser).toHaveBeenCalledWith(mockUser);
+      expect(mockUserService.getUserById).toHaveBeenCalledWith(mockUser.id);
+      expect(result.user).toEqual(mockUserWithOrgs);
       expect(result.tokens).toHaveProperty("accessToken");
       expect(result.tokens).toHaveProperty("refreshToken");
     });
@@ -77,7 +94,6 @@ describe("AuthService", () => {
 
       await expect(
         service.register({
-          ctx: TEST_CTX,
           input: {
             email: "existing@example.com",
             password: "password123",
@@ -99,6 +115,14 @@ describe("AuthService", () => {
         email: input.email,
         name: "Test User",
         role: "USER",
+        organizations: [
+          {
+            id: "member-1",
+            organizationId: "org-1",
+            userId: "user-1",
+            role: "OWNER",
+          },
+        ],
       };
 
       mockUserService.getUserByEmail.mockResolvedValue(mockUser);
@@ -199,6 +223,14 @@ describe("AuthService", () => {
         id: "user-1",
         email: "test@example.com",
         role: "USER",
+        organizations: [
+          {
+            id: "member-1",
+            organizationId: "org-1",
+            userId: "user-1",
+            role: "OWNER",
+          },
+        ],
       };
 
       (jwt.verify as any).mockReturnValue({
@@ -276,9 +308,22 @@ describe("AuthService", () => {
         role: "USER",
       };
 
+      const mockUserWithOrgs = {
+        ...mockUser,
+        organizations: [
+          {
+            id: "member-1",
+            organizationId: "org-1",
+            userId: "user-1",
+            role: "OWNER",
+          },
+        ],
+      };
+
       mockUserService.getUserByProvider.mockResolvedValue(null);
-      mockUserService.getUserByEmail.mockResolvedValue(null);
       mockUserService.createOAuthUser.mockResolvedValue(mockUser);
+      mockUserService.createPersonalOrganizationForUser.mockResolvedValue(undefined);
+      mockUserService.getUserById.mockResolvedValue(mockUserWithOrgs);
 
       const result = await service.authenticateWithOAuth({
         ctx: TEST_CTX,
@@ -291,52 +336,12 @@ describe("AuthService", () => {
         provider: profile.provider,
         providerId: profile.id,
         avatar: profile.avatar,
-        skipPersonalOrg: true,
       });
-      expect(result.user).toEqual(mockUser);
+      expect(mockUserService.createPersonalOrganizationForUser).toHaveBeenCalledWith(mockUser);
+      expect(mockUserService.getUserById).toHaveBeenCalledWith(mockUser.id);
+      expect(result.user).toEqual(mockUserWithOrgs);
       expect(result.isNewUser).toBe(true);
       expect(result.tokens).toHaveProperty("accessToken");
-    });
-
-    it("should link OAuth to existing local account", async () => {
-      const profile = {
-        id: "google-123",
-        email: "existing@example.com",
-        name: "Existing User",
-        provider: "google" as const,
-      };
-
-      const existingUser = {
-        id: "user-1",
-        email: profile.email,
-        name: "Existing User",
-        password: "hashed-password",
-        provider: null,
-        providerId: null,
-      };
-
-      const updatedUser = {
-        ...existingUser,
-        provider: profile.provider,
-        providerId: profile.id,
-      };
-
-      mockUserService.getUserByProvider.mockResolvedValue(null);
-      mockUserService.getUserByEmail.mockResolvedValue(existingUser);
-      mockUserService.updateUser.mockResolvedValue(updatedUser);
-
-      const result = await service.authenticateWithOAuth({
-        ctx: TEST_CTX,
-        input: { provider: profile.provider, profile },
-      });
-
-      expect(mockUserService.updateUser).toHaveBeenCalledWith("user-1", {
-        provider: profile.provider,
-        providerId: profile.id,
-        avatar: undefined,
-      });
-      expect(result.user).toEqual(updatedUser);
-      expect(result.isNewUser).toBe(false);
     });
 
     it("should update existing OAuth user info", async () => {
@@ -355,6 +360,14 @@ describe("AuthService", () => {
         provider: profile.provider,
         providerId: profile.id,
         avatar: "https://example.com/old-avatar.jpg",
+        organizations: [
+          {
+            id: "member-1",
+            organizationId: "org-1",
+            userId: "user-1",
+            role: "OWNER",
+          },
+        ],
       };
 
       const updatedUser = {
@@ -394,9 +407,22 @@ describe("AuthService", () => {
         providerId: profile.id,
       };
 
+      const mockUserWithOrgs = {
+        ...mockUser,
+        organizations: [
+          {
+            id: "member-1",
+            organizationId: "org-1",
+            userId: "user-1",
+            role: "OWNER",
+          },
+        ],
+      };
+
       mockUserService.getUserByProvider.mockResolvedValue(null);
-      mockUserService.getUserByEmail.mockResolvedValue(null);
       mockUserService.createOAuthUser.mockResolvedValue(mockUser);
+      mockUserService.createPersonalOrganizationForUser.mockResolvedValue(undefined);
+      mockUserService.getUserById.mockResolvedValue(mockUserWithOrgs);
 
       const result = await service.authenticateWithOAuth({
         ctx: TEST_CTX,
@@ -409,45 +435,10 @@ describe("AuthService", () => {
         provider: "github",
         providerId: profile.id,
         avatar: undefined,
-        skipPersonalOrg: true,
       });
+      expect(mockUserService.createPersonalOrganizationForUser).toHaveBeenCalledWith(mockUser);
+      expect(mockUserService.getUserById).toHaveBeenCalledWith(mockUser.id);
       expect(result.isNewUser).toBe(true);
-    });
-
-    it("should preserve existing user data when linking OAuth", async () => {
-      const profile = {
-        id: "google-999",
-        email: "local@example.com",
-        provider: "google" as const,
-      };
-
-      const existingUser = {
-        id: "user-1",
-        email: profile.email,
-        name: "Existing Name",
-        avatar: null,
-        password: "hashed",
-      };
-
-      mockUserService.getUserByProvider.mockResolvedValue(null);
-      mockUserService.getUserByEmail.mockResolvedValue(existingUser);
-      mockUserService.updateUser.mockResolvedValue({
-        ...existingUser,
-        provider: profile.provider,
-        providerId: profile.id,
-      });
-
-      const result = await service.authenticateWithOAuth({
-        ctx: TEST_CTX,
-        input: { provider: profile.provider, profile },
-      });
-
-      expect(mockUserService.updateUser).toHaveBeenCalledWith("user-1", {
-        provider: profile.provider,
-        providerId: profile.id,
-        avatar: undefined,
-      });
-      expect(result.user.name).toBe("Existing Name");
     });
   });
 
@@ -459,13 +450,26 @@ describe("AuthService", () => {
         role: "USER",
       };
 
+      const mockUserWithOrgs = {
+        ...mockUser,
+        organizations: [
+          {
+            id: "member-1",
+            organizationId: "org-1",
+            userId: "user-1",
+            role: "OWNER",
+          },
+        ],
+      };
+
       mockUserService.createUser.mockResolvedValue(mockUser);
       (jwt.sign as any)
         .mockReturnValueOnce("access-token")
         .mockReturnValueOnce("refresh-token");
+      mockUserService.createPersonalOrganizationForUser.mockResolvedValue(undefined);
+      mockUserService.getUserById.mockResolvedValue(mockUserWithOrgs);
 
       await service.register({
-        ctx: TEST_CTX,
         input: {
           email: "test@example.com",
           password: "password",

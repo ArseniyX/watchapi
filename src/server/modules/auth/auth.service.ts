@@ -1,11 +1,10 @@
 import jwt from "jsonwebtoken";
 import { UserService } from "../user/user.service";
 import { OrganizationService } from "../organization/organization.service";
-import { User } from "../../../generated/prisma";
+import { User } from "@/generated/prisma";
 import {
   LoginInput,
   RegisterInput,
-  OAuthProfile,
   AuthTokens,
   OAuthCallbackInput,
 } from "./auth.schema";
@@ -20,31 +19,32 @@ export class AuthService {
   ) {}
 
   async register({
-    ctx,
     input,
   }: {
-    ctx: Context;
     input: RegisterInput;
   }): Promise<{ user: User; tokens: AuthTokens }> {
-    // Create user without personal org (handled by setupNewUser)
-    const user = await this.userService.createUser({
+    let user = await this.userService.createUser({
       email: input.email,
       name: input.name,
       password: input.password,
-      skipPersonalOrg: true,
     });
 
-    // Handle invitation or create personal org
     await this.setupNewUser(user, input.invitationToken);
 
-    const tokens = this.generateTokens(user);
+    // Refetch user to get updated organizations
+    const userWithOrgs = await this.userService.getUserById(user.id);
+    if (!userWithOrgs) {
+      throw new NotFoundError("User", user.id);
+    }
 
-    return { user, tokens };
+    const tokens = this.generateTokens(userWithOrgs, userWithOrgs.organizations[0].organizationId);
+
+    return { user: userWithOrgs, tokens };
   }
 
   async login({
-    ctx,
     input,
+    ctx,
   }: {
     ctx: Context;
     input: LoginInput;
@@ -59,7 +59,10 @@ export class AuthService {
       throw new UnauthorizedError("Invalid email or password");
     }
 
-    const tokens = this.generateTokens(user);
+    const tokens = this.generateTokens(
+      user,
+      ctx.organizationId || user.organizations[0].organizationId,
+    );
 
     return { user, tokens };
   }
@@ -118,7 +121,10 @@ export class AuthService {
         throw new NotFoundError("User", payload.userId);
       }
 
-      return this.generateTokens(user);
+      return this.generateTokens(
+        user,
+        ctx.organizationId || user.organizations[0].organizationId,
+      );
     } catch (error) {
       if (
         error instanceof UnauthorizedError ||
@@ -137,7 +143,7 @@ export class AuthService {
     ctx: Context;
     input: OAuthCallbackInput;
   }): Promise<{ user: User; tokens: AuthTokens; isNewUser: boolean }> {
-    let user = await this.userService.getUserByProvider(
+    let user: any = await this.userService.getUserByProvider(
       input.provider,
       input.profile.id,
     );
@@ -145,34 +151,21 @@ export class AuthService {
     let isNewUser = false;
 
     if (!user) {
-      // Check if user exists with this email (from different provider or local)
-      const existingUser = await this.userService.getUserByEmail(
-        input.profile.email,
-      );
+      // Create new user without personal org (handled by setupNewUser)
+      const newUser = await this.userService.createOAuthUser({
+        email: input.profile.email,
+        name: input.profile.name,
+        provider: input.provider,
+        providerId: input.profile.id,
+        avatar: input.profile.avatar,
+      });
 
-      if (existingUser) {
-        // Link OAuth to existing account
-        user = await this.userService.updateUser(existingUser.id, {
-          provider: input.provider,
-          providerId: input.profile.id,
-          avatar: input.profile.avatar,
-        });
-      } else {
-        // Create new user without personal org (handled by setupNewUser)
-        user = await this.userService.createOAuthUser({
-          email: input.profile.email,
-          name: input.profile.name,
-          provider: input.provider,
-          providerId: input.profile.id,
-          avatar: input.profile.avatar,
-          skipPersonalOrg: true,
-        });
+      // Handle invitation or create personal org
+      await this.setupNewUser(newUser, input.invitationToken);
 
-        // Handle invitation or create personal org
-        await this.setupNewUser(user, input.invitationToken);
-
-        isNewUser = true;
-      }
+      // Refetch to get organizations
+      user = await this.userService.getUserById(newUser.id);
+      isNewUser = true;
     } else {
       user = await this.userService.updateUser(user.id, {
         name: input.profile.name || user.name,
@@ -180,9 +173,46 @@ export class AuthService {
       });
     }
 
-    const tokens = this.generateTokens(user);
+    if (!user) {
+      throw new NotFoundError("User", input.profile.email);
+    }
+
+    const tokens = this.generateTokens(
+      user,
+      ctx.organizationId || user.organizations[0].organizationId,
+    );
 
     return { user, tokens, isNewUser };
+  }
+
+  async switchOrganization({
+    ctx,
+    input,
+  }: {
+    ctx: Context;
+    input: { organizationId: string };
+  }): Promise<AuthTokens> {
+    if (!ctx.user) {
+      throw new UnauthorizedError("Authentication required");
+    }
+
+    // Get user with organizations
+    const user = await this.userService.getUserById(ctx.user.id);
+    if (!user) {
+      throw new NotFoundError("User", ctx.user.id);
+    }
+
+    // Verify user is a member of the target organization
+    const isMember = user.organizations.some(
+      (org) => org.organizationId === input.organizationId
+    );
+
+    if (!isMember) {
+      throw new UnauthorizedError("You are not a member of this organization");
+    }
+
+    // Generate new tokens with the new organization ID
+    return this.generateTokens(user, input.organizationId);
   }
 
   /**
@@ -216,7 +246,7 @@ export class AuthService {
     console.log(`Created personal organization for user ${user.id}`);
   }
 
-  private generateTokens(user: User): AuthTokens {
+  private generateTokens(user: User, activeOrgId: string): AuthTokens {
     const now = Math.floor(Date.now() / 1000);
 
     const accessToken = jwt.sign(
@@ -224,6 +254,7 @@ export class AuthService {
         userId: user.id,
         email: user.email,
         role: user.role,
+        activeOrganizationId: activeOrgId,
         type: "access",
         iss: "watchapi",
         aud: "watchapi-app",

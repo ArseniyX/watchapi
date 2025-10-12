@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import { UserRepository } from "./user.repository";
-import { User } from "@/generated/prisma";
+import { Organization, Prisma, User } from "@/generated/prisma";
 import { OrganizationRepository } from "../organization/organization.repository";
 import {
   CreateUserInput,
@@ -20,7 +20,7 @@ export class UserService {
     private readonly organizationRepository: OrganizationRepository,
   ) {}
 
-  async createUser(input: CreateUserInput): Promise<User> {
+  async createUser(input: CreateUserInput) {
     // Check if user already exists
     const existingUser = await this.userRepository.findByEmail(input.email);
     if (existingUser) {
@@ -39,19 +39,14 @@ export class UserService {
       role: "USER",
     });
 
-    // Create personal organization for new user (unless skipped for invitation)
-    if (!input.skipPersonalOrg) {
-      await this.createPersonalOrganization(user);
-    }
-
     return user;
   }
 
-  async getUserById(id: string): Promise<User | null> {
+  async getUserById(id: string) {
     return this.userRepository.findById(id);
   }
 
-  async getUserByEmail(email: string): Promise<User | null> {
+  async getUserByEmail(email: string) {
     return this.userRepository.findByEmail(email);
   }
 
@@ -73,15 +68,17 @@ export class UserService {
       role: "USER",
     });
 
-    // Create personal organization for new OAuth user (unless skipped for invitation)
-    if (!input.skipPersonalOrg) {
-      await this.createPersonalOrganization(user);
-    }
-
     return user;
   }
 
-  async updateUser(id: string, input: UpdateUserInput): Promise<User> {
+  async updateUser(
+    id: string,
+    input: UpdateUserInput,
+  ): Promise<
+    Prisma.UserGetPayload<{
+      include: { organizations: true };
+    }>
+  > {
     // Validate user exists
     if (!id || id.trim() === "") {
       throw new BadRequestError("User ID is required");
@@ -171,7 +168,7 @@ export class UserService {
    * Create a personal organization for a new user
    * @private
    */
-  private async createPersonalOrganization(user: User): Promise<void> {
+  private async createPersonalOrganization(user: User): Promise<Organization> {
     const orgName = user.name
       ? `${user.name}'s Workspace`
       : `${user.email}'s Workspace`;
@@ -189,5 +186,7 @@ export class UserService {
       role: "OWNER",
       status: "ACTIVE",
     });
+
+    return organization;
   }
 }

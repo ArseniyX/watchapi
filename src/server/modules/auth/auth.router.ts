@@ -1,4 +1,4 @@
-import { router, publicProcedure } from "../../trpc";
+import { router, publicProcedure, protectedProcedure } from "../../trpc";
 import { AuthService } from "./auth.service";
 import {
   registerSchema,
@@ -6,14 +6,15 @@ import {
   refreshTokenSchema,
   verifyTokenSchema,
   oauthCallbackSchema,
+  switchOrganizationSchema,
 } from "./auth.schema";
 
 export const createAuthRouter = (authService: AuthService) =>
   router({
     register: publicProcedure
       .input(registerSchema)
-      .mutation(async ({ ctx, input }) => {
-        const result = await authService.register({ ctx, input });
+      .mutation(async ({ input }) => {
+        const result = await authService.register({ input });
         return {
           user: {
             id: result.user.id,
@@ -82,5 +83,11 @@ export const createAuthRouter = (authService: AuthService) =>
           tokens: result.tokens,
           isNewUser: result.isNewUser,
         };
+      }),
+
+    switchOrganization: protectedProcedure
+      .input(switchOrganizationSchema)
+      .mutation(async ({ ctx, input }) => {
+        return authService.switchOrganization({ ctx, input });
       }),
   });

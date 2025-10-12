@@ -63,18 +63,8 @@ describe("UserService", () => {
         role: "USER",
       };
 
-      const mockOrganization = {
-        id: "org-1",
-        name: "Test User's Organization",
-        slug: "test-users-organization",
-      };
-
       mockUserRepository.findByEmail.mockResolvedValue(null);
       mockUserRepository.create.mockResolvedValue(mockUser);
-      mockOrganizationRepository.createOrganization.mockResolvedValue(
-        mockOrganization,
-      );
-      mockOrganizationRepository.addMember.mockResolvedValue(undefined);
 
       const result = await service.createUser(input);
 
@@ -120,10 +110,6 @@ describe("UserService", () => {
         id: "user-1",
         email: "test@example.com",
       });
-      mockOrganizationRepository.createOrganization.mockResolvedValue({
-        id: "org-1",
-      });
-      mockOrganizationRepository.addMember.mockResolvedValue(undefined);
 
       await service.createUser(input);
 
@@ -241,10 +227,6 @@ describe("UserService", () => {
       };
 
       mockUserRepository.create.mockResolvedValue(mockUser);
-      mockOrganizationRepository.createOrganization.mockResolvedValue({
-        id: "org-1",
-      });
-      mockOrganizationRepository.addMember.mockResolvedValue(undefined);
 
       const result = await service.createOAuthUser(input);
 
@@ -270,10 +252,6 @@ describe("UserService", () => {
       };
 
       mockUserRepository.create.mockResolvedValue({ id: "user-1" });
-      mockOrganizationRepository.createOrganization.mockResolvedValue({
-        id: "org-1",
-      });
-      mockOrganizationRepository.addMember.mockResolvedValue(undefined);
 
       await service.createOAuthUser(input);
 
@@ -296,10 +274,6 @@ describe("UserService", () => {
       };
 
       mockUserRepository.create.mockResolvedValue({ id: "user-1" });
-      mockOrganizationRepository.createOrganization.mockResolvedValue({
-        id: "org-1",
-      });
-      mockOrganizationRepository.addMember.mockResolvedValue(undefined);
 
       await service.createOAuthUser(input);
 

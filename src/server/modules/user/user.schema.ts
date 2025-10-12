@@ -6,7 +6,6 @@ export const createUserSchema = z.object({
   email: z.string().email("Invalid email format").min(1, "Email is required"),
   name: z.string().optional(),
   password: z.string().min(6, "Password must be at least 6 characters"),
-  skipPersonalOrg: z.boolean().optional(),
 });
 
 export const createOAuthUserSchema = z.object({
@@ -14,8 +13,7 @@ export const createOAuthUserSchema = z.object({
   name: z.string().optional(),
   provider: z.string().min(1, "Provider is required"),
   providerId: z.string().min(1, "Provider ID is required"),
-  avatar: z.string().url("Invalid avatar URL").optional(),
-  skipPersonalOrg: z.boolean().optional(),
+  avatar: z.url("Invalid avatar URL").optional(),
 });
 
 // User update schemas

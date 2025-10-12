@@ -21,6 +21,7 @@ import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/logo";
 import { Google } from "@/components/icons/Google";
+import { useOrganizationStore } from "@/stores/organization-store";
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -34,6 +35,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { user, login, loginWithOAuth } = useAuth();
   const { toast } = useToast();
+  const { setSelectedOrgId } = useOrganizationStore();
 
   // Redirect if already logged in
   useEffect(() => {
@@ -54,6 +56,17 @@ export default function LoginPage() {
       if (accessToken && refreshToken) {
         localStorage.setItem("accessToken", accessToken);
         localStorage.setItem("refreshToken", refreshToken);
+
+        // Decode JWT to get organization ID
+        try {
+          const payload = JSON.parse(atob(accessToken.split('.')[1]));
+          if (payload.activeOrganizationId) {
+            setSelectedOrgId(payload.activeOrganizationId);
+          }
+        } catch (error) {
+          console.error("Failed to decode JWT:", error);
+        }
+
         // Immediate redirect, no state update
         window.location.replace("/app");
         return;
