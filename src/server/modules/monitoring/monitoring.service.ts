@@ -349,14 +349,35 @@ export class MonitoringService {
       totalEndpoints: activeEndpoints.length,
     });
 
+    const now = new Date();
+
     for (const endpoint of activeEndpoints) {
+      const lastCheckedAt = endpoint.lastCheckedAt
+        ? new Date(endpoint.lastCheckedAt)
+        : null;
+
+      const intervalMs = (endpoint.interval || 60) * 1000; // assuming interval in seconds
+      const shouldRun =
+        !lastCheckedAt || now.getTime() - lastCheckedAt.getTime() >= intervalMs;
+
+      if (!shouldRun) {
+        continue; // skip this endpoint for now
+      }
+
       try {
         await this.checkApiEndpoint({
           input: { id: endpoint.id },
-          ctx: {
-            organizationId: endpoint.organizationId,
-          },
+          ctx: { organizationId: endpoint.organizationId },
         });
+
+        // update lastCheckedAt
+        await this.apiEndpointRepository.update(
+          endpoint.id,
+          endpoint.organizationId,
+          {
+            lastCheckedAt: now,
+          },
+        );
       } catch (error) {
         logError(`Failed to check endpoint ${endpoint.id}`, error, {
           endpointId: endpoint.id,

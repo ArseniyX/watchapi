@@ -35,7 +35,7 @@ export const createOrganizationRouter = (
           .object({
             id: z.string(),
           })
-          .merge(updateOrganizationSchema),
+          .and(updateOrganizationSchema),
       )
       .mutation(async ({ input, ctx }) => {
         const { id, ...data } = input;

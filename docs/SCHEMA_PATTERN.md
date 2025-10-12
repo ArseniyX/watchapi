@@ -94,7 +94,7 @@ export const createOrganizationRouter = (service: OrganizationService) =>
       }),
 
     update: protectedProcedure
-      .input(z.object({ id: z.string() }).merge(updateOrganizationSchema))
+      .input(z.object({ id: z.string() }).and(updateOrganizationSchema))
       .mutation(async ({ input, ctx }) => {
         const { id, ...data } = input;
         return service.updateOrganization(ctx.user.id, id, data);
@@ -207,7 +207,7 @@ const createSchema = baseSchema.extend({
 });
 
 // Or merge
-const updateWithId = z.object({ id: z.string() }).merge(updateSchema);
+const updateWithId = z.object({ id: z.string() }).and(updateSchema);
 ```
 
 ## Migration Checklist
