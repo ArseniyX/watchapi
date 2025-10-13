@@ -102,9 +102,15 @@ export class EmailService {
     const emailPass = process.env.EMAIL_PASS;
 
     if (!emailHost || !emailUser || !emailPass) {
-      console.warn(
-        "Email not configured. Set EMAIL_HOST, EMAIL_USER, EMAIL_PASS env variables to enable alerts.",
-      );
+      if (this.resend) {
+        console.info(
+          "SMTP credentials not provided. Resend API detected; using Resend for alert delivery.",
+        );
+      } else {
+        console.warn(
+          "Email not configured. Set RESEND_API_KEY or SMTP credentials (EMAIL_HOST, EMAIL_USER, EMAIL_PASS) to enable alerts.",
+        );
+      }
       return;
     }
 
@@ -125,21 +131,11 @@ export class EmailService {
   }
 
   async sendAlertEmail(data: AlertEmailData): Promise<boolean> {
-    if (!this.transporter) {
-      console.log("[Email Alert - Not Sent] Email not configured");
-      console.log(
-        `Alert: ${data.endpointName} (${data.endpointUrl}) is ${data.status}`,
-      );
-      if (data.errorMessage) console.log(`Error: ${data.errorMessage}`);
-      return false;
-    }
+    const subject = `🚨 Alert: ${
+      data.endpointName
+    } - ${data.status.toUpperCase()}`;
 
-    try {
-      const subject = `🚨 Alert: ${
-        data.endpointName
-      } - ${data.status.toUpperCase()}`;
-
-      const html = `
+    const html = `
         <!DOCTYPE html>
         <html>
         <head>
@@ -207,12 +203,45 @@ export class EmailService {
               <p>This is an automated alert from your API Monitoring system.</p>
             </div>
           </div>
-        </body>
+          </body>
         </html>
       `;
 
+    if (this.resend) {
+      try {
+        await this.resend.emails.send({
+          from:
+            process.env.EMAIL_FROM || "WatchAPI Alerts <support@watchapi.dev>",
+          to: data.to,
+          subject,
+          html,
+        });
+
+        console.log(
+          `Alert email sent via Resend to ${data.to} for endpoint: ${data.endpointName}`,
+        );
+        return true;
+      } catch (error) {
+        console.error("Failed to send alert email via Resend:", error);
+        // Fall back to SMTP if configured
+      }
+    }
+
+    if (!this.transporter) {
+      console.log("[Email Alert - Not Sent] No email provider configured");
+      console.log(
+        `Alert: ${data.endpointName} (${data.endpointUrl}) is ${data.status}`,
+      );
+      if (data.errorMessage) console.log(`Error: ${data.errorMessage}`);
+      return false;
+    }
+
+    try {
       await this.transporter.sendMail({
-        from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+        from:
+          process.env.EMAIL_FROM ||
+          process.env.EMAIL_USER ||
+          "support@watchapi.dev",
         to: data.to,
         subject,
         html,

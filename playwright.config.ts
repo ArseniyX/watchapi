@@ -1,4 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
+import { config as loadEnv } from "dotenv";
+
+loadEnv();
 
 const E2E_HOST = process.env.E2E_HOST ?? "127.0.0.1";
 const E2E_PORT = process.env.E2E_PORT ?? "3100";
