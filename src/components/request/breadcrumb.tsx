@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useLayoutEffect } from "react";
 import { ChevronRight, Save, Share2, Link2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,8 +37,12 @@ export function RequestBreadcrumb({
 }: RequestBreadcrumbProps) {
   const [requestEditValue, setRequestEditValue] = useState(request);
   const [collectionEditValue, setCollectionEditValue] = useState(collection);
-  const [requestWidth, setRequestWidth] = useState(0);
-  const [collectionWidth, setCollectionWidth] = useState(0);
+  const [requestWidth, setRequestWidth] = useState(() =>
+    Math.max((request?.length || 1) * 8 + 10, 20),
+  );
+  const [collectionWidth, setCollectionWidth] = useState(() =>
+    Math.max((collection?.length || 1) * 8 + 10, 20),
+  );
   const requestInputRef = useRef<HTMLInputElement>(null);
   const collectionInputRef = useRef<HTMLInputElement>(null);
   const measureRef = useRef<HTMLSpanElement>(null);
@@ -51,19 +55,17 @@ export function RequestBreadcrumb({
     setCollectionEditValue(collection);
   }, [collection]);
 
-  // Measure text width with padding for px-1 (8px) + ring (2px) + buffer (6px) = 16px total
-  useEffect(() => {
-    if (measureRef.current) {
-      measureRef.current.textContent = requestEditValue || "A";
-      setRequestWidth(Math.max(measureRef.current.offsetWidth + 10, 20));
-    }
+  // Measure text width synchronously to avoid visible jitter.
+  useLayoutEffect(() => {
+    if (!measureRef.current) return;
+    measureRef.current.textContent = requestEditValue || "A";
+    setRequestWidth(Math.max(measureRef.current.offsetWidth + 10, 20));
   }, [requestEditValue]);
 
-  useEffect(() => {
-    if (measureRef.current) {
-      measureRef.current.textContent = collectionEditValue || "A";
-      setCollectionWidth(Math.max(measureRef.current.offsetWidth + 10, 20));
-    }
+  useLayoutEffect(() => {
+    if (!measureRef.current) return;
+    measureRef.current.textContent = collectionEditValue || "A";
+    setCollectionWidth(Math.max(measureRef.current.offsetWidth + 10, 20));
   }, [collectionEditValue]);
 
   const handleFinishRequestEdit = () => {
