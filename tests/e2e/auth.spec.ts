@@ -1,5 +1,11 @@
 import { test, expect } from "@playwright/test";
-import { signUp, login, generateTestEmail, TEST_PASSWORD } from "./helpers/auth";
+import {
+  signUp,
+  login,
+  logout,
+  generateTestEmail,
+  TEST_PASSWORD,
+} from "./helpers/auth";
 
 test.describe("Authentication Flow", () => {
   test.describe("Sign Up", () => {
@@ -69,9 +75,8 @@ test.describe("Authentication Flow", () => {
       // First sign up
       await signUp(page, email, TEST_PASSWORD);
 
-      // Clear session
-      await page.context().clearCookies();
-      await page.evaluate(() => localStorage.clear());
+      // Log out to clear session cleanly
+      await logout(page);
 
       // Try to sign up again with same email
       await page.goto("/signup");
@@ -97,12 +102,10 @@ test.describe("Authentication Flow", () => {
       // First create an account
       await signUp(page, email, TEST_PASSWORD);
 
-      // Clear storage to simulate logout
-      await page.context().clearCookies();
-      await page.evaluate(() => localStorage.clear());
+      // Properly log out via UI to clear session state
+      await logout(page);
 
       // Now try to log in
-      await page.goto("/login");
       await page.fill('input[name="email"]', email);
       await page.fill('input[name="password"]', TEST_PASSWORD);
       await page.click('button[type="submit"]');

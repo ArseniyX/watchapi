@@ -17,8 +17,9 @@ export class OrganizationService {
     const slug = data.slug || this.generateSlug(data.name);
 
     // Check if slug already exists
-    const existing =
-      await this.organizationRepository.findOrganizationBySlug(slug);
+    const existing = await this.organizationRepository.findOrganizationBySlug(
+      slug,
+    );
     if (existing) {
       throw new Error("An organization with this slug already exists");
     }
@@ -155,7 +156,9 @@ export class OrganizationService {
       });
 
       // Send invitation email
-      const invitationUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/app?org=${data.organizationId}`;
+      const invitationUrl = `${
+        process.env.NEXT_PUBLIC_DOMAIN || "http://localhost:3000"
+      }/app?org=${data.organizationId}`;
       await emailService.sendInvitationEmail({
         to: data.email,
         organizationName: organization.name,
@@ -182,7 +185,9 @@ export class OrganizationService {
     });
 
     // Send invitation email with signup link
-    const invitationUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/signup?invitation=${token}`;
+    const invitationUrl = `${
+      process.env.NEXT_PUBLIC_DOMAIN || "http://localhost:3000"
+    }/signup?invitation=${token}`;
     await emailService.sendInvitationEmail({
       to: data.email,
       organizationName: organization.name,
@@ -196,8 +201,9 @@ export class OrganizationService {
   }
 
   async acceptInvitation(token: string, userId: string) {
-    const invitation =
-      await this.organizationRepository.findInvitationByToken(token);
+    const invitation = await this.organizationRepository.findInvitationByToken(
+      token,
+    );
 
     if (!invitation) {
       throw new Error("Invitation not found");
@@ -299,8 +305,9 @@ export class OrganizationService {
   }
 
   async resendInvitation(invitationId: string) {
-    const invitation =
-      await this.organizationRepository.findInvitationById(invitationId);
+    const invitation = await this.organizationRepository.findInvitationById(
+      invitationId,
+    );
 
     if (!invitation) {
       throw new Error("Invitation not found");
@@ -335,7 +342,9 @@ export class OrganizationService {
     });
 
     // Send invitation email
-    const invitationUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/signup?invitation=${newToken}`;
+    const invitationUrl = `${
+      process.env.NEXT_PUBLIC_DOMAIN || "http://localhost:3000"
+    }/signup?invitation=${newToken}`;
     await emailService.sendInvitationEmail({
       to: invitation.email,
       organizationName: organization.name,
