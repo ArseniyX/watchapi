@@ -13,18 +13,20 @@ const BASE_URL = `http://${E2E_HOST}:${E2E_PORT}`;
 /**
  * See https://playwright.dev/docs/test-configuration.
  */
+const defaultWorkers = parseInt(process.env.PLAYWRIGHT_WORKERS ?? "1", 10) || 1;
+
 export default defineConfig({
   testDir: "./tests/e2e",
   /* Global setup - run before all tests */
   globalSetup: require.resolve("./tests/e2e/global-setup.ts"),
   /* Run tests in files in parallel */
-  fullyParallel: true,
+  fullyParallel: false,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
   /* Run tests in parallel on CI with multiple workers */
-  workers: process.env.CI ? 4 : undefined,
+  workers: process.env.CI ? 4 : defaultWorkers,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: "html",
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */

@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { OrganizationService } from "../organization.service";
-import { OrganizationRepository } from "../organization.repository";
 import { OrganizationRole, MemberStatus } from "../../../../generated/prisma";
 
 // Mock the repository

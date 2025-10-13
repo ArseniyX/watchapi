@@ -10,7 +10,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { Activity, AlertTriangle } from "lucide-react";
 
 interface MonitoringTabProps {
@@ -45,7 +44,6 @@ export function MonitoringTab({
     planLimit.currentActiveMonitors >= planLimit.maxActiveMonitors &&
     !isActive;
 
-  const intervalMinutes = Math.floor(interval / 60000);
   const minIntervalMinutes = planLimit
     ? Math.floor(planLimit.minCheckInterval / 60000)
     : 1;
@@ -175,24 +173,12 @@ export function MonitoringTab({
               </p>
             </div>
 
-            {/* Monitoring Status */}
-            {/* <div className="rounded-lg border border-border bg-muted/50 p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Badge
-                  variant="outline"
-                  className="bg-green-500/10 text-green-600 border-green-500/20"
-                >
-                  <Activity className="h-3 w-3 mr-1" />
-                  Monitoring Active
-                </Badge>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                This endpoint will be checked every {intervalMinutes}{" "}
-                {intervalMinutes === 1 ? "minute" : "minutes"}. You'll be
-                notified if the response status is not {expectedStatus} or if
-                the request times out.
-              </p>
-            </div> */}
+            <div className="rounded-lg border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
+              Checks run every {Math.round(interval / 60000)}{" "}
+              {Math.round(interval / 60000) === 1 ? "minute" : "minutes"} with a
+              timeout of {timeout}ms. Notifications trigger when the response
+              status differs from {expectedStatus}.
+            </div>
           </div>
         )}
 

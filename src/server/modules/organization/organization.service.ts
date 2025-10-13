@@ -3,9 +3,6 @@ import { OrganizationRepository } from "./organization.repository";
 import {
   CreateOrganizationInput,
   UpdateOrganizationInput,
-  AddMemberInput,
-  UpdateMemberRoleInput,
-  RemoveMemberInput,
 } from "./organization.schema";
 import crypto from "crypto";
 import { emailService } from "../shared/email.service";

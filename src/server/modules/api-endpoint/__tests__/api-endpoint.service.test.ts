@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { ApiEndpointService } from "../api-endpoint.service";
-import { ApiEndpointRepository } from "../api-endpoint.repository";
 import { HttpMethod, PlanType } from "../../../../generated/prisma";
 
 // Mock ApiEndpointRepository

@@ -9,7 +9,6 @@ import {
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbList,
-  BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 
@@ -181,23 +180,28 @@ export function RequestBreadcrumb({
           <Save className="h-3 w-3" />
           Save
         </Button>
-        {/* <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 text-xs"
-                    onClick={onShare}
-                >
-                    <Share2 className="h-3 w-3" />
-                    Share
-                </Button> */}
-        {/* <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-7 w-7"
-                    onClick={onCopyLink}
-                >
-                    <Link2 className="h-3 w-3" />
-                </Button> */}
+        {onShare && (
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 text-xs"
+            onClick={onShare}
+          >
+            <Share2 className="h-3 w-3" />
+            Share
+          </Button>
+        )}
+        {onCopyLink && (
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-7 w-7"
+            onClick={onCopyLink}
+            aria-label="Copy request link"
+          >
+            <Link2 className="h-3 w-3" />
+          </Button>
+        )}
       </div>
     </div>
   );

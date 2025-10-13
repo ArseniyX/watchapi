@@ -39,7 +39,7 @@ export class NotificationChannelService {
     // Validate config JSON
     try {
       JSON.parse(input.config);
-    } catch (error) {
+    } catch {
       throw new Error("Invalid configuration JSON");
     }
 
@@ -79,7 +79,7 @@ export class NotificationChannelService {
     if (input.config) {
       try {
         JSON.parse(input.config);
-      } catch (error) {
+      } catch {
         throw new Error("Invalid configuration JSON");
       }
     }

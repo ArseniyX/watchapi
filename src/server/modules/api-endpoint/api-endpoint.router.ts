@@ -31,7 +31,7 @@ export const createApiEndpointRouter = (
 
     getOrganizationEndpoints: orgProcedure
       .input(getOrganizationEndpointsSchema)
-      .query(async ({ ctx, input }) => {
+      .query(async ({ ctx }) => {
         return apiEndpointService.getOrganizationApiEndpoints({ ctx });
       }),
 

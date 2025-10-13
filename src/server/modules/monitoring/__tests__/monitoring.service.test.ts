@@ -1,7 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { MonitoringService } from "../monitoring.service";
-import { MonitoringRepository } from "../monitoring.repository";
-import { ApiEndpointRepository } from "../../api-endpoint/api-endpoint.repository";
 import { HttpMethod, CheckStatus } from "../../../../generated/prisma";
 
 // Mock the repositories

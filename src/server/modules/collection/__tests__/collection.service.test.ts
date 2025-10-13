@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { CollectionService } from "../collection.service";
-import { CollectionRepository } from "../collection.repository";
 
 // Mock the repository
 const mockRepository = {

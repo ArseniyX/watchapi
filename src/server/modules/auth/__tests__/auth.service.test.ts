@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { AuthService } from "../auth.service";
-import { UserService } from "../../user/user.service";
 import jwt from "jsonwebtoken";
 
 // Mock UserService
@@ -23,7 +22,7 @@ const mockOrganizationService = {
 // Mock JWT
 vi.mock("jsonwebtoken", () => ({
   default: {
-    sign: vi.fn((payload, secret, options) => "mock-token"),
+    sign: vi.fn(() => "mock-token"),
     verify: vi.fn(),
   },
 }));

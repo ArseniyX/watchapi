@@ -53,7 +53,7 @@ export function BodyTab({
       const formatted = JSON.stringify(parsed, null, 2);
       onBodyContentChange(formatted);
       toast.success("JSON formatted successfully");
-    } catch (error) {
+    } catch {
       toast.error("Invalid JSON: Unable to format");
     }
   };

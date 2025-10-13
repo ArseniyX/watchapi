@@ -36,6 +36,7 @@ export function Toast({
           ? "border-red-500/50 bg-red-500/10 text-foreground"
           : "border-border bg-background/95 text-foreground",
       )}
+      data-toast-id={id}
     >
       <div className="grid gap-1">
         {title && (

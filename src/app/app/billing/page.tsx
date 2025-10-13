@@ -96,7 +96,7 @@ export default function BillingPage() {
   const currentOrg = organizations?.[0];
   const currentPlan = currentOrg?.plan || "FREE";
 
-  const handleUpgrade = (planId: string) => {
+  const handleUpgrade = () => {
     setComingSoonOpen(true);
   };
 
@@ -188,7 +188,7 @@ export default function BillingPage() {
                       className="w-full mt-6"
                       variant={isCurrent ? "outline" : "default"}
                       disabled={isCurrent}
-                      onClick={() => handleUpgrade(plan.priceId)}
+                      onClick={handleUpgrade}
                     >
                       {isCurrent
                         ? "Current Plan"

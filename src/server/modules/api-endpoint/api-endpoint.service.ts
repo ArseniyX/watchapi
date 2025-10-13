@@ -13,7 +13,6 @@ import {
   BadRequestError,
   NotFoundError,
   TooManyRequestsError,
-  ForbiddenError,
 } from "../../errors/custom-errors";
 import type { Context } from "../../trpc";
 

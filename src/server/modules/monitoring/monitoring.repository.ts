@@ -93,7 +93,6 @@ export class MonitoringRepository {
     apiEndpointId: string,
     from: Date,
     to: Date,
-    intervalMinutes: number = 60,
   ) {
     // This is a simplified version - you might want to use raw SQL for more complex time-series queries
     return this.prisma.monitoringCheck.findMany({

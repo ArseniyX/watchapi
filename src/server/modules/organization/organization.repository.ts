@@ -1,8 +1,5 @@
 import {
   PrismaClient,
-  Organization,
-  OrganizationMember,
-  OrganizationInvitation,
   OrganizationRole,
   MemberStatus,
 } from "../../../generated/prisma";

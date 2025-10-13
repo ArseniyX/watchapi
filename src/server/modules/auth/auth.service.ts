@@ -23,7 +23,7 @@ export class AuthService {
   }: {
     input: RegisterInput;
   }): Promise<{ user: User; tokens: AuthTokens }> {
-    let user = await this.userService.createUser({
+    const user = await this.userService.createUser({
       email: input.email,
       name: input.name,
       password: input.password,

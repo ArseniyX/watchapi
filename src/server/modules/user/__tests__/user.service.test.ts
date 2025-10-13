@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { UserService } from "../user.service";
-import { UserRepository } from "../user.repository";
 import bcrypt from "bcryptjs";
 
 // Mock UserRepository

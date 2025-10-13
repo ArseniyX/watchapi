@@ -1,9 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { AlertService } from "../alert.service";
-import { AlertRepository } from "../alert.repository";
-import { ApiEndpointRepository } from "../../api-endpoint/api-endpoint.repository";
-import { MonitoringRepository } from "../../monitoring/monitoring.repository";
-import { NotificationChannelService } from "../../notification-channel/notification-channel.service";
 import {
   AlertCondition,
   CheckStatus,

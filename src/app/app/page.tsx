@@ -46,7 +46,6 @@ export default function DashboardPage() {
     if (!endpoints || !history) return null;
 
     const totalEndpoints = endpoints.length;
-    const activeEndpoints = endpoints.filter((e) => e.isActive).length;
 
     // Calculate uptime based on recent checks
     const successfulChecks = history.filter(

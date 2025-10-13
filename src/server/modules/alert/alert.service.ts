@@ -160,8 +160,6 @@ export class AlertService {
     input: CreateAlertNotificationInput;
     ctx: Context;
   }) {
-    const organizationId = ctx.organizationId;
-
     // Verify alert exists and user has access
     await this.getAlert({ input: { id: input.alertId }, ctx });
 
@@ -208,8 +206,6 @@ export class AlertService {
     input: GetAlertTriggersInput;
     ctx: Context;
   }) {
-    const organizationId = ctx.organizationId;
-
     // Verify alert exists and user has access
     await this.getAlert({ input: { id: input.alertId }, ctx });
 

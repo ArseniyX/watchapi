@@ -34,9 +34,29 @@ export class CliService {
     };
   }
 
-  async submitCliReport(input: SubmitCliReportInput, userId: string, _organizationId: string) {
+  async submitCliReport(
+    input: SubmitCliReportInput,
+    userId: string,
+    organizationId: string,
+  ) {
+    const collection = await this.cliRepository.getCollectionWithEndpoints(
+      input.collectionId,
+      organizationId,
+    );
+
+    if (!collection) {
+      throw new NotFoundError("Collection", input.collectionId);
+    }
+
+    const allowedEndpointIds = new Set(
+      collection.apiEndpoints.map((endpoint) => endpoint.id),
+    );
+    const filteredResults = input.results.filter((result) =>
+      allowedEndpointIds.has(result.endpointId),
+    );
+
     // Convert CLI results to database format
-    const dbResults = input.results.map((result) => ({
+    const dbResults = filteredResults.map((result) => ({
       endpointId: result.endpointId,
       status: this.mapCliStatusToDbStatus(result.status),
       responseTime: result.responseTime,
@@ -55,7 +75,7 @@ export class CliService {
     );
 
     // Detect regressions by comparing with recent checks
-    const regressions = await this.detectRegressions(input.results);
+    const regressions = await this.detectRegressions(filteredResults);
 
     return {
       success: true,

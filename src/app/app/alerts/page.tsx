@@ -47,7 +47,6 @@ import {
   Webhook,
   MessageSquare,
   Trash2,
-  Edit,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { NotificationType } from "@/generated/prisma";

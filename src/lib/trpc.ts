@@ -1,5 +1,5 @@
 import { createTRPCReact } from "@trpc/react-query";
-import { createTRPCProxyClient, httpBatchLink, TRPCClientError } from "@trpc/client";
+import { createTRPCProxyClient, httpBatchLink } from "@trpc/client";
 import type { AppRouter } from "../server/app";
 import { useOrganizationStore } from "@/stores/organization-store";
 import { setStoredToken, removeStoredToken } from "@/stores/auth-store";

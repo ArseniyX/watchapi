@@ -1,4 +1,4 @@
-import { PrismaClient, NotificationChannel } from "@/generated/prisma";
+import { PrismaClient } from "@/generated/prisma";
 import { CreateNotificationChannelInput } from "./notification-channel.schema";
 
 export class NotificationChannelRepository {

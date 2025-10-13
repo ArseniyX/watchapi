@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, Send } from "lucide-react";
+import { Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -51,9 +51,6 @@ export function RequestUrlBar({
         <Send className="mr-2 h-4 w-4" />
         Send
       </Button>
-      {/* <Button size="icon" variant="ghost">
-                <ChevronDown className="h-4 w-4" />
-            </Button> */}
     </div>
   );
 }

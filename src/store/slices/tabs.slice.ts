@@ -22,7 +22,7 @@ export interface TabsSlice {
   closeOtherTabs: (tabId: string) => void;
 }
 
-export const createTabsSlice: StateCreator<TabsSlice> = (set, get) => ({
+export const createTabsSlice: StateCreator<TabsSlice> = (set) => ({
   tabs: [],
   activeTabId: null,
 
