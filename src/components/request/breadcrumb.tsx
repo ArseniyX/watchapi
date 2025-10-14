@@ -182,7 +182,7 @@ export function RequestBreadcrumb({
           <Save className="h-3 w-3" />
           Save
         </Button>
-        {onShare && (
+        {/* {onShare && (
           <Button
             size="sm"
             variant="ghost"
@@ -203,7 +203,7 @@ export function RequestBreadcrumb({
           >
             <Link2 className="h-3 w-3" />
           </Button>
-        )}
+        )} */}
       </div>
     </div>
   );
