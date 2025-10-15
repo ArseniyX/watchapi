@@ -28,14 +28,16 @@ const buildDatabaseUrl = () => {
     params.set("connect_timeout", "10"); // 10 seconds
   }
 
-  // Prisma connection pool settings
-  if (!params.has("connection_limit")) {
-    // Increase limit - 5 was too small for concurrent requests
-    params.set("connection_limit", "10"); // Max 10 connections in pool
+  // Prisma connection pool settings - default to a single connection unless overridden
+  const connectionLimit = process.env.PRISMA_CONNECTION_LIMIT || "1";
+
+  if (!params.has("connection_limit") && connectionLimit) {
+    params.set("connection_limit", connectionLimit);
   }
 
-  if (!params.has("pool_timeout")) {
-    params.set("pool_timeout", "20"); // Wait max 20s for connection from pool
+  const poolTimeout = process.env.PRISMA_POOL_TIMEOUT || "20";
+  if (!params.has("pool_timeout") && poolTimeout) {
+    params.set("pool_timeout", poolTimeout);
   }
 
   url.search = params.toString();
