@@ -35,6 +35,8 @@ import {
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { useRouter } from "next/navigation";
+import EndpointDetailsDrawer from "./endpoint-details-drawer";
+import type { EndpointSummary } from "./endpoint-details-drawer";
 
 function formatDuration(ms: number) {
   if (ms < 1000) return `${ms}ms`;
@@ -102,17 +104,38 @@ export default function MonitoringPage() {
       staleTime: refreshInterval,
     });
 
-  const filteredEndpoints = useMemo(() => {
+  const [selectedEndpointId, setSelectedEndpointId] = useState<string | null>(
+    null,
+  );
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  const selectedEndpoint = useMemo<EndpointSummary | null>(() => {
+    if (!selectedEndpointId || !endpoints) return null;
+    return endpoints.find((endpoint) => endpoint.id === selectedEndpointId) || null;
+  }, [endpoints, selectedEndpointId]);
+
+  const filteredEndpoints = useMemo<EndpointSummary[]>(() => {
     if (!endpoints) return [];
     if (!searchQuery.trim()) return endpoints;
 
     const query = searchQuery.toLowerCase();
-    return endpoints.filter(
-      (endpoint) =>
-        endpoint.name.toLowerCase().includes(query) ||
-        endpoint.url.toLowerCase().includes(query),
-    );
+    return endpoints.filter((endpoint) => {
+      const name = endpoint.name?.toLowerCase() ?? "";
+      return name.includes(query) || endpoint.url.toLowerCase().includes(query);
+    });
   }, [endpoints, searchQuery]);
+
+  const handleSelectEndpoint = (endpointId: string) => {
+    setSelectedEndpointId(endpointId);
+    setDrawerOpen(true);
+  };
+
+  const handleDrawerOpenChange = (open: boolean) => {
+    setDrawerOpen(open);
+    if (!open) {
+      setSelectedEndpointId(null);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -215,6 +238,7 @@ export default function MonitoringPage() {
                     key={`${endpoint.id}-${endpoint.name}-${endpoint.method}-${endpoint.url}`}
                     endpoint={endpoint}
                     refreshInterval={refreshInterval}
+                    onSelect={() => handleSelectEndpoint(endpoint.id)}
                   />
                 ))}
               </TableBody>
@@ -222,11 +246,24 @@ export default function MonitoringPage() {
           )}
         </CardContent>
       </Card>
+      <EndpointDetailsDrawer
+        endpoint={selectedEndpoint}
+        open={drawerOpen && !!selectedEndpoint}
+        onOpenChange={handleDrawerOpenChange}
+      />
     </div>
   );
 }
 
-function EndpointRow({ endpoint, refreshInterval }: { endpoint: any; refreshInterval: number }) {
+function EndpointRow({
+  endpoint,
+  refreshInterval,
+  onSelect,
+}: {
+  endpoint: EndpointSummary;
+  refreshInterval: number;
+  onSelect: () => void;
+}) {
   // Use the already-loaded monitoring checks from the parent query
   // endpoint.monitoringChecks is already populated with the last 5 checks
   const lastCheck = endpoint.monitoringChecks?.[0];
@@ -245,7 +282,10 @@ function EndpointRow({ endpoint, refreshInterval }: { endpoint: any; refreshInte
     : "N/A";
 
   return (
-    <TableRow>
+    <TableRow
+      onClick={onSelect}
+      className="cursor-pointer transition hover:bg-muted/40"
+    >
       <TableCell>
         <div className="flex items-center space-x-2">
           <StatusIcon status={lastCheck?.status || "unknown"} />

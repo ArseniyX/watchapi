@@ -356,7 +356,7 @@ export class MonitoringService {
         ? new Date(endpoint.lastCheckedAt)
         : null;
 
-      const intervalMs = (endpoint.interval || 60) * 1000; // assuming interval in seconds
+      const intervalMs = endpoint.interval ?? 60000; // stored in milliseconds
       const shouldRun =
         !lastCheckedAt || now.getTime() - lastCheckedAt.getTime() >= intervalMs;
 

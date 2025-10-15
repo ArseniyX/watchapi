@@ -30,6 +30,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CodeEditor } from "@/components/code-editor";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -138,6 +139,16 @@ export default function AlertsPage() {
   const deleteChannelMutation = trpc.notificationChannel.delete.useMutation({
     onSuccess: () => {
       toast.success("Notification channel deleted");
+      refetchChannels();
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
+  const updateChannelMutation = trpc.notificationChannel.update.useMutation({
+    onSuccess: () => {
+      toast.success("Notification channel updated");
       refetchChannels();
     },
     onError: (error) => {
@@ -521,17 +532,34 @@ export default function AlertsPage() {
                     <div className="mt-1">
                       <NotificationChannelIcon type={channel.type} />
                     </div>
-                    <div>
+                    <div className="min-w-[200px]">
                       <h4 className="font-medium">{channel.name}</h4>
                       <p className="text-sm text-muted-foreground mt-1">
                         {channel.type}
                       </p>
-                      <div className="mt-2">
+                      <div className="mt-2 flex items-center gap-3">
                         <Badge
                           variant={channel.isActive ? "default" : "secondary"}
                         >
                           {channel.isActive ? "Active" : "Inactive"}
                         </Badge>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <Switch
+                            checked={channel.isActive}
+                            onCheckedChange={(value) => {
+                              if (!selectedOrgId) return;
+                              updateChannelMutation.mutate({
+                                id: channel.id,
+                                organizationId: selectedOrgId,
+                                isActive: value,
+                              });
+                            }}
+                            disabled={
+                              !selectedOrgId || updateChannelMutation.isPending
+                            }
+                          />
+                          <span>{channel.isActive ? "Active" : "Paused"}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -539,6 +567,7 @@ export default function AlertsPage() {
                     variant="ghost"
                     size="icon"
                     onClick={() => handleDeleteChannel(channel.id)}
+                    disabled={deleteChannelMutation.isPending}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
