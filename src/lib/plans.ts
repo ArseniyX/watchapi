@@ -1,0 +1,73 @@
+import { Check, Clock, Database, TrendingUp, Users, Zap } from "lucide-react";
+
+export const plans = [
+  {
+    name: "Free",
+    price: "$0",
+    priceId: "free",
+    features: [
+      { icon: Database, text: "3 API endpoints" },
+      { icon: Users, text: "1 team member" },
+      { icon: Clock, text: "30-minute health checks" },
+      { icon: TrendingUp, text: "7 days data retention" },
+    ],
+    cta: "Start Free",
+    popular: false,
+    highlight: null,
+    description: "Perfect for trying out",
+  },
+  {
+    name: "Starter",
+    price: "$9",
+    priceId: "starter",
+    features: [
+      { icon: Database, text: "25 API endpoints" },
+      { icon: Users, text: "5 team members" },
+      { icon: Clock, text: "5-minute checks" },
+      { icon: TrendingUp, text: "30 days retention" },
+      { icon: Zap, text: "CI/CD integrations" },
+      { icon: Check, text: "Basic anomaly detection" },
+    ],
+    description: "For development teams",
+    cta: "Start Free Trial",
+    popular: true,
+    highlight: null,
+    priceNote: "flat rate/month",
+  },
+  {
+    name: "Pro",
+    price: "$29",
+    priceId: "pro",
+    features: [
+      { icon: Database, text: "100 API endpoints" },
+      { icon: Users, text: "15 team members" },
+      { icon: Clock, text: "1-minute checks" },
+      { icon: TrendingUp, text: "90 days retention" },
+      { icon: Zap, text: "Advanced AI anomaly detection" },
+      { icon: Check, text: "SLA monitoring" },
+      { icon: Check, text: "Priority support" },
+    ],
+    description: "For production teams",
+    cta: "Start Free Trial",
+    popular: false,
+    highlight: null,
+    priceNote: "flat rate/month",
+  },
+
+  // {
+  //   name: "Enterprise",
+  //   price: "Custom",
+  //   priceId: "enterprise",
+  //   features: [
+  //     { icon: Database, text: "Unlimited endpoints" },
+  //     { icon: Users, text: "Unlimited team members" },
+  //     { icon: Clock, text: "10-second checks" },
+  //     { icon: TrendingUp, text: "365 days retention" },
+  //     { icon: Zap, text: "24/7 dedicated support" },
+  //     { icon: Check, text: "SLA guarantees" },
+  //     { icon: Check, text: "White-label option" },
+  //     { icon: Check, text: "SSO/SAML" },
+  //     { icon: Check, text: "On-premise option" },
+  //   ],
+  // },
+];

@@ -10,15 +10,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  CreditCard,
-  Check,
-  Zap,
-  Users,
-  Clock,
-  Database,
-  TrendingUp,
-} from "lucide-react";
+import { CreditCard } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import {
   Dialog,
@@ -27,65 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-
-const plans = [
-  {
-    name: "Free",
-    price: "$0",
-    priceId: "free",
-    features: [
-      { icon: Database, text: "3 API endpoints" },
-      { icon: Users, text: "1 team member" },
-      { icon: Clock, text: "30-minute health checks" },
-      { icon: TrendingUp, text: "7 days data retention" },
-    ],
-    current: true,
-  },
-  {
-    name: "Starter",
-    price: "$39",
-    priceId: "starter",
-    popular: true,
-    features: [
-      { icon: Database, text: "25 API endpoints" },
-      { icon: Users, text: "5 team members" },
-      { icon: Clock, text: "2-minute checks" },
-      { icon: TrendingUp, text: "30 days retention" },
-      { icon: Zap, text: "CI/CD integrations" },
-      { icon: Check, text: "Basic anomaly detection" },
-    ],
-  },
-  {
-    name: "Pro",
-    price: "$99",
-    priceId: "pro",
-    features: [
-      { icon: Database, text: "100 API endpoints" },
-      { icon: Users, text: "15 team members" },
-      { icon: Clock, text: "1-minute checks" },
-      { icon: TrendingUp, text: "90 days retention" },
-      { icon: Zap, text: "Advanced AI anomaly detection" },
-      { icon: Check, text: "SLA monitoring" },
-      { icon: Check, text: "Priority support" },
-    ],
-  },
-  {
-    name: "Enterprise",
-    price: "Custom",
-    priceId: "enterprise",
-    features: [
-      { icon: Database, text: "Unlimited endpoints" },
-      { icon: Users, text: "Unlimited team members" },
-      { icon: Clock, text: "10-second checks" },
-      { icon: TrendingUp, text: "365 days retention" },
-      { icon: Zap, text: "24/7 dedicated support" },
-      { icon: Check, text: "SLA guarantees" },
-      { icon: Check, text: "White-label option" },
-      { icon: Check, text: "SSO/SAML" },
-      { icon: Check, text: "On-premise option" },
-    ],
-  },
-];
+import { plans } from "@/lib/plans";
 
 export default function BillingPage() {
   const [comingSoonOpen, setComingSoonOpen] = useState(false);
@@ -110,6 +44,10 @@ export default function BillingPage() {
           </h1>
           <p className="text-muted-foreground mt-2">
             Manage your subscription and billing information
+          </p>
+          <p className="mt-3 text-sm font-medium text-primary">
+            🚀 <strong>Beta pricing:</strong> Early adopters get up to 70% off
+            and keep these prices for life.
           </p>
         </div>
 
@@ -143,7 +81,7 @@ export default function BillingPage() {
         {/* Available Plans */}
         <div>
           <h2 className="text-2xl font-bold mb-8">Available Plans</h2>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {plans.map((plan) => {
               const isCurrent =
                 plan.priceId.toUpperCase() === currentPlan.toUpperCase();

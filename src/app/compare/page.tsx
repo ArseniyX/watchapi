@@ -9,6 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { plans as basePlans } from "@/lib/plans";
 import { Check, X } from "lucide-react";
 import Link from "next/link";
 import type { Metadata } from "next";
@@ -20,6 +21,9 @@ export const metadata: Metadata = {
 };
 
 export default function ComparePage() {
+  const starterPlan = basePlans.find((plan) => plan.name === "Starter");
+  const proPlan = basePlans.find((plan) => plan.name === "Pro");
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -59,10 +63,14 @@ export default function ComparePage() {
                     <TableCell className="font-bold">WatchAPI</TableCell>
                     <TableCell>Flat rate</TableCell>
                     <TableCell className="font-semibold text-green-600 dark:text-green-400">
-                      $39/month
+                      {starterPlan?.price
+                        ? `${starterPlan.price}/month`
+                        : "See pricing"}
                     </TableCell>
                     <TableCell className="font-semibold text-green-600 dark:text-green-400">
-                      $99/month
+                      {proPlan?.price
+                        ? `${proPlan.price}/month`
+                        : "See pricing"}
                     </TableCell>
                     <TableCell>Testing + Monitoring</TableCell>
                   </TableRow>

@@ -8,67 +8,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { plans } from "@/lib/plans";
 import { Check } from "lucide-react";
 import Link from "next/link";
-
-const plans = [
-  {
-    name: "Free",
-    price: "$0",
-    description: "Perfect for trying out",
-    features: [
-      "Unlimited API endpoints",
-      "3 active monitors",
-      "30-minute health checks",
-      "Email alerts only",
-      "7-day history",
-      "1 team member",
-      "API request builder",
-    ],
-    cta: "Start Free",
-    popular: false,
-    highlight: null,
-  },
-  {
-    name: "Starter",
-    price: "$39",
-    description: "For development teams",
-    priceNote: "flat rate/month",
-    features: [
-      "Unlimited API endpoints",
-      "25 active monitors",
-      "2-minute checks",
-      "Email, Slack & Discord alerts",
-      "30-day history",
-      "5 team members",
-      "CI/CD integrations",
-      "Basic anomaly detection",
-    ],
-    cta: "Start Free Trial",
-    popular: true,
-    highlight: null,
-  },
-  {
-    name: "Pro",
-    price: "$99",
-    description: "For production teams",
-    priceNote: "flat rate/month",
-    features: [
-      "Unlimited API endpoints",
-      "100 active monitors",
-      "1-minute checks",
-      "Advanced AI anomaly detection",
-      "Webhook alerts",
-      "90-day history",
-      "15 team members",
-      "SLA monitoring",
-      "Priority support",
-    ],
-    cta: "Start Free Trial",
-    popular: false,
-    highlight: null,
-  },
-];
 
 export function Pricing() {
   return (
@@ -81,6 +23,10 @@ export function Pricing() {
           <p className="mt-6 text-lg leading-8 text-muted-foreground text-pretty">
             One flat rate for your entire team. No per-user fees. API testing
             and monitoring in one tool.
+          </p>
+          <p className="mt-4 text-sm font-medium text-primary">
+            🚀 <strong>Beta pricing:</strong> Early adopters get up to 70% off
+            and keep these prices for life.
           </p>
         </div>
         <div className="mx-auto mt-16 max-w-5xl">
@@ -130,7 +76,7 @@ export function Pricing() {
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <ul className="space-y-4">
-                    {plan.features.map((feature) => (
+                    {plan.features.map(({ text: feature }) => (
                       <li key={feature} className="flex items-start space-x-3">
                         <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
                         <span className="text-sm text-foreground">
