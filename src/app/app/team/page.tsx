@@ -20,13 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Mail,
-  MoreHorizontal,
-  Crown,
-  Shield,
-  User,
-} from "lucide-react";
+import { Mail, MoreHorizontal, Crown, Shield, User } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -205,7 +199,7 @@ export default function TeamPage() {
               }
             }}
           >
-            <SelectTrigger className="w-[200px]">
+            <SelectTrigger>
               <SelectValue placeholder="Select organization" />
             </SelectTrigger>
             <SelectContent>
@@ -521,8 +515,8 @@ export default function TeamPage() {
             <AlertDialogDescription>
               Are you sure you want to remove{" "}
               <span className="font-semibold">{memberToRemove?.name}</span> (
-              {memberToRemove?.email}) from this organization? This action cannot
-              be undone.
+              {memberToRemove?.email}) from this organization? This action
+              cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

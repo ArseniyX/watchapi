@@ -151,21 +151,64 @@ export class AuthService {
     let isNewUser = false;
 
     if (!user) {
-      // Create new user without personal org (handled by setupNewUser)
-      const newUser = await this.userService.createOAuthUser({
-        email: input.profile.email,
-        name: input.profile.name,
-        provider: input.provider,
-        providerId: input.profile.id,
-        avatar: input.profile.avatar,
-      });
+      const existingUserWithEmail = await this.userService.getUserByEmail(
+        input.profile.email,
+      );
 
-      // Handle invitation or create personal org
-      await this.setupNewUser(newUser, input.invitationToken);
+      if (existingUserWithEmail) {
+        const updateData: {
+          provider: string;
+          providerId: string;
+          name?: string;
+          avatar?: string;
+        } = {
+          provider: input.provider,
+          providerId: input.profile.id,
+        };
 
-      // Refetch to get organizations
-      user = await this.userService.getUserById(newUser.id);
-      isNewUser = true;
+        if (!existingUserWithEmail.name && input.profile.name) {
+          updateData.name = input.profile.name;
+        }
+
+        if (input.profile.avatar) {
+          updateData.avatar = input.profile.avatar;
+        }
+
+        user = await this.userService.updateUser(
+          existingUserWithEmail.id,
+          updateData,
+        );
+
+        if (input.invitationToken) {
+          try {
+            await this.organizationService.acceptInvitation(
+              input.invitationToken,
+              existingUserWithEmail.id,
+            );
+            user = await this.userService.getUserById(
+              existingUserWithEmail.id,
+            );
+          } catch (error) {
+            console.error("Failed to accept invitation:", error);
+          }
+        }
+      } else {
+        // Create new user without personal org (handled by setupNewUser)
+        const newUser = await this.userService.createOAuthUser({
+          email: input.profile.email,
+          name: input.profile.name,
+          provider: input.provider,
+          providerId: input.profile.id,
+          avatar: input.profile.avatar,
+        });
+
+        // Handle invitation or create personal org
+        await this.setupNewUser(newUser, input.invitationToken);
+
+        // Refetch to get organizations
+        user = await this.userService.getUserById(newUser.id);
+        isNewUser = true;
+      }
     } else {
       user = await this.userService.updateUser(user.id, {
         name: input.profile.name || user.name,
