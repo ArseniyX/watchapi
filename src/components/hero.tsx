@@ -120,7 +120,7 @@ export function Hero() {
                     {/* Floating Stats Tooltips */}
                     {/* Top Right - Uptime */}
                     <div
-                      className="absolute top-8 right-8 bg-white dark:bg-zinc-900 backdrop-blur-md border-2 border-green-500/30 dark:border-green-500/50 rounded-xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.3)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.6)] ring-1 ring-green-500/10"
+                      className="hidden lg:block absolute top-8 right-8 bg-white dark:bg-zinc-900 backdrop-blur-md border-2 border-green-500/30 dark:border-green-500/50 rounded-xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.3)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.6)] ring-1 ring-green-500/10"
                     >
                       <div className="flex items-center gap-3">
                         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-500/20 ring-2 ring-green-500/40">
@@ -151,7 +151,7 @@ export function Hero() {
 
                     {/* Bottom Left - Response Time */}
                     <div
-                      className="absolute bottom-8 left-8 bg-white dark:bg-zinc-900 backdrop-blur-md border-2 border-blue-500/30 dark:border-blue-500/50 rounded-xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.3)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.6)] ring-1 ring-blue-500/10"
+                      className="hidden lg:block absolute bottom-8 left-8 bg-white dark:bg-zinc-900 backdrop-blur-md border-2 border-blue-500/30 dark:border-blue-500/50 rounded-xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.3)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.6)] ring-1 ring-blue-500/10"
                     >
                       <div className="flex items-center gap-3">
                         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/20 ring-2 ring-blue-500/40">
@@ -182,7 +182,7 @@ export function Hero() {
 
                     {/* Bottom Right - 24/7 Monitoring */}
                     <div
-                      className="absolute bottom-8 right-8 bg-white dark:bg-zinc-900 backdrop-blur-md border-2 border-primary/30 dark:border-primary/50 rounded-xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.3)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.6)] ring-1 ring-primary/10"
+                      className="hidden lg:block absolute bottom-8 right-8 bg-white dark:bg-zinc-900 backdrop-blur-md border-2 border-primary/30 dark:border-primary/50 rounded-xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.3)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.6)] ring-1 ring-primary/10"
                     >
                       <div className="flex items-center gap-3">
                         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/20 ring-2 ring-primary/40">

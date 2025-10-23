@@ -21,8 +21,8 @@ export function Footer() {
   return (
     <footer className="border-t border-border bg-background">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="flex justify-between">
-          <div className="space-y-4">
+        <div className="flex flex-col gap-10 md:flex-row md:items-start md:justify-between">
+          <div className="space-y-4 max-w-xs">
             <Logo className="-ml-2" />
             <p className="text-muted-foreground text-sm leading-relaxed">
               Lightweight API monitoring and testing for small teams. Simple,
@@ -30,9 +30,9 @@ export function Footer() {
             </p>
           </div>
 
-          <div className="flex gap-24 space-y-4">
+          <div className="grid grid-cols-2 gap-x-12 gap-y-8 sm:flex sm:flex-wrap sm:gap-x-16 sm:gap-y-10">
             {Object.entries(footerLinks).map(([category, links]) => (
-              <div key={category}>
+              <div key={category} className="min-w-[120px]">
                 <h3 className="font-semibold text-foreground mb-4">
                   {category}
                 </h3>
