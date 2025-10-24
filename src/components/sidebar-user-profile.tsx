@@ -47,7 +47,7 @@ export function SidebarUserProfile() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
-          className="cursor-pointer flex items-center w-full rounded-md transition-colors group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0"
+          className="cursor-pointer flex items-center w-full rounded-md transition-colors group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0 gap-2"
           data-testid="user-profile-dropdown"
         >
           <div className="h-5 w-5 rounded-full bg-secondary flex items-center justify-center shrink-0 transition-all hover:bg-primary/10 overflow-hidden">
