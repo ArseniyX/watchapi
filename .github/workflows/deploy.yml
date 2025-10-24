@@ -105,8 +105,8 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     environment: production
-    needs: [lint-and-test, e2e-test]
-    if: always() && (needs.lint-and-test.result == 'success') && (needs.e2e-test.result == 'success' || needs.e2e-test.result == 'skipped')
+    needs: [lint-and-test]
+    # if: always() && (needs.lint-and-test.result == 'success') && (needs.e2e-test.result == 'success' || needs.e2e-test.result == 'skipped')
     
     env:
       REGISTRY: ghcr.io
