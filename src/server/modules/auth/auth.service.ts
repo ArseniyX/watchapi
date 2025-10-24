@@ -8,8 +8,20 @@ import {
   AuthTokens,
   OAuthCallbackInput,
 } from "./auth.schema";
-import { UnauthorizedError, NotFoundError } from "../../errors/custom-errors";
-import type { Context } from "../../trpc";
+import {
+  UnauthorizedError,
+  NotFoundError,
+} from "@/server/errors/custom-errors";
+import type { Context } from "@/server/trpc";
+
+type UserWithOrganizations = Exclude<
+  Awaited<ReturnType<UserService["getUserById"]>>,
+  null
+>;
+
+type EmailLookupUser = NonNullable<
+  Awaited<ReturnType<UserService["getUserByEmail"]>>
+>;
 
 export class AuthService {
   constructor(
@@ -22,22 +34,19 @@ export class AuthService {
     input,
   }: {
     input: RegisterInput;
-  }): Promise<{ user: User; tokens: AuthTokens }> {
+  }): Promise<{ user: UserWithOrganizations; tokens: AuthTokens }> {
     const user = await this.userService.createUser({
       email: input.email,
       name: input.name,
       password: input.password,
     });
 
-    await this.setupNewUser(user, input.invitationToken);
+    const userWithOrgs = await this.setupNewUser(user, input.invitationToken);
 
-    // Refetch user to get updated organizations
-    const userWithOrgs = await this.userService.getUserById(user.id);
-    if (!userWithOrgs) {
-      throw new NotFoundError("User", user.id);
-    }
-
-    const tokens = this.generateTokens(userWithOrgs, userWithOrgs.organizations[0].organizationId);
+    const tokens = this.generateTokens(
+      userWithOrgs,
+      userWithOrgs.organizations[0].organizationId,
+    );
 
     return { user: userWithOrgs, tokens };
   }
@@ -48,7 +57,7 @@ export class AuthService {
   }: {
     ctx: Context;
     input: LoginInput;
-  }): Promise<{ user: User; tokens: AuthTokens }> {
+  }): Promise<{ user: EmailLookupUser; tokens: AuthTokens }> {
     const user = await this.userService.getUserByEmail(input.email);
     if (!user) {
       throw new UnauthorizedError("Invalid email or password");
@@ -142,7 +151,11 @@ export class AuthService {
   }: {
     ctx: Context;
     input: OAuthCallbackInput;
-  }): Promise<{ user: User; tokens: AuthTokens; isNewUser: boolean }> {
+  }): Promise<{
+    user: UserWithOrganizations;
+    tokens: AuthTokens;
+    isNewUser: boolean;
+  }> {
     let user: any = await this.userService.getUserByProvider(
       input.provider,
       input.profile.id,
@@ -185,15 +198,12 @@ export class AuthService {
               input.invitationToken,
               existingUserWithEmail.id,
             );
-            user = await this.userService.getUserById(
-              existingUserWithEmail.id,
-            );
+            user = await this.userService.getUserById(existingUserWithEmail.id);
           } catch (error) {
             console.error("Failed to accept invitation:", error);
           }
         }
       } else {
-        // Create new user without personal org (handled by setupNewUser)
         const newUser = await this.userService.createOAuthUser({
           email: input.profile.email,
           name: input.profile.name,
@@ -202,11 +212,7 @@ export class AuthService {
           avatar: input.profile.avatar,
         });
 
-        // Handle invitation or create personal org
-        await this.setupNewUser(newUser, input.invitationToken);
-
-        // Refetch to get organizations
-        user = await this.userService.getUserById(newUser.id);
+        user = await this.setupNewUser(newUser, input.invitationToken);
         isNewUser = true;
       }
     } else {
@@ -247,7 +253,7 @@ export class AuthService {
 
     // Verify user is a member of the target organization
     const isMember = user.organizations.some(
-      (org) => org.organizationId === input.organizationId
+      (org) => org.organizationId === input.organizationId,
     );
 
     if (!isMember) {
@@ -260,12 +266,12 @@ export class AuthService {
 
   /**
    * Unified setup for new users - handles invitation acceptance or creates personal org
-   * Single source of truth for both regular signup and OAuth
+   * Returns the user with refreshed organization memberships
    */
   private async setupNewUser(
     user: User,
     invitationToken?: string,
-  ): Promise<void> {
+  ): Promise<UserWithOrganizations> {
     if (invitationToken) {
       try {
         // Try to accept invitation
@@ -276,7 +282,11 @@ export class AuthService {
         console.log(
           `User ${user.id} joined via invitation: ${invitationToken}`,
         );
-        return; // Success - user is now part of invited organization
+        const invitedUser = await this.userService.getUserById(user.id);
+        if (!invitedUser) {
+          throw new NotFoundError("User", user.id);
+        }
+        return invitedUser; // Success - user is now part of invited organization
       } catch (error) {
         // Invitation failed (expired, invalid, etc.)
         console.error("Failed to accept invitation:", error);
@@ -287,6 +297,13 @@ export class AuthService {
     // No invitation or invitation failed - create personal organization
     await this.userService.createPersonalOrganizationForUser(user);
     console.log(`Created personal organization for user ${user.id}`);
+
+    const userWithPersonalOrg = await this.userService.getUserById(user.id);
+    if (!userWithPersonalOrg) {
+      throw new NotFoundError("User", user.id);
+    }
+
+    return userWithPersonalOrg;
   }
 
   private generateTokens(user: User, activeOrgId: string): AuthTokens {

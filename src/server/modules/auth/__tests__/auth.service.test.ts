@@ -320,6 +320,7 @@ describe("AuthService", () => {
       };
 
       mockUserService.getUserByProvider.mockResolvedValue(null);
+      mockUserService.getUserByEmail.mockResolvedValue(null);
       mockUserService.createOAuthUser.mockResolvedValue(mockUser);
       mockUserService.createPersonalOrganizationForUser.mockResolvedValue(undefined);
       mockUserService.getUserById.mockResolvedValue(mockUserWithOrgs);
@@ -419,6 +420,7 @@ describe("AuthService", () => {
       };
 
       mockUserService.getUserByProvider.mockResolvedValue(null);
+      mockUserService.getUserByEmail.mockResolvedValue(null);
       mockUserService.createOAuthUser.mockResolvedValue(mockUser);
       mockUserService.createPersonalOrganizationForUser.mockResolvedValue(undefined);
       mockUserService.getUserById.mockResolvedValue(mockUserWithOrgs);
