@@ -216,9 +216,9 @@ export default function DashboardPage() {
                   return (
                     <div
                       key={check.id}
-                      className="flex items-center justify-between"
+                      className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
                     >
-                      <div className="flex items-center space-x-3">
+                      <div className="flex w-full items-center gap-3 sm:w-auto">
                         <div
                           className={`h-2 w-2 rounded-full ${statusColor}`}
                         />
@@ -231,13 +231,16 @@ export default function DashboardPage() {
                           </p>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-sm font-medium">
+                      <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-col sm:items-end sm:text-right">
+                        <p className="text-sm font-medium sm:text-right">
                           {check.responseTime
                             ? formatDuration(check.responseTime)
                             : "N/A"}
                         </p>
-                        <Badge variant={statusVariant} className="text-xs">
+                        <Badge
+                          variant={statusVariant}
+                          className="w-fit text-xs sm:self-end"
+                        >
                           {statusText}
                         </Badge>
                       </div>

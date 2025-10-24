@@ -267,7 +267,7 @@ export default function TeamPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                 <span className="text-sm text-muted-foreground">
                   Total Members
                 </span>
@@ -275,19 +275,19 @@ export default function TeamPage() {
                   {members?.length || 0}
                 </span>
               </div>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                 <span className="text-sm text-muted-foreground">
                   Active Members
                 </span>
                 <span className="text-2xl font-bold">{activeMembers}</span>
               </div>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                 <span className="text-sm text-muted-foreground">
                   Pending Invitations
                 </span>
                 <span className="text-2xl font-bold">{pendingInvitations}</span>
               </div>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                 <span className="text-sm text-muted-foreground">Admins</span>
                 <span className="text-2xl font-bold">{admins}</span>
               </div>
@@ -309,7 +309,7 @@ export default function TeamPage() {
               {invitations.map((invitation) => (
                 <div
                   key={invitation.id}
-                  className="flex items-center justify-between p-4 border rounded-lg bg-muted/50"
+                  className="flex flex-col gap-4 p-4 border rounded-lg bg-muted/50 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="flex items-center space-x-4">
                     <Avatar>
@@ -329,7 +329,7 @@ export default function TeamPage() {
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-4">
+                  <div className="flex flex-wrap items-center gap-3 sm:space-x-4 sm:gap-0">
                     <RoleBadge role={invitation.role} />
                     <Badge variant="secondary">Pending</Badge>
                     <Button
@@ -369,7 +369,7 @@ export default function TeamPage() {
               {members.map((member) => (
                 <div
                   key={member.id}
-                  className="flex items-center justify-between p-4 border rounded-lg"
+                  className="flex flex-col gap-4 p-4 border rounded-lg sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="flex items-center space-x-4">
                     <Avatar>
@@ -399,7 +399,7 @@ export default function TeamPage() {
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-4">
+                  <div className="flex flex-wrap items-center gap-3 sm:space-x-4 sm:gap-0">
                     <div className="text-right">
                       <RoleBadge role={member.role} />
                       <p className="text-xs text-muted-foreground mt-1">

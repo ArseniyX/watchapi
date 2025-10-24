@@ -181,9 +181,9 @@ export default function AnalyticsPage() {
               {topEndpoints.map((endpoint, index) => (
                 <div
                   key={endpoint.id}
-                  className="flex items-center justify-between p-4 border rounded-lg"
+                  className="flex flex-col gap-4 p-4 border rounded-lg sm:flex-row sm:items-center sm:justify-between"
                 >
-                  <div className="flex items-center space-x-4">
+                  <div className="flex w-full items-start gap-4 sm:w-auto sm:items-center">
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold text-sm">
                       {index + 1}
                     </div>
@@ -197,14 +197,14 @@ export default function AnalyticsPage() {
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-6 text-sm">
-                    <div className="text-center">
+                  <div className="flex w-full flex-wrap items-center gap-4 text-sm sm:w-auto sm:justify-end sm:space-x-6 sm:gap-0">
+                    <div className="text-left sm:text-center">
                       <p className="font-medium">
                         {endpoint.avgResponseTime}ms
                       </p>
                       <p className="text-muted-foreground">Avg Time</p>
                     </div>
-                    <div className="text-center">
+                    <div className="text-left sm:text-center">
                       <p className="font-medium">{endpoint.errorRate}%</p>
                       <p className="text-muted-foreground">Error Rate</p>
                     </div>
