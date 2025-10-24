@@ -123,12 +123,18 @@ export default function RootLayout({
           }}
         />
         <link
-          style={{
-            borderRadius: "0.5rem",
-          }}
           rel="icon"
-          href="/favicon.png"
+          href="/favicon-light.png"
+          media="(prefers-color-scheme: light)"
         />
+
+        <link
+          rel="icon"
+          href="/favicon-dark.png"
+          media="(prefers-color-scheme: dark)"
+        />
+
+        <link rel="icon" href="/favicon.png" />
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#111" />
         <meta name="mobile-web-app-capable" content="yes" />
