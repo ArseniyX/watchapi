@@ -6,7 +6,7 @@ export const plans = [
     price: "$0",
     priceId: "free",
     features: [
-      { icon: Database, text: "3 API endpoints" },
+      { icon: Database, text: "Unlimited API endpoints" },
       { icon: Users, text: "1 team member" },
       { icon: Clock, text: "30-minute health checks" },
       { icon: TrendingUp, text: "7 days data retention" },
@@ -21,7 +21,7 @@ export const plans = [
     price: "$9",
     priceId: "starter",
     features: [
-      { icon: Database, text: "25 API endpoints" },
+      // { icon: Database, text: "25 API endpoints" },
       { icon: Users, text: "5 team members" },
       { icon: Clock, text: "5-minute checks" },
       { icon: TrendingUp, text: "30 days retention" },
@@ -39,11 +39,11 @@ export const plans = [
     price: "$29",
     priceId: "pro",
     features: [
-      { icon: Database, text: "100 API endpoints" },
+      // { icon: Database, text: "100 API endpoints" },
       { icon: Users, text: "15 team members" },
       { icon: Clock, text: "1-minute checks" },
       { icon: TrendingUp, text: "90 days retention" },
-      { icon: Zap, text: "Advanced AI anomaly detection" },
+      // { icon: Zap, text: "Advanced AI anomaly detection" },
       { icon: Check, text: "SLA monitoring" },
       { icon: Check, text: "Priority support" },
     ],

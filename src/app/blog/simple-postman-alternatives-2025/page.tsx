@@ -78,8 +78,8 @@ export default function BlogPost() {
 
         <ul className="space-y-3 mb-6 ml-6 list-disc">
           <li>
-            <strong>Pricing model:</strong> $19-39 per user per month adds up
-            quickly for teams
+            <strong>Pricing model:</strong> $14-29 per user per month adds up
+            quickly when every collaborator needs a license
           </li>
           <li>
             <strong>Feature bloat:</strong> Many teams only use 10-20% of
@@ -123,7 +123,9 @@ export default function BlogPost() {
           <li>Real-time alerts via email, Slack, Discord, or webhooks</li>
           <li>Performance analytics and uptime tracking</li>
           <li>Team collaboration with collections</li>
-          <li>Flat pricing - $29-99/month for unlimited team members</li>
+          <li>
+            Flat pricing - $9/month (5 seats) or $29/month (15 seats) included
+          </li>
         </ul>
 
         <h3 className="text-2xl font-semibold mb-4 mt-8">
@@ -141,7 +143,8 @@ export default function BlogPost() {
           <p className="font-semibold mb-2">Pricing Comparison</p>
           <p className="text-sm mb-0">
             For a team of 10 developers: Postman Professional costs
-            $390/month. WatchAPI costs $39-99/month with unlimited team members.
+            $290/month. WatchAPI Starter is $9/month (5 seats) and Pro is
+            $29/month (15 seats).
           </p>
         </div>
 
@@ -356,7 +359,7 @@ export default function BlogPost() {
         </h3>
         <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
           Stop juggling multiple tools. Get API testing and continuous
-          monitoring in one platform. Start free with 5 endpoints.
+          monitoring in one platform. Start free with 3 endpoints.
         </p>
         <div className="flex gap-4 justify-center">
           <Link href="/signup">
