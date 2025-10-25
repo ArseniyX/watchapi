@@ -26,7 +26,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <SidebarUserProfile />
             </div>
           </header>
-          <div className="flex flex-1 flex-col gap-4 px-4 pt-4 md:pt-0 overflow-auto">
+          <div className="flex flex-1 flex-col gap-4 px-4 pt-0 md:pt-0 overflow-auto">
             {children}
           </div>
         </SidebarInset>

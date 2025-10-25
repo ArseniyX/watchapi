@@ -384,7 +384,7 @@ export default function AlertsPage() {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <div>
+            <div className="space-y-2">
               <CardTitle>Notification Channels</CardTitle>
               <CardDescription>
                 Configure how your team receives alerts when endpoints fail
@@ -537,7 +537,7 @@ export default function AlertsPage() {
                       <p className="text-sm text-muted-foreground mt-1">
                         {channel.type}
                       </p>
-                      <div className="mt-2 flex items-center gap-3">
+                      <div className="mt-2 flex items-center justify-between gap-3">
                         <Badge
                           variant={channel.isActive ? "default" : "secondary"}
                         >
