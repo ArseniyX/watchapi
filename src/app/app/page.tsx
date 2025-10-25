@@ -178,7 +178,7 @@ export default function DashboardPage() {
             <DashboardChart />
           </CardContent>
         </Card>
-        <Card className="col-span-3">
+        <Card className="col-span-4 md:col-span-2 lg:col-span-3 w-full">
           <CardHeader>
             <CardTitle>Recent API Checks</CardTitle>
             <CardDescription>Latest monitoring results</CardDescription>
@@ -198,20 +198,20 @@ export default function DashboardPage() {
                     check.status === "SUCCESS"
                       ? "bg-green-500"
                       : check.status === "TIMEOUT"
-                        ? "bg-yellow-500"
-                        : "bg-red-500";
+                      ? "bg-yellow-500"
+                      : "bg-red-500";
                   const statusText =
                     check.status === "SUCCESS"
                       ? "success"
                       : check.status === "TIMEOUT"
-                        ? "timeout"
-                        : "error";
+                      ? "timeout"
+                      : "error";
                   const statusVariant =
                     check.status === "SUCCESS"
                       ? "default"
                       : check.status === "TIMEOUT"
-                        ? "secondary"
-                        : "destructive";
+                      ? "secondary"
+                      : "destructive";
 
                   return (
                     <div
