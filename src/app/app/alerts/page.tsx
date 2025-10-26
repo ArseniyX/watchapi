@@ -49,6 +49,8 @@ import {
   MessageSquare,
   Trash2,
 } from "lucide-react";
+import { SlackIcon } from "@/components/icons/Slack";
+import { DiscordIcon } from "@/components/icons/Discord";
 import { trpc } from "@/lib/trpc";
 import { NotificationType } from "@/generated/prisma";
 import { toast } from "sonner";
@@ -87,8 +89,9 @@ const NotificationChannelIcon = ({ type }: { type: string }) => {
     case NotificationType.WEBHOOK:
       return <Webhook className="h-4 w-4" />;
     case NotificationType.SLACK:
+      return <SlackIcon className="h-4 w-4" />;
     case NotificationType.DISCORD:
-      return <MessageSquare className="h-4 w-4" />;
+      return <DiscordIcon className="h-4 w-4" />;
     default:
       return null;
   }
@@ -445,13 +448,13 @@ export default function AlertsPage() {
                         </SelectItem>
                         <SelectItem value={NotificationType.SLACK}>
                           <div className="flex items-center">
-                            <MessageSquare className="h-4 w-4 mr-2" />
+                            <SlackIcon className="h-4 w-4 mr-2" />
                             Slack
                           </div>
                         </SelectItem>
                         <SelectItem value={NotificationType.DISCORD}>
                           <div className="flex items-center">
-                            <MessageSquare className="h-4 w-4 mr-2" />
+                            <DiscordIcon className="h-4 w-4 mr-2" />
                             Discord
                           </div>
                         </SelectItem>
