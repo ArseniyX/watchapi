@@ -3,11 +3,14 @@
 import {
   Bar,
   BarChart,
+  CartesianGrid,
   ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  Tooltip,
 } from "recharts";
+
+import { chartTheme, chartTooltipStyles } from "@/lib/chart-theme";
 
 interface UptimeChartProps {
   data?: Array<{
@@ -67,28 +70,31 @@ export function UptimeChart({ data }: UptimeChartProps) {
   return (
     <ResponsiveContainer width="100%" height={300}>
       <BarChart data={chartData}>
+        <CartesianGrid
+          stroke={chartTheme.gridColor}
+          strokeDasharray="4 4"
+          vertical={false}
+        />
         <XAxis
           dataKey="name"
-          stroke="#888888"
+          stroke={chartTheme.axisColor}
           fontSize={12}
           tickLine={false}
           axisLine={false}
+          tick={{ fill: chartTheme.axisColor }}
         />
         <YAxis
-          stroke="#888888"
+          stroke={chartTheme.axisColor}
           fontSize={12}
           tickLine={false}
           axisLine={false}
+          tick={{ fill: chartTheme.axisColor }}
           tickFormatter={(value) => `${value}%`}
           domain={domain}
         />
         <Tooltip
-          contentStyle={{
-            backgroundColor: "hsl(var(--card))",
-            border: "1px solid hsl(var(--border))",
-            borderRadius: "8px",
-          }}
-          labelStyle={{ color: "hsl(var(--foreground))" }}
+          contentStyle={chartTooltipStyles.content}
+          labelStyle={chartTooltipStyles.label}
           formatter={(value) => [`${value}%`, "Uptime"]}
         />
         <Bar

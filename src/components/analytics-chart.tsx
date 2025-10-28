@@ -1,13 +1,16 @@
 "use client";
 
 import {
+  CartesianGrid,
   Line,
   LineChart,
   ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  Tooltip,
 } from "recharts";
+
+import { chartTheme, chartTooltipStyles } from "@/lib/chart-theme";
 
 interface AnalyticsChartProps {
   data?: Array<{
@@ -68,27 +71,30 @@ export function AnalyticsChart({ data }: AnalyticsChartProps) {
   return (
     <ResponsiveContainer width="100%" height={300}>
       <LineChart data={chartData}>
+        <CartesianGrid
+          stroke={chartTheme.gridColor}
+          strokeDasharray="4 4"
+          vertical={false}
+        />
         <XAxis
           dataKey="name"
-          stroke="#888888"
+          stroke={chartTheme.axisColor}
           fontSize={12}
           tickLine={false}
           axisLine={false}
+          tick={{ fill: chartTheme.axisColor }}
         />
         <YAxis
-          stroke="#888888"
+          stroke={chartTheme.axisColor}
           fontSize={12}
           tickLine={false}
           axisLine={false}
+          tick={{ fill: chartTheme.axisColor }}
           tickFormatter={(value) => `${value}ms`}
         />
         <Tooltip
-          contentStyle={{
-            backgroundColor: "hsl(var(--card))",
-            border: "1px solid hsl(var(--border))",
-            borderRadius: "8px",
-          }}
-          labelStyle={{ color: "hsl(var(--foreground))" }}
+          contentStyle={chartTooltipStyles.content}
+          labelStyle={chartTooltipStyles.label}
         />
         <Line
           type="monotone"

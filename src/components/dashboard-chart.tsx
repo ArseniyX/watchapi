@@ -1,6 +1,15 @@
 "use client";
 
-import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  XAxis,
+  YAxis,
+} from "recharts";
+
+import { chartTheme } from "@/lib/chart-theme";
 
 const data = [
   { name: "00:00", value: 245 },
@@ -21,18 +30,25 @@ export function DashboardChart() {
   return (
     <ResponsiveContainer width="100%" height={350}>
       <AreaChart data={data}>
+        <CartesianGrid
+          stroke={chartTheme.gridColor}
+          strokeDasharray="4 4"
+          vertical={false}
+        />
         <XAxis
           dataKey="name"
-          stroke="#888888"
+          stroke={chartTheme.axisColor}
           fontSize={12}
           tickLine={false}
           axisLine={false}
+          tick={{ fill: chartTheme.axisColor }}
         />
         <YAxis
-          stroke="#888888"
+          stroke={chartTheme.axisColor}
           fontSize={12}
           tickLine={false}
           axisLine={false}
+          tick={{ fill: chartTheme.axisColor }}
           tickFormatter={(value) => `${value}ms`}
         />
         <Area
