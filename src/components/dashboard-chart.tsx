@@ -39,8 +39,8 @@ export function DashboardChart() {
           type="monotone"
           dataKey="value"
           strokeWidth={2}
-          stroke="hsl(var(--chart-1))"
-          fill="hsl(var(--chart-1))"
+          stroke="var(--chart-1)"
+          fill="var(--chart-1)"
           fillOpacity={0.2}
         />
       </AreaChart>

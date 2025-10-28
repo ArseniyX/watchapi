@@ -26,27 +26,24 @@ export function AnalyticsChart({ data }: AnalyticsChartProps) {
   }
 
   // Group data by hour and calculate average
-  const groupedData = data.reduce(
-    (acc, item) => {
-      const date = new Date(item.checkedAt);
-      const hour = new Date(
-        date.getFullYear(),
-        date.getMonth(),
-        date.getDate(),
-        date.getHours(),
-      );
-      const key = hour.getTime();
+  const groupedData = data.reduce((acc, item) => {
+    const date = new Date(item.checkedAt);
+    const hour = new Date(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate(),
+      date.getHours(),
+    );
+    const key = hour.getTime();
 
-      if (!acc[key]) {
-        acc[key] = { time: hour, values: [] };
-      }
-      if (item.responseTime) {
-        acc[key].values.push(item.responseTime);
-      }
-      return acc;
-    },
-    {} as Record<number, { time: Date; values: number[] }>,
-  );
+    if (!acc[key]) {
+      acc[key] = { time: hour, values: [] };
+    }
+    if (item.responseTime) {
+      acc[key].values.push(item.responseTime);
+    }
+    return acc;
+  }, {} as Record<number, { time: Date; values: number[] }>);
 
   const chartData = Object.values(groupedData)
     .map((group) => ({
@@ -84,18 +81,18 @@ export function AnalyticsChart({ data }: AnalyticsChartProps) {
         />
         <Tooltip
           contentStyle={{
-            backgroundColor: "hsl(var(--card))",
-            border: "1px solid hsl(var(--border))",
+            backgroundColor: "var(--card)",
+            border: "1px solid var(--border)",
             borderRadius: "8px",
           }}
-          labelStyle={{ color: "hsl(var(--foreground))" }}
+          labelStyle={{ color: "var(--foreground)" }}
         />
         <Line
           type="monotone"
           dataKey="value"
           strokeWidth={2}
-          stroke="hsl(var(--chart-1))"
-          dot={{ fill: "hsl(var(--chart-1))", strokeWidth: 2, r: 4 }}
+          stroke="var(--chart-1)"
+          dot={{ fill: "var(--chart-1)", strokeWidth: 2, r: 4 }}
         />
       </LineChart>
     </ResponsiveContainer>

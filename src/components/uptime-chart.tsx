@@ -26,23 +26,20 @@ export function UptimeChart({ data }: UptimeChartProps) {
   }
 
   // Group data by day and calculate uptime percentage
-  const groupedData = data.reduce(
-    (acc, item) => {
-      const date = new Date(item.checkedAt);
-      const day = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-      const key = day.getTime();
+  const groupedData = data.reduce((acc, item) => {
+    const date = new Date(item.checkedAt);
+    const day = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const key = day.getTime();
 
-      if (!acc[key]) {
-        acc[key] = { time: day, total: 0, successful: 0 };
-      }
-      acc[key].total++;
-      if (item.status === "SUCCESS") {
-        acc[key].successful++;
-      }
-      return acc;
-    },
-    {} as Record<number, { time: Date; total: number; successful: number }>,
-  );
+    if (!acc[key]) {
+      acc[key] = { time: day, total: 0, successful: 0 };
+    }
+    acc[key].total++;
+    if (item.status === "SUCCESS") {
+      acc[key].successful++;
+    }
+    return acc;
+  }, {} as Record<number, { time: Date; total: number; successful: number }>);
 
   const chartData = Object.values(groupedData)
     .map((group) => ({
@@ -84,18 +81,14 @@ export function UptimeChart({ data }: UptimeChartProps) {
         />
         <Tooltip
           contentStyle={{
-            backgroundColor: "hsl(var(--card))",
-            border: "1px solid hsl(var(--border))",
+            backgroundColor: "var(--card)",
+            border: "1px solid var(--border)",
             borderRadius: "8px",
           }}
-          labelStyle={{ color: "hsl(var(--foreground))" }}
+          labelStyle={{ color: "var(--foreground)" }}
           formatter={(value) => [`${value}%`, "Uptime"]}
         />
-        <Bar
-          dataKey="uptime"
-          fill="hsl(var(--chart-2))"
-          radius={[4, 4, 0, 0]}
-        />
+        <Bar dataKey="uptime" fill="var(--chart-1)" radius={[4, 4, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
   );
