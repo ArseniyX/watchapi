@@ -384,34 +384,41 @@ export default function AlertsPage() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="w-full">
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="space-y-2">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="space-y-1 text-center sm:text-left">
               <CardTitle>Notification Channels</CardTitle>
               <CardDescription>
-                Configure how your team receives alerts when endpoints fail
+                Configure how your team receives alerts when endpoints fail.
               </CardDescription>
             </div>
+
             <Dialog
               open={channelDialogOpen}
               onOpenChange={setChannelDialogOpen}
             >
               <DialogTrigger asChild>
-                <Button disabled={!selectedOrgId}>
+                <Button
+                  disabled={!selectedOrgId}
+                  className="w-full sm:w-auto justify-center"
+                >
                   <Plus className="h-4 w-4 mr-2" />
                   Add Channel
                 </Button>
               </DialogTrigger>
+
               <DialogContent className="max-w-2xl">
                 <DialogHeader>
                   <DialogTitle>Create Notification Channel</DialogTitle>
                   <DialogDescription>
                     Set up a new channel to receive alerts when API endpoints
-                    fail
+                    fail.
                   </DialogDescription>
                 </DialogHeader>
+
                 <div className="space-y-4 py-4">
+                  {/* Channel Name */}
                   <div className="space-y-2">
                     <Label htmlFor="channel-name">Channel Name</Label>
                     <Input
@@ -422,6 +429,7 @@ export default function AlertsPage() {
                     />
                   </div>
 
+                  {/* Channel Type */}
                   <div className="space-y-2">
                     <Label htmlFor="channel-type">Channel Type</Label>
                     <Select
@@ -431,7 +439,7 @@ export default function AlertsPage() {
                       }
                     >
                       <SelectTrigger id="channel-type">
-                        <SelectValue />
+                        <SelectValue placeholder="Select type" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value={NotificationType.EMAIL}>
@@ -462,6 +470,7 @@ export default function AlertsPage() {
                     </Select>
                   </div>
 
+                  {/* Config JSON */}
                   <div className="space-y-2">
                     <Label htmlFor="channel-config">Configuration (JSON)</Label>
                     <CodeEditor
@@ -483,10 +492,12 @@ export default function AlertsPage() {
                     </p>
                   </div>
                 </div>
-                <DialogFooter>
+
+                <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:gap-0 sm:justify-end">
                   <Button
                     variant="outline"
                     onClick={() => setChannelDialogOpen(false)}
+                    className="w-full sm:w-auto"
                   >
                     Cancel
                   </Button>
@@ -497,6 +508,7 @@ export default function AlertsPage() {
                       !channelConfig ||
                       createChannelMutation.isPending
                     }
+                    className="w-full sm:w-auto"
                   >
                     {createChannelMutation.isPending
                       ? "Creating..."
@@ -507,45 +519,51 @@ export default function AlertsPage() {
             </Dialog>
           </div>
         </CardHeader>
+
         <CardContent>
           {!selectedOrgId ? (
             <div className="text-center py-8">
               <p className="text-muted-foreground">
-                Select an organization to manage notification channels
+                Select an organization to manage notification channels.
               </p>
             </div>
           ) : channels && channels.length === 0 ? (
             <div className="text-center py-8">
               <MessageSquare className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
               <p className="text-muted-foreground mb-2">
-                No notification channels configured
+                No notification channels configured.
               </p>
               <p className="text-sm text-muted-foreground mb-4">
-                Add a channel to start receiving alerts
+                Add a channel to start receiving alerts.
               </p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="flex flex-col gap-3">
               {channels?.map((channel) => (
                 <div
                   key={channel.id}
-                  className="flex items-start justify-between rounded-lg border p-4"
+                  className="flex sm:flex-row sm:items-center sm:justify-between rounded-lg border bg-card p-4 transition-colors hover:bg-accent/5"
                 >
-                  <div className="flex items-start space-x-4">
-                    <div className="mt-1">
-                      <NotificationChannelIcon type={channel.type} />
-                    </div>
-                    <div className="min-w-[200px]">
-                      <h4 className="font-medium">{channel.name}</h4>
-                      <p className="text-sm text-muted-foreground mt-1">
+                  {/* Left section */}
+                  <div className="flex items-start gap-4 flex-1">
+                    <NotificationChannelIcon type={channel.type} />
+
+                    <div className="flex-1">
+                      <h4 className="font-medium leading-none">
+                        {channel.name}
+                      </h4>
+                      <p className="text-xs uppercase tracking-wide text-muted-foreground mt-1">
                         {channel.type}
                       </p>
-                      <div className="mt-2 flex items-center justify-between gap-3">
+
+                      <div className="mt-3 flex items-center gap-3">
                         <Badge
                           variant={channel.isActive ? "default" : "secondary"}
+                          className="text-xs px-2 py-0.5"
                         >
                           {channel.isActive ? "Active" : "Inactive"}
                         </Badge>
+
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
                           <Switch
                             checked={channel.isActive}
@@ -566,14 +584,19 @@ export default function AlertsPage() {
                       </div>
                     </div>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleDeleteChannel(channel.id)}
-                    disabled={deleteChannelMutation.isPending}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+
+                  {/* Right section (delete button) */}
+                  <div className="flex justify-end sm:justify-center mt-3 sm:mt-0 shrink-0">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition"
+                      onClick={() => handleDeleteChannel(channel.id)}
+                      disabled={deleteChannelMutation.isPending}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
