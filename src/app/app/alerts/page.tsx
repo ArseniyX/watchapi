@@ -529,24 +529,25 @@ export default function AlertsPage() {
               {channels?.map((channel) => (
                 <div
                   key={channel.id}
-                  className="flex items-start justify-between rounded-lg border p-4"
+                  className="flex flex-col gap-4 rounded-lg border p-4 sm:flex-row sm:items-start sm:justify-between"
                 >
-                  <div className="flex items-start space-x-4">
-                    <div className="mt-1">
+                  <div className="flex w-full items-start gap-4 sm:w-auto">
+                    <div className="mt-1 flex-shrink-0">
                       <NotificationChannelIcon type={channel.type} />
                     </div>
-                    <div className="min-w-[200px]">
-                      <h4 className="font-medium">{channel.name}</h4>
-                      <p className="text-sm text-muted-foreground mt-1">
+                    <div className="min-w-0 flex-1">
+                      <h4 className="font-medium break-words">{channel.name}</h4>
+                      <p className="text-sm text-muted-foreground mt-1 capitalize">
                         {channel.type}
                       </p>
-                      <div className="mt-2 flex items-center justify-between gap-3">
+                      <div className="mt-3 flex flex-col gap-3 sm:mt-2 sm:flex-row sm:items-center sm:justify-between">
                         <Badge
+                          className="w-fit"
                           variant={channel.isActive ? "default" : "secondary"}
                         >
                           {channel.isActive ? "Active" : "Inactive"}
                         </Badge>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground sm:text-sm">
                           <Switch
                             checked={channel.isActive}
                             onCheckedChange={(value) => {
@@ -561,7 +562,9 @@ export default function AlertsPage() {
                               !selectedOrgId || updateChannelMutation.isPending
                             }
                           />
-                          <span>{channel.isActive ? "Active" : "Paused"}</span>
+                          <span className="whitespace-nowrap">
+                            {channel.isActive ? "Active" : "Paused"}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -569,6 +572,7 @@ export default function AlertsPage() {
                   <Button
                     variant="ghost"
                     size="icon"
+                    className="self-end sm:self-start"
                     onClick={() => handleDeleteChannel(channel.id)}
                     disabled={deleteChannelMutation.isPending}
                   >
