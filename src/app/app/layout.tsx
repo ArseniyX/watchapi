@@ -10,6 +10,7 @@ import {
 import { AuthGuard } from "@/components/auth-guard";
 import { Logo } from "@/components/logo";
 import { SidebarUserProfile } from "@/components/sidebar-user-profile";
+import "./style.css";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (

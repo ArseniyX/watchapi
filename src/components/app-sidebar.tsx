@@ -7,6 +7,7 @@ import {
 import { Logo } from "./logo";
 import { SidebarNav } from "./sidebar-nav";
 import { SidebarUserProfile } from "./sidebar-user-profile";
+import { SidebarHelpMenu } from "./sidebar-help-menu";
 
 export function AppSidebar() {
   return (
@@ -20,7 +21,8 @@ export function AppSidebar() {
         <SidebarNav />
       </SidebarContent>
 
-      <div className="border-t p-4">
+      <div className="border-t py-4 flex flex-col gap-4 text-sm text-muted-foreground">
+        <SidebarHelpMenu />
         <SidebarUserProfile />
       </div>
     </Sidebar>
