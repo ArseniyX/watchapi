@@ -24,6 +24,7 @@ import {
 import { AnalyticsChart } from "@/components/analytics-chart";
 import { UptimeChart } from "@/components/uptime-chart";
 import { trpc } from "@/lib/trpc";
+import { DashboardHeader } from "@/components/dashboard-header";
 
 export default function AnalyticsPage() {
   const [days, setDays] = useState(7);
@@ -82,14 +83,10 @@ export default function AnalyticsPage() {
   ];
   return (
     <div className="flex flex-1 flex-col gap-4 p-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Analytics</h1>
-          <p className="text-muted-foreground">
-            Detailed insights into your API performance
-          </p>
-        </div>
-        <div className="flex items-center space-x-2">
+      <DashboardHeader
+        title="Analytics"
+        description="Detailed insights into your API performance"
+        actions={
           <Select
             value={days.toString()}
             onValueChange={(v) => setDays(Number(v))}
@@ -104,12 +101,8 @@ export default function AnalyticsPage() {
               <SelectItem value="90">Last 90 days</SelectItem>
             </SelectContent>
           </Select>
-          {/* <Button variant="outline">
-            <Download className="mr-2 h-4 w-4" />
-            Export
-          </Button> */}
-        </div>
-      </div>
+        }
+      />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {metrics.map((metric) => (

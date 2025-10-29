@@ -1,36 +1,15 @@
 "use client";
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Activity, Clock, AlertTriangle, TrendingUp } from "lucide-react";
-import { DashboardChart } from "@/components/dashboard-chart";
 import { OnboardingChecklist } from "@/components/onboarding-checklist";
 import { trpc } from "@/lib/trpc";
-
-function formatDuration(ms: number) {
-  if (ms < 1000) return `${ms}ms`;
-  if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
-  return `${Math.floor(ms / 60000)}m ${Math.floor((ms % 60000) / 1000)}s`;
-}
-
-function formatTime(date: Date) {
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-
-  if (diffMins < 1) return "now";
-  if (diffMins < 60) return `${diffMins}m ago`;
-  const diffHours = Math.floor(diffMins / 60);
-  if (diffHours < 24) return `${diffHours}h ago`;
-  const diffDays = Math.floor(diffHours / 24);
-  return `${diffDays}d ago`;
-}
+import { DashboardHeader } from "@/components/dashboard-header";
+import { DashboardLoadingState } from "@/components/dashboard-loading-state";
+import {
+  DashboardStatsGrid,
+  type DashboardStats,
+} from "@/components/dashboard-stats-grid";
+import { ResponseTimeCard } from "@/components/response-time-card";
+import { RecentChecksCard } from "@/components/recent-checks-card";
 
 export default function DashboardPage() {
   const { data: endpoints, isLoading: endpointsLoading } =
@@ -41,13 +20,11 @@ export default function DashboardPage() {
       { enabled: !!endpoints?.[0]?.id },
     );
 
-  // Calculate dashboard stats from real data
-  const calculateStats = () => {
+  const calculateStats = (): DashboardStats => {
     if (!endpoints || !history) return null;
 
     const totalEndpoints = endpoints.length;
 
-    // Calculate uptime based on recent checks
     const successfulChecks = history.filter(
       (h) => h.status === "SUCCESS",
     ).length;
@@ -57,7 +34,6 @@ export default function DashboardPage() {
         ? ((successfulChecks / totalChecks) * 100).toFixed(1)
         : "0.0";
 
-    // Calculate average response time
     const responseTimes = history
       .filter((h) => h.responseTime)
       .map((h) => h.responseTime!);
@@ -68,7 +44,6 @@ export default function DashboardPage() {
           )
         : 0;
 
-    // Calculate error rate
     const errorChecks = history.filter(
       (h) => h.status === "ERROR" || h.status === "FAILURE",
     ).length;
@@ -86,178 +61,21 @@ export default function DashboardPage() {
   const stats = calculateStats();
 
   if (endpointsLoading) {
-    return (
-      <div className="flex flex-1 flex-col items-center justify-center p-4 min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-        <p className="text-muted-foreground mt-4">Loading dashboard...</p>
-      </div>
-    );
+    return <DashboardLoadingState />;
   }
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Monitor your API performance at a glance
-          </p>
-        </div>
-      </div>
-
-      {/* Onboarding Checklist */}
+      <DashboardHeader />
       <OnboardingChecklist />
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">API Uptime</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats?.uptime || "0%"}</div>
-            <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-              <span>Last 30 days</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg Latency</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {stats?.avgResponseTime || "0ms"}
-            </div>
-            <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-              <span>Response time</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Error Rate</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats?.errorRate || "0%"}</div>
-            <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-              <span>Failed requests</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Endpoints</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {stats?.totalEndpoints || "0"}
-            </div>
-            <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-              <span>Total monitored</span>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
+      <DashboardStatsGrid stats={stats} />
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-4">
-          <CardHeader>
-            <CardTitle>Response Time Trends</CardTitle>
-            <CardDescription>
-              Average response times over the last 24 hours
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pl-2">
-            <DashboardChart />
-          </CardContent>
-        </Card>
-        <Card className="col-span-4 md:col-span-2 lg:col-span-3 w-full">
-          <CardHeader>
-            <CardTitle>Recent API Checks</CardTitle>
-            <CardDescription>Latest monitoring results</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {historyLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                </div>
-              ) : history && history.length > 0 ? (
-                history.slice(0, 5).map((check) => {
-                  const endpoint = endpoints?.find(
-                    (e) => e.id === check.apiEndpointId,
-                  );
-                  const statusColor =
-                    check.status === "SUCCESS"
-                      ? "bg-green-500"
-                      : check.status === "TIMEOUT"
-                      ? "bg-yellow-500"
-                      : "bg-red-500";
-                  const statusText =
-                    check.status === "SUCCESS"
-                      ? "success"
-                      : check.status === "TIMEOUT"
-                      ? "timeout"
-                      : "error";
-                  const statusVariant =
-                    check.status === "SUCCESS"
-                      ? "default"
-                      : check.status === "TIMEOUT"
-                      ? "secondary"
-                      : "destructive";
-
-                  return (
-                    <div
-                      key={check.id}
-                      className="flex gap-3 sm:flex-row justify-between"
-                    >
-                      <div className="flex w-full items-center gap-3 sm:w-auto">
-                        <div
-                          className={`h-2 w-2 rounded-full ${statusColor}`}
-                        />
-                        <div>
-                          <p className="text-sm font-medium">
-                            {endpoint?.name || endpoint?.url || "Unknown"}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {formatTime(new Date(check.checkedAt))}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2 sm:w-auto sm:flex-col sm:items-end ">
-                        <p className="text-sm font-medium sm:text-right">
-                          {check.responseTime
-                            ? formatDuration(check.responseTime)
-                            : "N/A"}
-                        </p>
-                        <Badge
-                          variant={statusVariant}
-                          className="w-fit text-xs sm:self-end"
-                        >
-                          {statusText}
-                        </Badge>
-                      </div>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="text-center text-muted-foreground py-4">
-                  <p>No recent checks</p>
-                  <p className="text-xs mt-1">
-                    Add some API endpoints to start monitoring
-                  </p>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+        <ResponseTimeCard />
+        <RecentChecksCard
+          endpoints={endpoints}
+          history={history}
+          isLoading={historyLoading}
+        />
       </div>
     </div>
   );

@@ -54,6 +54,7 @@ import { DiscordIcon } from "@/components/icons/Discord";
 import { trpc } from "@/lib/trpc";
 import { NotificationType } from "@/generated/prisma";
 import { toast } from "sonner";
+import { DashboardHeader } from "@/components/dashboard-header";
 
 function formatTime(date: Date) {
   const now = new Date();
@@ -105,6 +106,11 @@ export default function AlertsPage() {
     NotificationType.EMAIL,
   );
   const [channelConfig, setChannelConfig] = useState("");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [channelToDelete, setChannelToDelete] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
 
   const { data: organizations } =
     trpc.organization.getMyOrganizations.useQuery();
@@ -139,10 +145,16 @@ export default function AlertsPage() {
     },
   });
 
+  const closeDeleteDialog = () => {
+    setDeleteDialogOpen(false);
+    setChannelToDelete(null);
+  };
+
   const deleteChannelMutation = trpc.notificationChannel.delete.useMutation({
     onSuccess: () => {
       toast.success("Notification channel deleted");
       refetchChannels();
+      closeDeleteDialog();
     },
     onError: (error) => {
       toast.error(error.message);
@@ -203,13 +215,16 @@ export default function AlertsPage() {
     });
   };
 
-  const handleDeleteChannel = (id: string) => {
-    if (!selectedOrgId) return;
-    if (!confirm("Are you sure you want to delete this notification channel?"))
-      return;
+  const handleDeleteChannel = (channel: { id: string; name: string }) => {
+    setChannelToDelete({ id: channel.id, name: channel.name });
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDeleteChannel = () => {
+    if (!selectedOrgId || !channelToDelete) return;
 
     deleteChannelMutation.mutate({
-      id,
+      id: channelToDelete.id,
       organizationId: selectedOrgId,
     });
   };
@@ -240,369 +255,423 @@ export default function AlertsPage() {
   }).length;
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Alerts</h1>
-          <p className="text-muted-foreground">
-            Failed endpoint checks and alerts
-          </p>
-        </div>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Endpoints
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalEndpoints}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Active Monitoring
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{activeAlerts}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Failed Today
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-500">{todayFailed}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Failed This Week
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-yellow-500">
-              {weekFailed}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Alert History</CardTitle>
-          <CardDescription>
-            Recent failed checks across all endpoints
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {failedChecks.length === 0 ? (
-            <div className="text-center py-8">
-              <CheckCircle className="mx-auto h-12 w-12 text-green-500 mb-4" />
-              <p className="text-muted-foreground mb-2">No alerts</p>
-              <p className="text-sm text-muted-foreground">
-                All endpoints are healthy!
-              </p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto max-h-[300px] overflow-y-auto">
-              <Table>
-                <TableHeader className="sticky top-0 bg-card z-10">
-                  <TableRow>
-                    <TableHead className="whitespace-nowrap">Status</TableHead>
-                    <TableHead className="min-w-[200px]">Endpoint</TableHead>
-                    <TableHead className="min-w-[200px]">Error</TableHead>
-                    <TableHead className="whitespace-nowrap">
-                      Status Code
-                    </TableHead>
-                    <TableHead className="whitespace-nowrap">
-                      Response Time
-                    </TableHead>
-                    <TableHead className="whitespace-nowrap">Time</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {failedChecks.slice(0, 50).map((check, index) => (
-                    <TableRow key={`${check.id}-${index}`}>
-                      <TableCell className="whitespace-nowrap">
-                        <div className="flex items-center space-x-2">
-                          <StatusIcon status={check.status} />
-                          <Badge
-                            variant={
-                              check.status === "TIMEOUT"
-                                ? "secondary"
-                                : "destructive"
-                            }
-                          >
-                            {check.status.toLowerCase()}
-                          </Badge>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="max-w-[300px]">
-                          <div className="font-medium truncate">
-                            {check.endpointName}
-                          </div>
-                          <div className="text-sm text-muted-foreground font-mono truncate">
-                            {check.endpointUrl}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground max-w-[300px]">
-                        <div className="truncate">
-                          {check.errorMessage || "No error message"}
-                        </div>
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        {check.statusCode ? (
-                          <Badge variant="outline" className="font-mono">
-                            {check.statusCode}
-                          </Badge>
-                        ) : (
-                          <span className="text-muted-foreground">N/A</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="font-mono text-sm whitespace-nowrap">
-                        {check.responseTime ? `${check.responseTime}ms` : "N/A"}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground whitespace-nowrap">
-                        {formatTime(new Date(check.checkedAt))}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card className="w-full">
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="space-y-1 text-center sm:text-left">
-              <CardTitle>Notification Channels</CardTitle>
-              <CardDescription>
-                Configure how your team receives alerts when endpoints fail.
-              </CardDescription>
-            </div>
-
-            <Dialog
-              open={channelDialogOpen}
-              onOpenChange={setChannelDialogOpen}
+    <>
+      <Dialog
+        open={deleteDialogOpen}
+        onOpenChange={(open) => {
+          if (open) {
+            setDeleteDialogOpen(true);
+          } else {
+            closeDeleteDialog();
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Notification Channel</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete{" "}
+              <span className="font-semibold">
+                {channelToDelete?.name ?? "this channel"}
+              </span>
+              ? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:gap-0 sm:justify-end">
+            <Button
+              variant="outline"
+              onClick={closeDeleteDialog}
+              disabled={deleteChannelMutation.isPending}
+              className="w-full sm:w-auto"
             >
-              <DialogTrigger asChild>
-                <Button
-                  disabled={!selectedOrgId}
-                  className="w-full sm:w-auto justify-center"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Channel
-                </Button>
-              </DialogTrigger>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmDeleteChannel}
+              disabled={
+                deleteChannelMutation.isPending ||
+                !channelToDelete ||
+                !selectedOrgId
+              }
+              className="w-full sm:w-auto"
+            >
+              {deleteChannelMutation.isPending ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-              <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle>Create Notification Channel</DialogTitle>
-                  <DialogDescription>
-                    Set up a new channel to receive alerts when API endpoints
-                    fail.
-                  </DialogDescription>
-                </DialogHeader>
+      <div className="flex flex-1 flex-col gap-4 p-4">
+        <DashboardHeader
+          title="Alerts"
+          description="Failed endpoint checks and alerts"
+        />
 
-                <div className="space-y-4 py-4">
-                  {/* Channel Name */}
-                  <div className="space-y-2">
-                    <Label htmlFor="channel-name">Channel Name</Label>
-                    <Input
-                      id="channel-name"
-                      placeholder="e.g., Team Email, Ops Webhook"
-                      value={channelName}
-                      onChange={(e) => setChannelName(e.target.value)}
-                    />
-                  </div>
-
-                  {/* Channel Type */}
-                  <div className="space-y-2">
-                    <Label htmlFor="channel-type">Channel Type</Label>
-                    <Select
-                      value={channelType}
-                      onValueChange={(value) =>
-                        setChannelType(value as NotificationType)
-                      }
-                    >
-                      <SelectTrigger id="channel-type">
-                        <SelectValue placeholder="Select type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value={NotificationType.EMAIL}>
-                          <div className="flex items-center">
-                            <Mail className="h-4 w-4 mr-2" />
-                            Email
+        <div className="grid gap-4 md:grid-cols-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Total Endpoints
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{totalEndpoints}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Active Monitoring
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{activeAlerts}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Failed Today
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-red-500">
+                {todayFailed}
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Failed This Week
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-yellow-500">
+                {weekFailed}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Alert History</CardTitle>
+            <CardDescription>
+              Recent failed checks across all endpoints
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {failedChecks.length === 0 ? (
+              <div className="text-center py-8">
+                <CheckCircle className="mx-auto h-12 w-12 text-green-500 mb-4" />
+                <p className="text-muted-foreground mb-2">No alerts</p>
+                <p className="text-sm text-muted-foreground">
+                  All endpoints are healthy!
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto max-h-[300px] overflow-y-auto">
+                <Table>
+                  <TableHeader className="sticky top-0 bg-card z-10">
+                    <TableRow>
+                      <TableHead className="whitespace-nowrap">
+                        Status
+                      </TableHead>
+                      <TableHead className="min-w-[200px]">Endpoint</TableHead>
+                      <TableHead className="min-w-[200px]">Error</TableHead>
+                      <TableHead className="whitespace-nowrap">
+                        Status Code
+                      </TableHead>
+                      <TableHead className="whitespace-nowrap">
+                        Response Time
+                      </TableHead>
+                      <TableHead className="whitespace-nowrap">Time</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {failedChecks.slice(0, 50).map((check, index) => (
+                      <TableRow key={`${check.id}-${index}`}>
+                        <TableCell className="whitespace-nowrap">
+                          <div className="flex items-center space-x-2">
+                            <StatusIcon status={check.status} />
+                            <Badge
+                              variant={
+                                check.status === "TIMEOUT"
+                                  ? "secondary"
+                                  : "destructive"
+                              }
+                            >
+                              {check.status.toLowerCase()}
+                            </Badge>
                           </div>
-                        </SelectItem>
-                        <SelectItem value={NotificationType.WEBHOOK}>
-                          <div className="flex items-center">
-                            <Webhook className="h-4 w-4 mr-2" />
-                            Webhook
+                        </TableCell>
+                        <TableCell>
+                          <div className="max-w-[300px]">
+                            <div className="font-medium truncate">
+                              {check.endpointName}
+                            </div>
+                            <div className="text-sm text-muted-foreground font-mono truncate">
+                              {check.endpointUrl}
+                            </div>
                           </div>
-                        </SelectItem>
-                        <SelectItem value={NotificationType.SLACK}>
-                          <div className="flex items-center">
-                            <SlackIcon className="h-4 w-4 mr-2" />
-                            Slack
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground max-w-[300px]">
+                          <div className="truncate">
+                            {check.errorMessage || "No error message"}
                           </div>
-                        </SelectItem>
-                        <SelectItem value={NotificationType.DISCORD}>
-                          <div className="flex items-center">
-                            <DiscordIcon className="h-4 w-4 mr-2" />
-                            Discord
-                          </div>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap">
+                          {check.statusCode ? (
+                            <Badge variant="outline" className="font-mono">
+                              {check.statusCode}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground">N/A</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="font-mono text-sm whitespace-nowrap">
+                          {check.responseTime
+                            ? `${check.responseTime}ms`
+                            : "N/A"}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground whitespace-nowrap">
+                          {formatTime(new Date(check.checkedAt))}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-                  {/* Config JSON */}
-                  <div className="space-y-2">
-                    <Label htmlFor="channel-config">Configuration (JSON)</Label>
-                    <CodeEditor
-                      value={channelConfig}
-                      onChange={setChannelConfig}
-                      language="json"
-                      placeholder={getConfigPlaceholder()}
-                      height="150px"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      {channelType === NotificationType.EMAIL &&
-                        "Provide an array of email addresses"}
-                      {channelType === NotificationType.WEBHOOK &&
-                        "Provide webhook URL and optional headers"}
-                      {channelType === NotificationType.SLACK &&
-                        "Provide your Slack webhook URL"}
-                      {channelType === NotificationType.DISCORD &&
-                        "Provide your Discord webhook URL"}
-                    </p>
-                  </div>
-                </div>
+        <Card className="w-full">
+          <CardHeader>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="space-y-1 text-center sm:text-left">
+                <CardTitle>Notification Channels</CardTitle>
+                <CardDescription>
+                  Configure how your team receives alerts when endpoints fail.
+                </CardDescription>
+              </div>
 
-                <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:gap-0 sm:justify-end">
+              <Dialog
+                open={channelDialogOpen}
+                onOpenChange={setChannelDialogOpen}
+              >
+                <DialogTrigger asChild>
                   <Button
-                    variant="outline"
-                    onClick={() => setChannelDialogOpen(false)}
-                    className="w-full sm:w-auto"
+                    disabled={!selectedOrgId}
+                    className="w-full sm:w-auto justify-center"
                   >
-                    Cancel
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Channel
                   </Button>
-                  <Button
-                    onClick={handleCreateChannel}
-                    disabled={
-                      !channelName ||
-                      !channelConfig ||
-                      createChannelMutation.isPending
-                    }
-                    className="w-full sm:w-auto"
-                  >
-                    {createChannelMutation.isPending
-                      ? "Creating..."
-                      : "Create Channel"}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </div>
-        </CardHeader>
+                </DialogTrigger>
 
-        <CardContent>
-          {!selectedOrgId ? (
-            <div className="text-center py-8">
-              <p className="text-muted-foreground">
-                Select an organization to manage notification channels.
-              </p>
-            </div>
-          ) : channels && channels.length === 0 ? (
-            <div className="text-center py-8">
-              <MessageSquare className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-              <p className="text-muted-foreground mb-2">
-                No notification channels configured.
-              </p>
-              <p className="text-sm text-muted-foreground mb-4">
-                Add a channel to start receiving alerts.
-              </p>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-3">
-              {channels?.map((channel) => (
-                <div
-                  key={channel.id}
-                  className="flex sm:flex-row sm:items-center sm:justify-between rounded-lg border bg-card p-4 transition-colors hover:bg-accent/5"
-                >
-                  {/* Left section */}
-                  <div className="flex items-start gap-4 flex-1">
-                    <NotificationChannelIcon type={channel.type} />
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>Create Notification Channel</DialogTitle>
+                    <DialogDescription>
+                      Set up a new channel to receive alerts when API endpoints
+                      fail.
+                    </DialogDescription>
+                  </DialogHeader>
 
-                    <div className="flex-1">
-                      <h4 className="font-medium leading-none">
-                        {channel.name}
-                      </h4>
-                      <p className="text-xs uppercase tracking-wide text-muted-foreground mt-1">
-                        {channel.type}
+                  <div className="space-y-4 py-4">
+                    {/* Channel Name */}
+                    <div className="space-y-2">
+                      <Label htmlFor="channel-name">Channel Name</Label>
+                      <Input
+                        id="channel-name"
+                        placeholder="e.g., Team Email, Ops Webhook"
+                        value={channelName}
+                        onChange={(e) => setChannelName(e.target.value)}
+                      />
+                    </div>
+
+                    {/* Channel Type */}
+                    <div className="space-y-2">
+                      <Label htmlFor="channel-type">Channel Type</Label>
+                      <Select
+                        value={channelType}
+                        onValueChange={(value) =>
+                          setChannelType(value as NotificationType)
+                        }
+                      >
+                        <SelectTrigger id="channel-type">
+                          <SelectValue placeholder="Select type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={NotificationType.EMAIL}>
+                            <div className="flex items-center">
+                              <Mail className="h-4 w-4 mr-2" />
+                              Email
+                            </div>
+                          </SelectItem>
+                          <SelectItem value={NotificationType.WEBHOOK}>
+                            <div className="flex items-center">
+                              <Webhook className="h-4 w-4 mr-2" />
+                              Webhook
+                            </div>
+                          </SelectItem>
+                          <SelectItem value={NotificationType.SLACK}>
+                            <div className="flex items-center">
+                              <SlackIcon className="h-4 w-4 mr-2" />
+                              Slack
+                            </div>
+                          </SelectItem>
+                          <SelectItem value={NotificationType.DISCORD}>
+                            <div className="flex items-center">
+                              <DiscordIcon className="h-4 w-4 mr-2" />
+                              Discord
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Config JSON */}
+                    <div className="space-y-2">
+                      <Label htmlFor="channel-config">
+                        Configuration (JSON)
+                      </Label>
+                      <CodeEditor
+                        value={channelConfig}
+                        onChange={setChannelConfig}
+                        language="json"
+                        placeholder={getConfigPlaceholder()}
+                        height="150px"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        {channelType === NotificationType.EMAIL &&
+                          "Provide an array of email addresses"}
+                        {channelType === NotificationType.WEBHOOK &&
+                          "Provide webhook URL and optional headers"}
+                        {channelType === NotificationType.SLACK &&
+                          "Provide your Slack webhook URL"}
+                        {channelType === NotificationType.DISCORD &&
+                          "Provide your Discord webhook URL"}
                       </p>
-
-                      <div className="mt-3 flex items-center gap-3">
-                        <Badge
-                          variant={channel.isActive ? "default" : "secondary"}
-                          className="text-xs px-2 py-0.5"
-                        >
-                          {channel.isActive ? "Active" : "Inactive"}
-                        </Badge>
-
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <Switch
-                            checked={channel.isActive}
-                            onCheckedChange={(value) => {
-                              if (!selectedOrgId) return;
-                              updateChannelMutation.mutate({
-                                id: channel.id,
-                                organizationId: selectedOrgId,
-                                isActive: value,
-                              });
-                            }}
-                            disabled={
-                              !selectedOrgId || updateChannelMutation.isPending
-                            }
-                          />
-                          <span>{channel.isActive ? "Active" : "Paused"}</span>
-                        </div>
-                      </div>
                     </div>
                   </div>
 
-                  {/* Right section (delete button) */}
-                  <div className="flex justify-end sm:justify-center mt-3 sm:mt-0 shrink-0">
+                  <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:gap-0 sm:justify-end">
                     <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition"
-                      onClick={() => handleDeleteChannel(channel.id)}
-                      disabled={deleteChannelMutation.isPending}
+                      variant="outline"
+                      onClick={() => setChannelDialogOpen(false)}
+                      className="w-full sm:w-auto"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      Cancel
                     </Button>
-                  </div>
-                </div>
-              ))}
+                    <Button
+                      onClick={handleCreateChannel}
+                      disabled={
+                        !channelName ||
+                        !channelConfig ||
+                        createChannelMutation.isPending
+                      }
+                      className="w-full sm:w-auto"
+                    >
+                      {createChannelMutation.isPending
+                        ? "Creating..."
+                        : "Create Channel"}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+          </CardHeader>
+
+          <CardContent>
+            {!selectedOrgId ? (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">
+                  Select an organization to manage notification channels.
+                </p>
+              </div>
+            ) : channels && channels.length === 0 ? (
+              <div className="text-center py-8">
+                <MessageSquare className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                <p className="text-muted-foreground mb-2">
+                  No notification channels configured.
+                </p>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Add a channel to start receiving alerts.
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {channels?.map((channel) => (
+                  <div
+                    key={channel.id}
+                    className="flex sm:flex-row sm:items-center sm:justify-between rounded-lg border bg-card p-4 transition-colors hover:bg-accent/5"
+                  >
+                    {/* Left section */}
+                    <div className="flex items-start gap-4 flex-1">
+                      <NotificationChannelIcon type={channel.type} />
+
+                      <div className="flex-1">
+                        <h4 className="font-medium leading-none">
+                          {channel.name}
+                        </h4>
+                        <p className="text-xs uppercase tracking-wide text-muted-foreground mt-1">
+                          {channel.type}
+                        </p>
+
+                        <div className="mt-3 flex items-center gap-3">
+                          <Badge
+                            variant={channel.isActive ? "default" : "secondary"}
+                            className="text-xs px-2 py-0.5"
+                          >
+                            {channel.isActive ? "Active" : "Inactive"}
+                          </Badge>
+
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <Switch
+                              checked={channel.isActive}
+                              onCheckedChange={(value) => {
+                                if (!selectedOrgId) return;
+                                updateChannelMutation.mutate({
+                                  id: channel.id,
+                                  organizationId: selectedOrgId,
+                                  isActive: value,
+                                });
+                              }}
+                              disabled={
+                                !selectedOrgId ||
+                                updateChannelMutation.isPending
+                              }
+                            />
+                            <span>
+                              {channel.isActive ? "Active" : "Paused"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right section (delete button) */}
+                    <div className="flex justify-end sm:justify-center mt-3 sm:mt-0 shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition"
+                        onClick={() => handleDeleteChannel(channel as any)}
+                        disabled={deleteChannelMutation.isPending}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </>
   );
 }

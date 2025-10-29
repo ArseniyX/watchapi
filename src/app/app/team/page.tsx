@@ -43,6 +43,7 @@ import { OrganizationRole } from "@/generated/prisma";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
 import { useOrganizationStore } from "@/stores/organization-store";
+import { DashboardHeader } from "@/components/dashboard-header";
 
 const RoleIcon = ({ role }: { role: string }) => {
   switch (role) {
@@ -175,43 +176,41 @@ export default function TeamPage() {
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4">
-      <div className="flex justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Team</h1>
-          <p className="text-muted-foreground">
-            Manage your team members and permissions
-          </p>
-        </div>
-        {organizations && organizations.length > 0 && (
-          <Select
-            value={selectedOrgId || undefined}
-            onValueChange={async (orgId) => {
-              try {
-                await switchOrganization(orgId);
+      <DashboardHeader
+        title="Team"
+        description="Manage your team members and permissions"
+        actions={
+          organizations && organizations.length > 0 ? (
+            <Select
+              value={selectedOrgId || undefined}
+              onValueChange={async (orgId) => {
+                try {
+                  await switchOrganization(orgId);
 
-                // Invalidate all queries to refetch with new context
-                await utils.invalidate();
+                  // Invalidate all queries to refetch with new context
+                  await utils.invalidate();
 
-                toast.success("Organization switched successfully");
-              } catch (error) {
-                toast.error("Failed to switch organization");
-                console.error("Organization switch error:", error);
-              }
-            }}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select organization" />
-            </SelectTrigger>
-            <SelectContent>
-              {organizations.map((org) => (
-                <SelectItem key={org.id} value={org.id}>
-                  {org.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
-      </div>
+                  toast.success("Organization switched successfully");
+                } catch (error) {
+                  toast.error("Failed to switch organization");
+                  console.error("Organization switch error:", error);
+                }
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select organization" />
+              </SelectTrigger>
+              <SelectContent>
+                {organizations.map((org) => (
+                  <SelectItem key={org.id} value={org.id}>
+                    {org.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : undefined
+        }
+      />
 
       <div className="grid gap-6 md:grid-cols-2">
         <Card>

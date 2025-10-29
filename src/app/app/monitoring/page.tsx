@@ -34,6 +34,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { DashboardHeader } from "@/components/dashboard-header";
 import { useRouter } from "next/navigation";
 import EndpointDetailsDrawer from "./endpoint-details-drawer";
 import type { EndpointSummary } from "./endpoint-details-drawer";
@@ -111,7 +112,9 @@ export default function MonitoringPage() {
 
   const selectedEndpoint = useMemo<EndpointSummary | null>(() => {
     if (!selectedEndpointId || !endpoints) return null;
-    return endpoints.find((endpoint) => endpoint.id === selectedEndpointId) || null;
+    return (
+      endpoints.find((endpoint) => endpoint.id === selectedEndpointId) || null
+    );
   }, [endpoints, selectedEndpointId]);
 
   const filteredEndpoints = useMemo<EndpointSummary[]>(() => {
@@ -148,22 +151,20 @@ export default function MonitoringPage() {
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Monitoring</h1>
-          <p className="text-muted-foreground">
-            Real-time API health and performance monitoring
-          </p>
-        </div>
-        <Button onClick={() => router.push("/app/collections")}>
-          <Settings className="mr-2 h-4 w-4" />
-          Configure Monitoring
-        </Button>
-      </div>
+      <DashboardHeader
+        title="Monitoring"
+        description="Real-time API health and performance monitoring"
+        actions={
+          <Button onClick={() => router.push("/app/collections")}>
+            <Settings className="mr-2 h-4 w-4" />
+            Configure Monitoring
+          </Button>
+        }
+      />
 
       <div className="flex items-center space-x-4">
         <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search endpoints..."
             className="pl-8"
@@ -183,7 +184,7 @@ export default function MonitoringPage() {
             setRefreshInterval(intervals[value]);
           }}
         >
-          <SelectTrigger className="w-48">
+          <SelectTrigger className="border-2 border-border py-4.5">
             <SelectValue placeholder="Refresh interval" />
           </SelectTrigger>
           <SelectContent>

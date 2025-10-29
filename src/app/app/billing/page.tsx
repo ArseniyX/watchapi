@@ -20,6 +20,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { plans } from "@/lib/plans";
+import { DashboardHeader } from "@/components/dashboard-header";
 
 export default function BillingPage() {
   const [comingSoonOpen, setComingSoonOpen] = useState(false);
@@ -38,18 +39,15 @@ export default function BillingPage() {
     <div className="h-full overflow-auto">
       <div className="container max-w-7xl mx-auto p-6 space-y-8">
         {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            Billing & Subscription
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            Manage your subscription and billing information
-          </p>
+        <DashboardHeader
+          title="Billing & Subscription"
+          description="Manage your subscription and billing information"
+        >
           <p className="mt-3 text-sm font-medium text-primary">
             🚀 <strong>Beta pricing:</strong> Early adopters get up to 70% off
             and keep these prices for life.
           </p>
-        </div>
+        </DashboardHeader>
 
         {/* Current Plan Overview */}
         <Card>

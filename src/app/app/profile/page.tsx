@@ -14,6 +14,7 @@ import {
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { trpc } from "@/lib/trpc";
+import { DashboardHeader } from "@/components/dashboard-header";
 
 export default function ProfilePage() {
   const { user } = useAuth();
@@ -102,12 +103,10 @@ export default function ProfilePage() {
   return (
     <div className="flex-1 p-8">
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Profile</h1>
-          <p className="text-muted-foreground">
-            Manage your account settings and preferences
-          </p>
-        </div>
+        <DashboardHeader
+          title="Profile"
+          description="Manage your account settings and preferences"
+        />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card>

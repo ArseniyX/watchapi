@@ -69,8 +69,8 @@ export { scheduler };
 // Auto-start scheduler in production (but not during tests)
 if (
   // process.env.ENABLE_CRON === "true" &&
-  // !hasScheduler &&
-  // process.env.NODE_ENV !== "test" &&
+  !hasScheduler &&
+  process.env.NODE_ENV !== "test" &&
   !process.env.VITEST
 ) {
   console.log("Starting monitoring scheduler...");
