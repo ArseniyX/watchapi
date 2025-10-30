@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { KeyboardEvent, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -29,7 +29,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CodeEditor } from "@/components/code-editor";
 import { Switch } from "@/components/ui/switch";
 import {
   Select,
@@ -48,6 +47,7 @@ import {
   Webhook,
   MessageSquare,
   Trash2,
+  X,
 } from "lucide-react";
 import { SlackIcon } from "@/components/icons/Slack";
 import { DiscordIcon } from "@/components/icons/Discord";
@@ -55,6 +55,25 @@ import { trpc } from "@/lib/trpc";
 import { NotificationType } from "@/generated/prisma";
 import { toast } from "sonner";
 import { DashboardHeader } from "@/components/dashboard-header";
+import { ZodError, z } from "zod";
+
+const emailConfigSchema = z.object({
+  emails: z.array(z.string().email("Enter a valid email address"))
+    .min(1, "Add at least one email address"),
+});
+
+const webhookConfigSchema = z.object({
+  url: z.string().url("Enter a valid webhook URL"),
+  headers: z.record(z.string(), z.string()).optional(),
+});
+
+const slackConfigSchema = z.object({
+  webhookUrl: z.string().url("Enter a valid Slack webhook URL"),
+});
+
+const discordConfigSchema = z.object({
+  webhookUrl: z.string().url("Enter a valid Discord webhook URL"),
+});
 
 function formatTime(date: Date) {
   const now = new Date();
@@ -105,7 +124,14 @@ export default function AlertsPage() {
   const [channelType, setChannelType] = useState<NotificationType>(
     NotificationType.EMAIL,
   );
-  const [channelConfig, setChannelConfig] = useState("");
+  const [emailInput, setEmailInput] = useState("");
+  const [emailRecipients, setEmailRecipients] = useState<string[]>([]);
+  const [webhookUrl, setWebhookUrl] = useState("");
+  const [webhookHeaders, setWebhookHeaders] = useState<
+    { key: string; value: string }[]
+  >([{ key: "", value: "" }]);
+  const [slackWebhookUrl, setSlackWebhookUrl] = useState("");
+  const [discordWebhookUrl, setDiscordWebhookUrl] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [channelToDelete, setChannelToDelete] = useState<{
     id: string;
@@ -179,41 +205,145 @@ export default function AlertsPage() {
   const resetChannelForm = () => {
     setChannelName("");
     setChannelType(NotificationType.EMAIL);
-    setChannelConfig("");
-  };
-
-  const getConfigPlaceholder = () => {
-    switch (channelType) {
-      case NotificationType.EMAIL:
-        return '{"emails": ["ops@example.com", "team@example.com"]}';
-      case NotificationType.WEBHOOK:
-        return '{"url": "https://your-webhook.com/alerts", "headers": {"Authorization": "Bearer token"}}';
-      case NotificationType.SLACK:
-        return '{"webhookUrl": "https://hooks.slack.com/services/YOUR/WEBHOOK/URL"}';
-      case NotificationType.DISCORD:
-        return '{"webhookUrl": "https://discord.com/api/webhooks/YOUR/WEBHOOK"}';
-      default:
-        return "{}";
-    }
+    setEmailInput("");
+    setEmailRecipients([]);
+    setWebhookUrl("");
+    setWebhookHeaders([{ key: "", value: "" }]);
+    setSlackWebhookUrl("");
+    setDiscordWebhookUrl("");
   };
 
   const handleCreateChannel = () => {
     if (!selectedOrgId) return;
 
     try {
-      JSON.parse(channelConfig);
-    } catch {
-      toast.error("Invalid JSON configuration");
+      let configString = "";
+      const trimmedName = channelName.trim();
+
+      switch (channelType) {
+        case NotificationType.EMAIL: {
+          const config = emailConfigSchema.parse({
+            emails: emailRecipients,
+          });
+          configString = JSON.stringify(config);
+          break;
+        }
+        case NotificationType.WEBHOOK: {
+          const trimmedWebhookUrl = webhookUrl.trim();
+          const headers = webhookHeaders.reduce<Record<string, string>>(
+            (acc, header) => {
+              const key = header.key.trim();
+              const value = header.value.trim();
+              if (key && value) {
+                acc[key] = value;
+              }
+              return acc;
+            },
+            {},
+          );
+
+          const config = webhookConfigSchema.parse({
+            url: trimmedWebhookUrl,
+            headers: Object.keys(headers).length > 0 ? headers : undefined,
+          });
+          configString = JSON.stringify(config);
+          break;
+        }
+        case NotificationType.SLACK: {
+          const config = slackConfigSchema.parse({
+            webhookUrl: slackWebhookUrl.trim(),
+          });
+          configString = JSON.stringify(config);
+          break;
+        }
+        case NotificationType.DISCORD: {
+          const config = discordConfigSchema.parse({
+            webhookUrl: discordWebhookUrl.trim(),
+          });
+          configString = JSON.stringify(config);
+          break;
+        }
+        default:
+          throw new Error("Unsupported notification channel type");
+      }
+
+      createChannelMutation.mutate({
+        organizationId: selectedOrgId,
+        name: trimmedName,
+        type: channelType,
+        config: configString,
+      });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        toast.error(error.errors[0]?.message ?? "Invalid configuration");
+      } else if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error("Failed to create channel. Check the configuration values.");
+      }
+    }
+  };
+
+  const handleAddEmailRecipient = () => {
+    const trimmed = emailInput.trim();
+    if (!trimmed) return;
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      toast.error("Enter a valid email address");
       return;
     }
 
-    createChannelMutation.mutate({
-      organizationId: selectedOrgId,
-      name: channelName,
-      type: channelType,
-      config: channelConfig,
-    });
+    if (emailRecipients.includes(trimmed)) {
+      toast.error("Email already added");
+      return;
+    }
+
+    setEmailRecipients((prev) => [...prev, trimmed]);
+    setEmailInput("");
   };
+
+  const handleEmailInputKeyDown = (
+    event: KeyboardEvent<HTMLInputElement>,
+  ) => {
+    if (event.key === "Enter" || event.key === ",") {
+      event.preventDefault();
+      handleAddEmailRecipient();
+    }
+  };
+
+  const removeEmailRecipient = (email: string) => {
+    setEmailRecipients((prev) => prev.filter((item) => item !== email));
+  };
+
+  const updateWebhookHeader = (
+    index: number,
+    field: "key" | "value",
+    value: string,
+  ) => {
+    setWebhookHeaders((prev) =>
+      prev.map((header, i) =>
+        i === index ? { ...header, [field]: value } : header,
+      ),
+    );
+  };
+
+  const addWebhookHeaderRow = () => {
+    setWebhookHeaders((prev) => [...prev, { key: "", value: "" }]);
+  };
+
+  const removeWebhookHeaderRow = (index: number) => {
+    setWebhookHeaders((prev) =>
+      prev.filter((_, headerIndex) => headerIndex !== index),
+    );
+  };
+
+  const isCreateDisabled =
+    createChannelMutation.isPending ||
+    !channelName.trim() ||
+    (channelType === NotificationType.EMAIL && emailRecipients.length === 0) ||
+    (channelType === NotificationType.WEBHOOK && !webhookUrl.trim()) ||
+    (channelType === NotificationType.SLACK && !slackWebhookUrl.trim()) ||
+    (channelType === NotificationType.DISCORD && !discordWebhookUrl.trim());
 
   const handleDeleteChannel = (channel: { id: string; name: string }) => {
     setChannelToDelete({ id: channel.id, name: channel.name });
@@ -459,7 +589,12 @@ export default function AlertsPage() {
 
               <Dialog
                 open={channelDialogOpen}
-                onOpenChange={setChannelDialogOpen}
+                onOpenChange={(open) => {
+                  setChannelDialogOpen(open);
+                  if (!open) {
+                    resetChannelForm();
+                  }
+                }}
               >
                 <DialogTrigger asChild>
                   <Button
@@ -533,46 +668,211 @@ export default function AlertsPage() {
                       </Select>
                     </div>
 
-                    {/* Config JSON */}
-                    <div className="space-y-2">
-                      <Label htmlFor="channel-config">
-                        Configuration (JSON)
-                      </Label>
-                      <CodeEditor
-                        value={channelConfig}
-                        onChange={setChannelConfig}
-                        language="json"
-                        placeholder={getConfigPlaceholder()}
-                        height="150px"
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        {channelType === NotificationType.EMAIL &&
-                          "Provide an array of email addresses"}
-                        {channelType === NotificationType.WEBHOOK &&
-                          "Provide webhook URL and optional headers"}
-                        {channelType === NotificationType.SLACK &&
-                          "Provide your Slack webhook URL"}
-                        {channelType === NotificationType.DISCORD &&
-                          "Provide your Discord webhook URL"}
-                      </p>
+                    {/* Channel configuration */}
+                    <div className="space-y-4">
+                      {channelType === NotificationType.EMAIL && (
+                        <div className="space-y-3">
+                          <div className="space-y-2">
+                            <Label>Email recipients</Label>
+                            {emailRecipients.length > 0 && (
+                              <div className="flex flex-wrap gap-2">
+                                {emailRecipients.map((email) => (
+                                  <Badge
+                                    key={email}
+                                    variant="secondary"
+                                    className="flex items-center gap-1"
+                                  >
+                                    {email}
+                                    <button
+                                      type="button"
+                                      onClick={() => removeEmailRecipient(email)}
+                                      className="ml-1 rounded-full p-0.5 hover:bg-muted transition"
+                                      aria-label={`Remove ${email}`}
+                                    >
+                                      <X className="h-3 w-3" />
+                                    </button>
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
+                            <div className="flex flex-col sm:flex-row gap-2">
+                              <Input
+                                id="email-recipient"
+                                placeholder="alerts@example.com"
+                                value={emailInput}
+                                onChange={(event) =>
+                                  setEmailInput(event.target.value)
+                                }
+                                onKeyDown={handleEmailInputKeyDown}
+                                aria-describedby="email-recipient-help"
+                              />
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={handleAddEmailRecipient}
+                                disabled={!emailInput.trim()}
+                              >
+                                Add email
+                              </Button>
+                            </div>
+                          </div>
+                          <p
+                            id="email-recipient-help"
+                            className="text-xs text-muted-foreground"
+                          >
+                            Add one or more email addresses to notify.
+                          </p>
+                        </div>
+                      )}
+
+                      {channelType === NotificationType.WEBHOOK && (
+                        <div className="space-y-3">
+                          <div className="space-y-2">
+                            <Label htmlFor="webhook-url">Webhook URL</Label>
+                            <Input
+                              id="webhook-url"
+                              placeholder="https://your-webhook.com/alerts"
+                              value={webhookUrl}
+                              onChange={(event) =>
+                                setWebhookUrl(event.target.value)
+                              }
+                              aria-describedby="webhook-url-help"
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between gap-2">
+                              <Label>Headers (optional)</Label>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={addWebhookHeaderRow}
+                              >
+                                <Plus className="h-4 w-4 mr-1" /> Add header
+                              </Button>
+                            </div>
+
+                            <div className="space-y-2">
+                              {webhookHeaders.length === 0 && (
+                                <p className="text-xs text-muted-foreground">
+                                  No headers added yet.
+                                </p>
+                              )}
+                              {webhookHeaders.map((header, index) => (
+                                <div
+                                  key={`webhook-header-${index}`}
+                                  className="flex flex-col sm:flex-row gap-2"
+                                >
+                                  <Input
+                                    placeholder="Header name"
+                                    value={header.key}
+                                    onChange={(event) =>
+                                      updateWebhookHeader(
+                                        index,
+                                        "key",
+                                        event.target.value,
+                                      )
+                                    }
+                                  />
+                                  <Input
+                                    placeholder="Header value"
+                                    value={header.value}
+                                    onChange={(event) =>
+                                      updateWebhookHeader(
+                                        index,
+                                        "value",
+                                        event.target.value,
+                                      )
+                                    }
+                                  />
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => removeWebhookHeaderRow(index)}
+                                    aria-label="Remove header"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          <p
+                            id="webhook-url-help"
+                            className="text-xs text-muted-foreground"
+                          >
+                            Provide the webhook URL and any custom headers required
+                            for authentication.
+                          </p>
+                        </div>
+                      )}
+
+                      {channelType === NotificationType.SLACK && (
+                        <div className="space-y-2">
+                          <Label htmlFor="slack-webhook-url">
+                            Slack webhook URL
+                          </Label>
+                          <Input
+                            id="slack-webhook-url"
+                            placeholder="https://hooks.slack.com/services/..."
+                            value={slackWebhookUrl}
+                            onChange={(event) =>
+                              setSlackWebhookUrl(event.target.value)
+                            }
+                            aria-describedby="slack-webhook-help"
+                          />
+                          <p
+                            id="slack-webhook-help"
+                            className="text-xs text-muted-foreground"
+                          >
+                            Paste the Slack incoming webhook URL for your channel.
+                          </p>
+                        </div>
+                      )}
+
+                      {channelType === NotificationType.DISCORD && (
+                        <div className="space-y-2">
+                          <Label htmlFor="discord-webhook-url">
+                            Discord webhook URL
+                          </Label>
+                          <Input
+                            id="discord-webhook-url"
+                            placeholder="https://discord.com/api/webhooks/..."
+                            value={discordWebhookUrl}
+                            onChange={(event) =>
+                              setDiscordWebhookUrl(event.target.value)
+                            }
+                            aria-describedby="discord-webhook-help"
+                          />
+                          <p
+                            id="discord-webhook-help"
+                            className="text-xs text-muted-foreground"
+                          >
+                            Paste the Discord webhook URL for the destination
+                            channel.
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
 
                   <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:gap-0 sm:justify-end">
                     <Button
                       variant="outline"
-                      onClick={() => setChannelDialogOpen(false)}
+                      onClick={() => {
+                        setChannelDialogOpen(false);
+                        resetChannelForm();
+                      }}
                       className="w-full sm:w-auto"
                     >
                       Cancel
                     </Button>
                     <Button
                       onClick={handleCreateChannel}
-                      disabled={
-                        !channelName ||
-                        !channelConfig ||
-                        createChannelMutation.isPending
-                      }
+                      disabled={isCreateDisabled}
                       className="w-full sm:w-auto"
                     >
                       {createChannelMutation.isPending
