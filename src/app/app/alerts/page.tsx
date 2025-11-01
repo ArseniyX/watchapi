@@ -22,13 +22,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Plus, Mail, Webhook, MessageSquare, Trash2, X } from "lucide-react";
 import { SlackIcon } from "@/components/icons/Slack";
 import { DiscordIcon } from "@/components/icons/Discord";
@@ -39,6 +32,8 @@ import { DashboardHeader } from "@/components/dashboard-header";
 import { ZodError, z } from "zod";
 import { AlertStatistics } from "./alert-statistics";
 import { AlertHistory } from "./alert-history";
+import { AlertChannelType } from "./alert-channel-type";
+import { AlertChannelDeleteButton } from "./alert-channel-delete-buttion";
 
 const emailConfigSchema = z.object({
   emails: z
@@ -455,46 +450,10 @@ export default function AlertsPage() {
                       />
                     </div>
 
-                    {/* Channel Type */}
-                    <div className="space-y-2">
-                      <Label htmlFor="channel-type">Channel Type</Label>
-                      <Select
-                        value={channelType}
-                        onValueChange={(value) =>
-                          setChannelType(value as NotificationType)
-                        }
-                      >
-                        <SelectTrigger id="channel-type">
-                          <SelectValue placeholder="Select type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value={NotificationType.EMAIL}>
-                            <div className="flex items-center">
-                              <Mail className="h-4 w-4 mr-2" />
-                              Email
-                            </div>
-                          </SelectItem>
-                          <SelectItem value={NotificationType.WEBHOOK}>
-                            <div className="flex items-center">
-                              <Webhook className="h-4 w-4 mr-2" />
-                              Webhook
-                            </div>
-                          </SelectItem>
-                          <SelectItem value={NotificationType.SLACK}>
-                            <div className="flex items-center">
-                              <SlackIcon className="h-4 w-4 mr-2" />
-                              Slack
-                            </div>
-                          </SelectItem>
-                          <SelectItem value={NotificationType.DISCORD}>
-                            <div className="flex items-center">
-                              <DiscordIcon className="h-4 w-4 mr-2" />
-                              Discord
-                            </div>
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    <AlertChannelType
+                      channelType={channelType}
+                      setChannelType={setChannelType}
+                    />
 
                     {/* Channel configuration */}
                     <div className="space-y-4">
@@ -787,17 +746,11 @@ export default function AlertsPage() {
                     </div>
 
                     {/* Right section (delete button) */}
-                    <div className="flex justify-end sm:justify-center mt-3 sm:mt-0 shrink-0">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition"
-                        onClick={() => handleDeleteChannel(channel as any)}
-                        disabled={deleteChannelMutation.isPending}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    <AlertChannelDeleteButton
+                      channel={channel}
+                      deleteChannelMutation={deleteChannelMutation}
+                      handleDeleteChannel={handleDeleteChannel}
+                    />
                   </div>
                 ))}
               </div>
